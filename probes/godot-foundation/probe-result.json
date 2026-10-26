@@ -1,0 +1,28 @@
+{
+  "checks": {
+    "camera_attached": true,
+    "horizontal_motion_and_wall": true,
+    "independent_instances": true,
+    "pack_scene": true,
+    "resource_round_trip": true,
+    "save_resource_text": true,
+    "save_scene_text": true,
+    "scene_ownership": true,
+    "signal_delivery": true,
+    "signal_disconnect": true
+  },
+  "engine_version": {
+    "build": "official",
+    "hash": "ed1daf0bf001b61586d9930840f2f1394092c079",
+    "hex": 263938,
+    "major": 4,
+    "minor": 7,
+    "patch": 2,
+    "status": "stable",
+    "string": "4.7.2-stable (official)",
+    "timestamp": 0
+  },
+  "physics_ticks": 90,
+  "scope": "Headless structural and runtime probe; no visual UI, Android export, jump or combat test",
+  "wall_stop_x": 69.9974975585938
+}

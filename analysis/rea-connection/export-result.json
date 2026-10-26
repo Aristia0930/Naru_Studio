@@ -1,0 +1,16 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"result\":{\"path\":\"C:\\\\Users\\\\kjk98\\\\OneDrive\\\\바탕 화면\\\\game\\\\engine-tool\\\\analysis\\\\rea-connection\\\\evidence-20261026-230007.json\",\"bytes\":10166248,\"records\":2,\"unknowns\":0}}"
+    }
+  ],
+  "structuredContent": {
+    "result": {
+      "path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\analysis\\rea-connection\\evidence-20261026-230007.json",
+      "bytes": 10166248,
+      "records": 2,
+      "unknowns": 0
+    }
+  }
+}

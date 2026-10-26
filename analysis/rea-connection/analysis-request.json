@@ -1,0 +1,8 @@
+{
+  "input_path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\rpgmaker-mv-corescript",
+  "source_paths": [
+    "js/rpg_objects/Game_Interpreter.js"
+  ],
+  "analysis_timeout_ms": 30000,
+  "detail": "summary"
+}

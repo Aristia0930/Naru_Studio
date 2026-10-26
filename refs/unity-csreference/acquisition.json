@@ -1,0 +1,62 @@
+{
+  "repository": "https://github.com/Unity-Technologies/UnityCsReference",
+  "commit": "bf6028387a4fc2ea6d41aa7d8998e774655aedf6",
+  "revision_scope": "master reference snapshot; not established as the installed 6000.6.5f1 build",
+  "files": [
+    {
+      "path": "Editor/Mono/SerializedObject.bindings.cs",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/Editor/Mono/SerializedObject.bindings.cs",
+      "sha256": "063e44c7430295f86526e1f0b208c15417615e582120ca2e4ad905151beed6b8",
+      "bytes": 17068
+    },
+    {
+      "path": "Editor/Mono/SerializedProperty.bindings.cs",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/Editor/Mono/SerializedProperty.bindings.cs",
+      "sha256": "93564994e73528e4d9513f117802194d40b7219bbead512d155d2820c7bd5817",
+      "bytes": 85800
+    },
+    {
+      "path": "Editor/Mono/Undo/Undo.bindings.cs",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/Editor/Mono/Undo/Undo.bindings.cs",
+      "sha256": "9d1a1afd4b5a1747b45ddfc6da58ff3784d501d5147fd3c10bb2fb6ef2cdc776",
+      "bytes": 19105
+    },
+    {
+      "path": "Editor/Mono/Prefabs/PrefabUtility.cs",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/Editor/Mono/Prefabs/PrefabUtility.cs",
+      "sha256": "680006cd424ae43ebee8b50c88d2367cbf6b066730e6101c1765aa1d6c0b2fad",
+      "bytes": 185405
+    },
+    {
+      "path": "Editor/Mono/Inspector/Core/InspectorWindow.cs",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/Editor/Mono/Inspector/Core/InspectorWindow.cs",
+      "sha256": "26968e92c402fa0ac064462f19925bf210c4fbc332e77b5e541cf7d63edf1c7c",
+      "bytes": 27048
+    },
+    {
+      "path": "Editor/Mono/Inspector/Editor.cs",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/Editor/Mono/Inspector/Editor.cs",
+      "sha256": "f5d39e875791b38f93df7f882f0c82271efdc11c49944ba34c04d6ee7f8854b3",
+      "bytes": 66918
+    },
+    {
+      "path": "Editor/Mono/EditorApplication.bindings.cs",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/Editor/Mono/EditorApplication.bindings.cs",
+      "sha256": "a6a6726dcdcc0b5dd08034c39fbc6f5630fdcb7c58cca74881a2fb3d39665d83",
+      "bytes": 15505
+    },
+    {
+      "path": "LICENSE.md",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/LICENSE.md",
+      "sha256": "075413c1101c31d802ddd3386a16a4826c0232254da70f12db6154b242248bd1",
+      "bytes": 86
+    },
+    {
+      "path": "README.md",
+      "url": "https://raw.githubusercontent.com/Unity-Technologies/UnityCsReference/bf6028387a4fc2ea6d41aa7d8998e774655aedf6/README.md",
+      "sha256": "7ce02cc62516167947ff89e7d43be5cb6292fd881e22acf3d41a5f720d0fb47c",
+      "bytes": 1337
+    }
+  ],
+  "scope": "Selected public reference source only; no native engine reconstruction"
+}

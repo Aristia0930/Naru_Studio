@@ -1,0 +1,12 @@
+﻿{
+    "inspected_date":  "2026-10-26",
+    "method":  "Windows file metadata and directory presence only; editor was not launched",
+    "executable":  "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Unity.exe",
+    "product_version":  "6000.6.5f1_3ff58d469c8a",
+    "module_directories":  [
+                               "AndroidPlayer",
+                               "WebGLSupport",
+                               "windowsstandalonesupport"
+                           ],
+    "build_status":  "not tested"
+}

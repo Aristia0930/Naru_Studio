@@ -1,0 +1,2761 @@
+{
+  "status": "copied-and-sha256-verified",
+  "plan": {
+    "source": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool",
+    "destination": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game_tool",
+    "files": 548,
+    "bytes": 325165200,
+    "mode": "copy originals preserved",
+    "excluded": [
+      "Ghidra installed directory and ZIP",
+      ".git",
+      ".godot",
+      "Python cache"
+    ],
+    "binary_policy": "Godot research binary copied locally, excluded from Git by .gitignore",
+    "apply": true
+  },
+  "files": [
+    {
+      "path": ".gitignore",
+      "sha256": "6ab75d9d211a8e167eac2756eece7d2bd07f9ed4e0623e5fabe2dc2791f50022",
+      "bytes": 486
+    },
+    {
+      "path": "AGENTS.md",
+      "sha256": "0d7773bc3b81bf7781c12c46bbb79913ac0eea37b2e98a5703e4052e2b9205f8",
+      "bytes": 3155
+    },
+    {
+      "path": "ENGINE_TOOL_PLAN.md",
+      "sha256": "adf731cf62e293040980fa67a5577648e29a4e31bac57903d9ce3b52e1e44ed2",
+      "bytes": 12223
+    },
+    {
+      "path": "GHIDRA_SETUP.md",
+      "sha256": "104c967befa652c9e26845d35128cdea2f68746db74da0c052bd60b72cbb286a",
+      "bytes": 2901
+    },
+    {
+      "path": "NARU_NEXT_STEPS.md",
+      "sha256": "a14fdee25ee7ecd3bd65c1996cc983c97f1c898ca8b587a9921de58e8f549914",
+      "bytes": 12881
+    },
+    {
+      "path": "README.md",
+      "sha256": "4b1262c24d16b16cfcf52a65864124af5687244cdde54461ff2bbc41a7292f5c",
+      "bytes": 4097
+    },
+    {
+      "path": "REPOSITORY_AGENTS.md",
+      "sha256": "0d7773bc3b81bf7781c12c46bbb79913ac0eea37b2e98a5703e4052e2b9205f8",
+      "bytes": 3155
+    },
+    {
+      "path": "SESSION_STATE.md",
+      "sha256": "1d9659c4bf56da958869008bf72a6afdcc01db90e25c06e63008ab69e46859ce",
+      "bytes": 20660
+    },
+    {
+      "path": "Start Studio.cmd",
+      "sha256": "e0dac6ab6516095f260e32ad369f5efe5252fc7ff3092fd1358aee35c6e9730b",
+      "bytes": 376
+    },
+    {
+      "path": "TOOL_FOUNDATION.md",
+      "sha256": "72b353da0d0c4f05585c520fd284696b24b22088a4b2535e4fc76eb9b747f620",
+      "bytes": 17835
+    },
+    {
+      "path": "analysis/foundation/source-observations.json",
+      "sha256": "f6838897176e48caf7da02e2ce3ca28800d67f14590d9e9c9e0a19e3afe5ceb7",
+      "bytes": 44793
+    },
+    {
+      "path": "analysis/godot/README.md",
+      "sha256": "d515af7833f9c56b01e7910f2f904600249975f231213032fde41c46b1c90105",
+      "bytes": 7747
+    },
+    {
+      "path": "analysis/godot/ghidra-launcher-entry.json",
+      "sha256": "3bd64093bb0dcab3182ca22a8d88b29e160629783fcb8d9e116ee4fcfd16f09f",
+      "bytes": 4902
+    },
+    {
+      "path": "analysis/godot/ghidra-launcher-evidence-20261026.json",
+      "sha256": "3a9bc8374921b30519d1752e5400925190c131a44f1150c64e15f46c67f76963",
+      "bytes": 15803811
+    },
+    {
+      "path": "analysis/godot/ghidra-launcher-startup.json",
+      "sha256": "47e718c65d2987264d8832b4c1746d05e6f55b7c89e65c23a975be96977e9d4d",
+      "bytes": 9146
+    },
+    {
+      "path": "analysis/godot/ghidra-launcher-worker.json",
+      "sha256": "552d8c876c9365b9543ddf5fe7b0637da28345caa84458f25f652a61700bcfea",
+      "bytes": 17684
+    },
+    {
+      "path": "analysis/godot/rea-exports.json",
+      "sha256": "c817adc15c94d4124a172be14aeb470b1a5698be4bb5e24b75613fa3b9174a8a",
+      "bytes": 2904
+    },
+    {
+      "path": "analysis/godot/runtime-probe-process.json",
+      "sha256": "216438ff6b3d4e2c04bca3e13c1ac352bc0d20aee233c48e60a9d48901065040",
+      "bytes": 1450
+    },
+    {
+      "path": "analysis/rea-connection/README.md",
+      "sha256": "f6530536af87662dca16a9d313beabe73a5866199899cf1829d80e7d8f8a4615",
+      "bytes": 6899
+    },
+    {
+      "path": "analysis/rea-connection/analysis-request.json",
+      "sha256": "91db0fa69b50623cc4e1b1648fb57ac7ab200a51c10d8de45132c3e9e14d75e2",
+      "bytes": 240
+    },
+    {
+      "path": "analysis/rea-connection/analysis-result.json",
+      "sha256": "351404e04c35b8b67c1b922677ba724ce76c8fb5d329e0d0a1b903f9359fbfe0",
+      "bytes": 2665
+    },
+    {
+      "path": "analysis/rea-connection/analysis-summary.json",
+      "sha256": "910433eaaa769f0abdfd564347835569365aba593445fdf1d8c03fe779023e67",
+      "bytes": 27872
+    },
+    {
+      "path": "analysis/rea-connection/codex-ghidra-session-check-20261026.json",
+      "sha256": "f0be3a5e3214bc4b87d4b4063df91cdc3a750852587cca835148f73e5437e5c2",
+      "bytes": 119164
+    },
+    {
+      "path": "analysis/rea-connection/codex-session-check-20261026.json",
+      "sha256": "c4a1df9fbeb58bccd47786c01d65237f91b0c1ed547b84f4edf8a366f4766e55",
+      "bytes": 214064
+    },
+    {
+      "path": "analysis/rea-connection/evidence-20261026-230007.json",
+      "sha256": "0eab2e866c97126d47cb12f031841dbfea901b0150a55998ffea78b5333cc7c3",
+      "bytes": 10166248
+    },
+    {
+      "path": "analysis/rea-connection/export-result.json",
+      "sha256": "1949d17dda300e7c9f3952490efcc464a866649640bcc9a396b0f4c8b2b376f0",
+      "bytes": 551
+    },
+    {
+      "path": "analysis/rea-connection/ghidra-12.1.4-doctor.json",
+      "sha256": "88a80e4c9509014152932d27c6169f6618eeee81b1f9ba70dae270f059c0914e",
+      "bytes": 13146
+    },
+    {
+      "path": "analysis/rea-connection/ghidra-12.2-doctor.json",
+      "sha256": "03e3569f3536c9ccadfe174ffc4a99e44a88ef7dce3d1503a99476d54bc5d7f2",
+      "bytes": 13118
+    },
+    {
+      "path": "analysis/rea-connection/ghidra-native-request.json",
+      "sha256": "d856791eeed73a8036556131e1ac3ff0a33c361755ae30ef87e0f78f94d495c9",
+      "bytes": 740
+    },
+    {
+      "path": "analysis/rea-connection/ghidra-native-result.json",
+      "sha256": "c0665a154ac94d2dd1bf0bb299c548eaed09fb2e1f918b23679cf1805ab78b2d",
+      "bytes": 4987
+    },
+    {
+      "path": "analysis/rea-connection/ghidra-native-stderr.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "analysis/rea-connection/ghidra-setup-plan.json",
+      "sha256": "37822bd7f28dfb4fe42b906eda60005400852bca3bc62b43b3ca5c95c2f0b42f",
+      "bytes": 12880
+    },
+    {
+      "path": "analysis/rea-connection/ghidra-setup-result.json",
+      "sha256": "9f6138095f9059e7290c044393f5f83c09a45118df30cd814e1308855b1d9a15",
+      "bytes": 13204
+    },
+    {
+      "path": "analysis/rea-connection/initialize.json",
+      "sha256": "8f204ada9efadff9380b584e172880980050b6045533e1ce1dd21a503995c48b",
+      "bytes": 3209
+    },
+    {
+      "path": "analysis/rea-connection/native-verification/hostname.exe",
+      "sha256": "f8b207720d8673feb5839df1e52360f72c2ad2ce9917d5f3da4f30368dc747c9",
+      "bytes": 40960
+    },
+    {
+      "path": "analysis/rea-connection/stderr.log",
+      "sha256": "8d5132810c8aff9aec2366e561a47c6d3de188f94d816872eb793028ace9734a",
+      "bytes": 197
+    },
+    {
+      "path": "analysis/rea-connection/tools-list.json",
+      "sha256": "dbcc5ba2975124e9206f6d3879ec1b279dae4f98052bb6f9eb7db8243b4d4b58",
+      "bytes": 9870090
+    },
+    {
+      "path": "analysis/rpgmaker/01_MV_전체구조.md",
+      "sha256": "692ec702580d7b59c8ed2ff8af20a66467153fb272e4a8bdd96e5032f55d04ac",
+      "bytes": 27526
+    },
+    {
+      "path": "analysis/rpgmaker/02_MV_데이터베이스.md",
+      "sha256": "248c6ceb70d9675ee18c0f3314334c5680ad3a77ef4d29196206ea7e7d535c93",
+      "bytes": 30062
+    },
+    {
+      "path": "analysis/rpgmaker/03_MV_이벤트명령.md",
+      "sha256": "5fcb80dd4cd593f36433e86ecb174a39427c411fc06c5da183bc5634cd9f0d24",
+      "bytes": 34378
+    },
+    {
+      "path": "analysis/rpgmaker/04_MV_턴제전투.md",
+      "sha256": "da7e1023d6d0d05433735f7e220987c22c89dd31a9b4f8c74c390298233509da",
+      "bytes": 30853
+    },
+    {
+      "path": "analysis/rpgmaker/05_XP_VX_VXAce.md",
+      "sha256": "b6c3b06ea7380a94a794114c2b2744d33f3609306b2085112bba574ca8f57817",
+      "bytes": 34795
+    },
+    {
+      "path": "analysis/rpgmaker/06_MZ_및_에디터UX.md",
+      "sha256": "e78506ee7f77c436230398d83ebab046c9ad766f51e0cbda8244573d6344eeab",
+      "bytes": 44314
+    },
+    {
+      "path": "analysis/rpgmaker/07_기초뼈대_설계.md",
+      "sha256": "723ce2318a669a79908ae0ed9a3c5b7f035a76855ed93eefc4cae8580e41eaec",
+      "bytes": 12071
+    },
+    {
+      "path": "analysis/rpgmaker/08_REA_재조사.md",
+      "sha256": "4957c5e08b6a9f3e8958319e1fb170667d590bc4046aeb6f01f88b8238e3ae1b",
+      "bytes": 4695
+    },
+    {
+      "path": "analysis/rpgmaker/rea-foundation-evidence-20261026.json",
+      "sha256": "d00200462c12f0475cad01c01ef33fab63f4c824d6ffbbfaf8d4f200ee5deec8",
+      "bytes": 15771122
+    },
+    {
+      "path": "analysis/rpgmaker/rea-foundation-request.json",
+      "sha256": "2b71de84258e3f6c47ae31c1fd4de9a077eb329cd7125269898c630b254d1594",
+      "bytes": 341
+    },
+    {
+      "path": "analysis/rpgmaker/rea-foundation-summary.json",
+      "sha256": "56a4aaa62d627c54042ec8692a84b13983e15a02a065c2dc7aee0ad2b740021d",
+      "bytes": 14659
+    },
+    {
+      "path": "analysis/unity/README.md",
+      "sha256": "e6bd8574ba2c567f9cafb44dc24400ea2f67394899ac926bed8055d219ac43f8",
+      "bytes": 2644
+    },
+    {
+      "path": "analysis/unity/local-installation.json",
+      "sha256": "e3c53a334715ef98e77fb9464345450faa7f8bc2a5831178d2211c81b0306b9e",
+      "bytes": 537
+    },
+    {
+      "path": "app/.gitignore",
+      "sha256": "c3aba91b6805b490cef8e02f704b8e8a7db37b7263f1f0dacdc25277994a1531",
+      "bytes": 43
+    },
+    {
+      "path": "app/core/document.gd",
+      "sha256": "b6734b55691e32b49421c2d68efb6bce6bb361a8fe57914dea13f0ac1d23442b",
+      "bytes": 10728
+    },
+    {
+      "path": "app/core/document.gd.uid",
+      "sha256": "3690708ab773030e20825f65389095e70b6b4fea5e88355d81550b4a30c1f6af",
+      "bytes": 20
+    },
+    {
+      "path": "app/core/exporter.gd",
+      "sha256": "bbb2446be6c9323ace3c381ab4050a7b102b42b26322d43d04cd60ead024fe5c",
+      "bytes": 3363
+    },
+    {
+      "path": "app/core/exporter.gd.uid",
+      "sha256": "f8b7ff04a214a722341445bfd629c870543d8b14e14e1927c0f0807e2a832bd1",
+      "bytes": 20
+    },
+    {
+      "path": "app/core/runner.gd",
+      "sha256": "b00715731e3db662ad2d973528b40db6ee6a3c4ef070f33738935ab0b9a6ed4e",
+      "bytes": 7507
+    },
+    {
+      "path": "app/core/runner.gd.uid",
+      "sha256": "4efb288ea2e61012f61e5ea31b0cc876a40f1f07123179c3934b759a9ee7a16a",
+      "bytes": 20
+    },
+    {
+      "path": "app/core/script_context.gd",
+      "sha256": "be1468804fceec2a25eb126db5ad7199ee13afe5bc940efec1f8865345892b56",
+      "bytes": 938
+    },
+    {
+      "path": "app/core/script_context.gd.uid",
+      "sha256": "a4b44323ca0f7f4646017df9ca1625f40b876a47e2d4679375b346608d7e70ea",
+      "bytes": 19
+    },
+    {
+      "path": "app/logs/export-smoke.log",
+      "sha256": "7014756ef1094147e00ebfa489b364e80453585c9beb8e08c4c82b94f9a9a9c0",
+      "bytes": 856
+    },
+    {
+      "path": "app/logs/import.log",
+      "sha256": "eba5ef7a2d40ad9fb5d4c32fd5d4769e353c492cc1b0534c4b6f5d6427215ac9",
+      "bytes": 838
+    },
+    {
+      "path": "app/logs/integration.log",
+      "sha256": "ce85827521932b69cd2052f2d9ced3ba5baed6a6f95b252a41b88868e3f81d24",
+      "bytes": 1722
+    },
+    {
+      "path": "app/logs/session-1793026638-776.jsonl",
+      "sha256": "a1773193bb82026d6c426273bc08bec2b7013f28cce5a045b2f3c800b46218b6",
+      "bytes": 142
+    },
+    {
+      "path": "app/logs/session-1793026742-736.jsonl",
+      "sha256": "ee9b9db2511450724284a62f56df744e6bc084b01e422a24c01b209f5b0a96cd",
+      "bytes": 142
+    },
+    {
+      "path": "app/logs/session-1793026847-339.jsonl",
+      "sha256": "5e91d028c1c28eef9875aa73fc697dfaadc9e371d61706aa96a63ada8985c453",
+      "bytes": 2896
+    },
+    {
+      "path": "app/logs/session-1793026943-229.jsonl",
+      "sha256": "394cf17d03437314ea3f542e237837f309310fd465996036460d96246c001f60",
+      "bytes": 2896
+    },
+    {
+      "path": "app/logs/session-1793027119-651.jsonl",
+      "sha256": "5db669ca59c906ee05769221ee3d3d439edfe6b7b421c871e3d30c41d9ec62da",
+      "bytes": 142
+    },
+    {
+      "path": "app/logs/smoke.log",
+      "sha256": "6d1c065383a27c36804949b6ffa4b09714470b112e5dacc0bd5aeb7b9c147c4e",
+      "bytes": 73
+    },
+    {
+      "path": "app/logs/visual-smoke.log",
+      "sha256": "c626242ed2b3f8bac24e80610b8de9e2a299bb93e1f5aa324bbcf09378af42ce",
+      "bytes": 389
+    },
+    {
+      "path": "app/main.gd",
+      "sha256": "5ef643779adc8b6a9ec0dfa2e8709a4fd17c6c3546265df996a9d1829808cc33",
+      "bytes": 33201
+    },
+    {
+      "path": "app/main.gd.uid",
+      "sha256": "15588bcf3a616aa34b6100daabe71ff695b1f5c33ed160721a9f5bd48cf32b8e",
+      "bytes": 20
+    },
+    {
+      "path": "app/main.tscn",
+      "sha256": "318d943a65ec4caae9a57dd24bcbdeed7a09311cd46b9b0ba44b73e066ccd171",
+      "bytes": 253
+    },
+    {
+      "path": "app/player.gd",
+      "sha256": "7663ccf3cd6019c41e142b146d277ffbcc4fe0ae1a5bb4c3465d1cca5f20433a",
+      "bytes": 1976
+    },
+    {
+      "path": "app/player.gd.uid",
+      "sha256": "5997b53726f0af91f1ec09954607f1e65490d5c79700204ff6578041d286678b",
+      "bytes": 19
+    },
+    {
+      "path": "app/player.tscn",
+      "sha256": "a528f0a3d4c82b4dd96e21dd4c8c7ce42a2018fbff166f0a6ee49f919f75405c",
+      "bytes": 253
+    },
+    {
+      "path": "app/project.godot",
+      "sha256": "65bbfcd8d5779a0b5b6fc440923c86432e5c7495535fb8c108207bbb9af49427",
+      "bytes": 513
+    },
+    {
+      "path": "app/test-output/latest.json",
+      "sha256": "eb75f40ae82f92c0df7955f829a7aae5ec1abce8801a919274cbacdfcb546d85",
+      "bytes": 3788
+    },
+    {
+      "path": "app/test-output/run-189009/broken.json",
+      "sha256": "be302461cda285db3ed2d45fb767b23e08ca8808b35a638009937df22b332d73",
+      "bytes": 7
+    },
+    {
+      "path": "app/test-output/run-189009/copy/assets/asset_2bf0c8dd662e579b.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-189009/copy/assets/asset_788ccfc5646a93f9.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/run-189009/copy/project.json",
+      "sha256": "8fa00ecafb492f0b8a2b43531ad0a17701e8e4026f35f4195781ebb3ffcf82c2",
+      "bytes": 1556
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/assets/asset_2bf0c8dd662e579b.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/assets/asset_788ccfc5646a93f9.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/core/document.gd",
+      "sha256": "b6734b55691e32b49421c2d68efb6bce6bb361a8fe57914dea13f0ac1d23442b",
+      "bytes": 10728
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/core/runner.gd",
+      "sha256": "530e19746db68129ba0f723770c4fc5c54834b2a8ae8d893580d45313fcb80fe",
+      "bytes": 7482
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/core/script_context.gd",
+      "sha256": "be1468804fceec2a25eb126db5ad7199ee13afe5bc940efec1f8865345892b56",
+      "bytes": 938
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/game.json",
+      "sha256": "d0ae7d44257e75722d6a53432822bfb776dc28c83e57f3147ff39da239f5d28c",
+      "bytes": 1553
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/player.gd",
+      "sha256": "7663ccf3cd6019c41e142b146d277ffbcc4fe0ae1a5bb4c3465d1cca5f20433a",
+      "bytes": 1976
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/player.tscn",
+      "sha256": "a528f0a3d4c82b4dd96e21dd4c8c7ce42a2018fbff166f0a6ee49f919f75405c",
+      "bytes": 253
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/project.godot",
+      "sha256": "13c0f753e72818ccf13c52460214fc643ee8af4f28a96dad452ad9f91ea69fcb",
+      "bytes": 260
+    },
+    {
+      "path": "app/test-output/run-189009/exported-game/ui/stage.gd",
+      "sha256": "c74e25d4c023896881e4f0a8061c719ffa646de24d0c24414c72b2c54e26e8c2",
+      "bytes": 4068
+    },
+    {
+      "path": "app/test-output/run-189009/project/assets/asset_2bf0c8dd662e579b.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-189009/project/assets/asset_788ccfc5646a93f9.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/run-189009/project/project.json",
+      "sha256": "bcda0cca49c74545bae16a5e62425b7f18299d913d429e087de8a8c8bb50889d",
+      "bytes": 1552
+    },
+    {
+      "path": "app/test-output/run-189009/project/project.json.bak",
+      "sha256": "8d279596730c6504c3f90b5f8481bba921b32b7aa7011c8045d4c47bdc151fb2",
+      "bytes": 1261
+    },
+    {
+      "path": "app/test-output/run-189009/tile.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-189009/tone.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/run-233567/broken.json",
+      "sha256": "be302461cda285db3ed2d45fb767b23e08ca8808b35a638009937df22b332d73",
+      "bytes": 7
+    },
+    {
+      "path": "app/test-output/run-233567/copy/assets/asset_2bf0c8dd662e579b.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-233567/copy/assets/asset_788ccfc5646a93f9.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/run-233567/copy/project.json",
+      "sha256": "8fa00ecafb492f0b8a2b43531ad0a17701e8e4026f35f4195781ebb3ffcf82c2",
+      "bytes": 1556
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/assets/asset_2bf0c8dd662e579b.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/assets/asset_788ccfc5646a93f9.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/core/document.gd",
+      "sha256": "b6734b55691e32b49421c2d68efb6bce6bb361a8fe57914dea13f0ac1d23442b",
+      "bytes": 10728
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/core/runner.gd",
+      "sha256": "b00715731e3db662ad2d973528b40db6ee6a3c4ef070f33738935ab0b9a6ed4e",
+      "bytes": 7507
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/core/script_context.gd",
+      "sha256": "be1468804fceec2a25eb126db5ad7199ee13afe5bc940efec1f8865345892b56",
+      "bytes": 938
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/game.json",
+      "sha256": "d0ae7d44257e75722d6a53432822bfb776dc28c83e57f3147ff39da239f5d28c",
+      "bytes": 1553
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/player.gd",
+      "sha256": "7663ccf3cd6019c41e142b146d277ffbcc4fe0ae1a5bb4c3465d1cca5f20433a",
+      "bytes": 1976
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/player.tscn",
+      "sha256": "a528f0a3d4c82b4dd96e21dd4c8c7ce42a2018fbff166f0a6ee49f919f75405c",
+      "bytes": 253
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/project.godot",
+      "sha256": "13c0f753e72818ccf13c52460214fc643ee8af4f28a96dad452ad9f91ea69fcb",
+      "bytes": 260
+    },
+    {
+      "path": "app/test-output/run-233567/exported-game/ui/stage.gd",
+      "sha256": "c74e25d4c023896881e4f0a8061c719ffa646de24d0c24414c72b2c54e26e8c2",
+      "bytes": 4068
+    },
+    {
+      "path": "app/test-output/run-233567/project/assets/asset_2bf0c8dd662e579b.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-233567/project/assets/asset_788ccfc5646a93f9.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/run-233567/project/project.json",
+      "sha256": "bcda0cca49c74545bae16a5e62425b7f18299d913d429e087de8a8c8bb50889d",
+      "bytes": 1552
+    },
+    {
+      "path": "app/test-output/run-233567/project/project.json.bak",
+      "sha256": "8d279596730c6504c3f90b5f8481bba921b32b7aa7011c8045d4c47bdc151fb2",
+      "bytes": 1261
+    },
+    {
+      "path": "app/test-output/run-233567/tile.png",
+      "sha256": "2bf0c8dd662e579bc2467f28e18129f5ec195d21487be38d57d8178b2c5ca030",
+      "bytes": 121
+    },
+    {
+      "path": "app/test-output/run-233567/tone.wav",
+      "sha256": "788ccfc5646a93f9ea87e1760c055d9e93e5011c59c6bb67c95e09f8e7c379f8",
+      "bytes": 4454
+    },
+    {
+      "path": "app/test-output/studio-overview.png",
+      "sha256": "3675a5c6da482acbfb9d1bd0519ad0f3a81a1b8ccc67750c52b025a0219864d3",
+      "bytes": 95883
+    },
+    {
+      "path": "app/test-output/visual-smoke.json",
+      "sha256": "72e8f970f161e51a981c85011597ad16f28e8b9d570e2c009692bc19e9e16e20",
+      "bytes": 259
+    },
+    {
+      "path": "app/tests/integration.gd",
+      "sha256": "1fd3156c11a52350913afbe36c56d196aa213c4e5a939ebdb18170e8c941799f",
+      "bytes": 8464
+    },
+    {
+      "path": "app/tests/visual_smoke.gd",
+      "sha256": "9aa607913cfe0261f2626a4a5a42f1320042113e431a2ebaec10a750e45c99bf",
+      "bytes": 984
+    },
+    {
+      "path": "app/ui/stage.gd",
+      "sha256": "c74e25d4c023896881e4f0a8061c719ffa646de24d0c24414c72b2c54e26e8c2",
+      "bytes": 4068
+    },
+    {
+      "path": "app/ui/stage.gd.uid",
+      "sha256": "22ec0fe7ff21212a0ae9483d277e105465a1d37482415d8b7cf914d6f5293317",
+      "bytes": 20
+    },
+    {
+      "path": "probes/godot-foundation/.gitignore",
+      "sha256": "64721fbb7bc1e6bb4e163ec390c01a36aebf3f71e35c81ecf0dcad54e94fa730",
+      "bytes": 9
+    },
+    {
+      "path": "probes/godot-foundation/generated_record.tres",
+      "sha256": "dadde61cf897ec773a534f59a5f7c75154dbac04b128513dd8b7c8d45bd056f6",
+      "bytes": 127
+    },
+    {
+      "path": "probes/godot-foundation/generated_scene.tscn",
+      "sha256": "addad8de474d0da09c0726ca89c1ee66cafa04b902a517cd51c527578d40eeb9",
+      "bytes": 155
+    },
+    {
+      "path": "probes/godot-foundation/godot.log",
+      "sha256": "a85cf941014b23243144ae876252eb5d78e3890a3fecc4cfc4d22f45f0534e82",
+      "bytes": 708
+    },
+    {
+      "path": "probes/godot-foundation/probe-result.json",
+      "sha256": "15f3b10ca86aa4b160b8ebe5592debdbea20cb780dee69305af907ec0ac19311",
+      "bytes": 751
+    },
+    {
+      "path": "probes/godot-foundation/probe.gd",
+      "sha256": "84d8beb7d21d8b43cf0a284e635c3c0ddb74ccc1286a7fed6b9ddf7113a94041",
+      "bytes": 3526
+    },
+    {
+      "path": "probes/godot-foundation/project.godot",
+      "sha256": "5ba49afa3944a9b2b27b77484801eb7a2606b8a150e188a97f9c8cf7c583b640",
+      "bytes": 135
+    },
+    {
+      "path": "refs/README.md",
+      "sha256": "01c60627541fd4f344ffc6d4f0c23f167fcaa34cc09511d479cfb45292d8e72b",
+      "bytes": 1760
+    },
+    {
+      "path": "refs/godot-4.7.2/.gitignore",
+      "sha256": "90b4052b40f4417883ce5c6eb69f11ef0f8fd7db995c9e1675d3dfb51a47bce6",
+      "bytes": 13
+    },
+    {
+      "path": "refs/godot-4.7.2/Godot_v4.7.2-stable_win64.exe.zip",
+      "sha256": "731980f9608d61333e5baf54a2ef17210acc7a538446c0cb9969f002aca1e953",
+      "bytes": 86013866
+    },
+    {
+      "path": "refs/godot-4.7.2/acquisition.json",
+      "sha256": "2ed4512ce7a4d2936e7578f912934c933551dd6986c470b952adbccf6187f8ec",
+      "bytes": 4597
+    },
+    {
+      "path": "refs/godot-4.7.2/bin/Godot_v4.7.2-stable_win64.exe",
+      "sha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+      "bytes": 180858888
+    },
+    {
+      "path": "refs/godot-4.7.2/bin/Godot_v4.7.2-stable_win64_console.exe",
+      "sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+      "bytes": 198152
+    },
+    {
+      "path": "refs/godot-4.7.2/source/LICENSE.txt",
+      "sha256": "b0435e3b3e4e55238f05f4b306f30524a1b2e20147810d436eaa554fa6855c80",
+      "bytes": 1149
+    },
+    {
+      "path": "refs/godot-4.7.2/source/core/io/resource.cpp",
+      "sha256": "d6bf138aae0c24f06c1456e20d4bcc37cc47d7bac4616cc8e7cb3934b3bfffd2",
+      "bytes": 28597
+    },
+    {
+      "path": "refs/godot-4.7.2/source/core/io/resource_loader.cpp",
+      "sha256": "35de9b6e4771228fcb61d90248b5f79cc036768c6a046635647970ebd4db9173",
+      "bytes": 59294
+    },
+    {
+      "path": "refs/godot-4.7.2/source/core/object/object.cpp",
+      "sha256": "d16943098177c719820de78f664d4cde3a9c4f997f25ccfa6a1f9b7e18098bd4",
+      "bytes": 76810
+    },
+    {
+      "path": "refs/godot-4.7.2/source/editor/editor_undo_redo_manager.cpp",
+      "sha256": "1c15631d3ba66e878aad02b9c22fbcdcd3713875f5e192bb8216b7081f1aea03",
+      "bytes": 20621
+    },
+    {
+      "path": "refs/godot-4.7.2/source/editor/inspector/editor_inspector.cpp",
+      "sha256": "fe45a1c885a03c95bd0954feb7bffdc0c4772d42319d3324ac80a0eb5abd315f",
+      "bytes": 223585
+    },
+    {
+      "path": "refs/godot-4.7.2/source/scene/2d/camera_2d.cpp",
+      "sha256": "33708375bad0f8983644bcf13e15195333f6d8de4efa65f1b1c18cf8591216fa",
+      "bytes": 37967
+    },
+    {
+      "path": "refs/godot-4.7.2/source/scene/2d/physics/character_body_2d.cpp",
+      "sha256": "8ca8564b3de89081232c3aea983d91096985f76cd4619f809f5eaca8ef10f200",
+      "bytes": 31953
+    },
+    {
+      "path": "refs/godot-4.7.2/source/scene/main/node.cpp",
+      "sha256": "0db10a968bd027fec03f6b78ddf793660001f61eacb369cf4cf2cf6dd48f2b80",
+      "bytes": 130466
+    },
+    {
+      "path": "refs/godot-4.7.2/source/scene/main/scene_tree.cpp",
+      "sha256": "eed6dbff323344efff19f2de6763705aff062a76e00fd7cbe42a4ee849b7e5a4",
+      "bytes": 75907
+    },
+    {
+      "path": "refs/godot-4.7.2/source/scene/resources/packed_scene.cpp",
+      "sha256": "0f94c3728f2415a03c0383536fa586a17788fc96597ea292827aa798b0c84b66",
+      "bytes": 85129
+    },
+    {
+      "path": "refs/mkxp/.editorconfig",
+      "sha256": "495eaa64b0b06bb36f3486165fb90c57ed37a381c3fbd9dc021d6950188798d7",
+      "bytes": 71
+    },
+    {
+      "path": "refs/mkxp/.gitignore",
+      "sha256": "3e578f881a5a5c13b1b40fd043fadf9b9a88372a38a45dc24255f786465f7b0c",
+      "bytes": 133
+    },
+    {
+      "path": "refs/mkxp/CMakeLists.txt",
+      "sha256": "0900f9f39593fae7a293d2fef6a26caecfc48d98d47d940d2b33f424a56e7689",
+      "bytes": 10862
+    },
+    {
+      "path": "refs/mkxp/COPYING",
+      "sha256": "189b1af95d661151e054cea10c91b3d754e4de4d3fecfb074c1fb29476f7167b",
+      "bytes": 18431
+    },
+    {
+      "path": "refs/mkxp/README.md",
+      "sha256": "43b6e779746a20be05cc3ae2f099d9b274273529f23912bdf28c8a2677a19c19",
+      "bytes": 9810
+    },
+    {
+      "path": "refs/mkxp/assets/icon.png",
+      "sha256": "acb3161e3373b3c4e8aa44d1005a722cad00896c395d58eed1e6b97431956f5e",
+      "bytes": 1263
+    },
+    {
+      "path": "refs/mkxp/assets/icon.svg",
+      "sha256": "0793c6e92d7932d6f33dd02f8796cf8b1de2410e19875b30208b8f10c8d081d6",
+      "bytes": 1944
+    },
+    {
+      "path": "refs/mkxp/assets/liberation.ttf",
+      "sha256": "e5b0af421ea2bfbc1ac8d251d647268087ae82786234c57f757d1f0b90fa8b49",
+      "bytes": 350200
+    },
+    {
+      "path": "refs/mkxp/binding-mri/audio-binding.cpp",
+      "sha256": "bbab7a2d8e1cc86219cc41ba05d6c83fcc320b38f0f3edf8752de4fe14a95539",
+      "bytes": 3716
+    },
+    {
+      "path": "refs/mkxp/binding-mri/binding-mri.cpp",
+      "sha256": "84ac959cf241bf43c67a5c3f14043158009e7db8c6565953902649ff7191c0ac",
+      "bytes": 14384
+    },
+    {
+      "path": "refs/mkxp/binding-mri/binding-types.h",
+      "sha256": "7b075af7b813374664e05a7985efec34f1cac01ad992da1e079601956aa3202d",
+      "bytes": 1101
+    },
+    {
+      "path": "refs/mkxp/binding-mri/binding-util.cpp",
+      "sha256": "75d5ae1741bb34068f7bfd9bcc1d3bb5cf2cf347bf1b19a5ac7281433cc29a06",
+      "bytes": 5811
+    },
+    {
+      "path": "refs/mkxp/binding-mri/binding-util.h",
+      "sha256": "6b62810a705d14d58d978e07191bb2ee719dd2a229027ceb03ae7d62798480c6",
+      "bytes": 8993
+    },
+    {
+      "path": "refs/mkxp/binding-mri/bitmap-binding.cpp",
+      "sha256": "3dafcc144db6ef66832469379f20d3b7f50226b02e43ff9e455bb7b5bda0d6b1",
+      "bytes": 10228
+    },
+    {
+      "path": "refs/mkxp/binding-mri/disposable-binding.h",
+      "sha256": "c1d28059f2993fc6048cc383a4bd2a68d98080146ca47060b20359eee9359e57",
+      "bytes": 2728
+    },
+    {
+      "path": "refs/mkxp/binding-mri/etc-binding.cpp",
+      "sha256": "612fbc96da13c8f937439e6452c489650b69fbaa7dcb34afb9bb00e419c31592",
+      "bytes": 6134
+    },
+    {
+      "path": "refs/mkxp/binding-mri/filesystem-binding.cpp",
+      "sha256": "2d6e816f7f300c9cac32ddc0a6e32397a1b04763b338b8f361778a639b50c943",
+      "bytes": 5173
+    },
+    {
+      "path": "refs/mkxp/binding-mri/flashable-binding.h",
+      "sha256": "dfc204d988df6517cfb870223231cfbd326772a3668b839e3b0903a65da8c6c4",
+      "bytes": 1700
+    },
+    {
+      "path": "refs/mkxp/binding-mri/font-binding.cpp",
+      "sha256": "ef850cc573a990a1254ab2555474201d227da7d81b98c487fb7872b15b1db5d4",
+      "bytes": 7708
+    },
+    {
+      "path": "refs/mkxp/binding-mri/graphics-binding.cpp",
+      "sha256": "6c42e8b5ff33a971951811ba7b311e98f54df3159b1675a9b58573e4df7bcc6c",
+      "bytes": 5541
+    },
+    {
+      "path": "refs/mkxp/binding-mri/input-binding.cpp",
+      "sha256": "64ced813784491bf5e8f284e9faf7141f6d6db759503710ef47ac0cccf6fc0f9",
+      "bytes": 4472
+    },
+    {
+      "path": "refs/mkxp/binding-mri/module_rpg.cpp",
+      "sha256": "ebffdbc570486ac43d667b43a6655772c757ae8a2ded70634111a5ced046ccd1",
+      "bytes": 98
+    },
+    {
+      "path": "refs/mkxp/binding-mri/module_rpg1.rb.xxd",
+      "sha256": "b7f7d35fd9b3800b8d22643467f86a93be199e751db859d9b688e517a129bc1e",
+      "bytes": 238076
+    },
+    {
+      "path": "refs/mkxp/binding-mri/module_rpg2.rb.xxd",
+      "sha256": "cd46c1688b864ca3e1551bdfa64536b006e4f12eb96cbde8cac15d276eeae126",
+      "bytes": 142679
+    },
+    {
+      "path": "refs/mkxp/binding-mri/module_rpg3.rb.xxd",
+      "sha256": "645510a7899a95d3484966bd8ffd42ae2f492290b9895328bc3d55c6076294f6",
+      "bytes": 138761
+    },
+    {
+      "path": "refs/mkxp/binding-mri/plane-binding.cpp",
+      "sha256": "8ceee32f1a6369f6e7205b3a7d3753acedd16582aec3534ed37e9973f922f551",
+      "bytes": 2314
+    },
+    {
+      "path": "refs/mkxp/binding-mri/sceneelement-binding.h",
+      "sha256": "92c21112bb8dac89b08098ad8642184bc98b6d77db70bda17570efcd1c59740f",
+      "bytes": 2167
+    },
+    {
+      "path": "refs/mkxp/binding-mri/serializable-binding.h",
+      "sha256": "22c4f9ab603744ad3aef43fa37ae0ebf16e17be2399f9cfd5753583dd2655d89",
+      "bytes": 1367
+    },
+    {
+      "path": "refs/mkxp/binding-mri/sprite-binding.cpp",
+      "sha256": "5488e3c5c9eed0cc4eaa396effed3569792de4a374a5a9ef071905f80a1da360",
+      "bytes": 4021
+    },
+    {
+      "path": "refs/mkxp/binding-mri/table-binding.cpp",
+      "sha256": "f3a17e8cf2ef326c528009cb0a45098924519727cbcae00edff36af00cddfbf8",
+      "bytes": 3739
+    },
+    {
+      "path": "refs/mkxp/binding-mri/tilemap-binding.cpp",
+      "sha256": "f6d3d1e3a0166b24f1ef7aab7946cf19597b0ebbb7aa036600d11bb90aeaef22",
+      "bytes": 4280
+    },
+    {
+      "path": "refs/mkxp/binding-mri/tilemapvx-binding.cpp",
+      "sha256": "2c80d04853a9deb80353a8fc54695d27d612b74a8ad9416e4b8cbbd64e65e660",
+      "bytes": 4359
+    },
+    {
+      "path": "refs/mkxp/binding-mri/viewport-binding.cpp",
+      "sha256": "224519b82414849ac13de72ca6c43b7bf255abd4cef50dbd038de3eb05902f0b",
+      "bytes": 2864
+    },
+    {
+      "path": "refs/mkxp/binding-mri/viewportelement-binding.h",
+      "sha256": "ae19f0d834736aead87825c358390c5803b91a3a359ba5e5f818e43d0c62f309",
+      "bytes": 2533
+    },
+    {
+      "path": "refs/mkxp/binding-mri/window-binding.cpp",
+      "sha256": "7d107de95b3cb58e0982e72960252744602bb914c307ce1e6f139c68512fbad5",
+      "bytes": 3153
+    },
+    {
+      "path": "refs/mkxp/binding-mri/windowvx-binding.cpp",
+      "sha256": "c4a0b8a1983b24bc298f0aed0d4e56147c3c317dd920e932422a80f4ef266c5b",
+      "bytes": 4989
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/audio-binding.cpp",
+      "sha256": "d5e148d0cf0388dbacafaa04847a327a9e203b33ce73175628b002da4f0e6887",
+      "bytes": 2423
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/binding-mruby.cpp",
+      "sha256": "0ccb2b1a5ea60b5fe7d34fa5ec32d0bf16ba0bc1ec54709da54a5e22c30812e4",
+      "bytes": 10004
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/binding-types.h",
+      "sha256": "7b075af7b813374664e05a7985efec34f1cac01ad992da1e079601956aa3202d",
+      "bytes": 1101
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/binding-util.cpp",
+      "sha256": "dacdedb6b6ff28bec75c9a159660329f2e227be492afe47bb0a95c331ed180bf",
+      "bytes": 3898
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/binding-util.h",
+      "sha256": "e3e6e4c59fe365cddc91966d9d51cbf29ebb9d88ac2111a8bfb819ed3bf6138c",
+      "bytes": 8330
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/bitmap-binding.cpp",
+      "sha256": "ef0bbe76cdbd8ec6b44957c2fe39fb842e288081fde257abeec4edcbfd6a5423",
+      "bytes": 8057
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/disposable-binding.h",
+      "sha256": "4a308f2d8702660cd10903efa74dd25b64258324d2597bb40b5103d21086de37",
+      "bytes": 3083
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/etc-binding.cpp",
+      "sha256": "72510081c065ccfe8fd2b3109538a5e3db6374512c18a60f61f9b76e0f02e0aa",
+      "bytes": 5903
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/flashable-binding.h",
+      "sha256": "6f4fd8082c13375954a1d8421630c9fddf05318d65da8a0088ff11241bb12740",
+      "bytes": 1786
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/font-binding.cpp",
+      "sha256": "0da5c73f26557b562ad66e70b9fada2bbbe89f322ec36d1a51a8d187f80c6d2e",
+      "bytes": 6285
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/graphics-binding.cpp",
+      "sha256": "1e56d090e70a79fcd90693ba5c87afbe287204abbdd29e6449953282e44940b3",
+      "bytes": 3358
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/input-binding.cpp",
+      "sha256": "424c57ab85660aa2814dc707a76343f831f70addca39f00d5145f675eea13e51",
+      "bytes": 5182
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/module_rpg.c",
+      "sha256": "05a77daead2a0778154e047e2897925e07aec2c0bd3504d550400c06111d84aa",
+      "bytes": 202039
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/file.cpp",
+      "sha256": "0a36d83d978f60482ec6f940bc65a9b97b86d7cd16666accd443324571370b72",
+      "bytes": 13268
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/file.h",
+      "sha256": "9ec031060833dd8d7b04e8dade18aa32268c7c46619165dd115ec0aea41c20d4",
+      "bytes": 1377
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/kernel.cpp",
+      "sha256": "a1c6f3d9b1729a7b6d0ff1eea8c87a91c83a919de0b4d48e39fd24f2346a1ce7",
+      "bytes": 5382
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/marshal.cpp",
+      "sha256": "f89e6a4e0b4b9f2eac85ff60ee8e90fc0de9c208854f54f6198df430f1b6f896",
+      "bytes": 20013
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/marshal.h",
+      "sha256": "774d40ebc3202d9af0af680dcffece6b2b18a71fd93b11e7de6bb52421320e54",
+      "bytes": 993
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/rwmem.cpp",
+      "sha256": "8875d49f61dd8e4f3f637004980dafc4068950cdcb1a3afb5f5d5e7aeb05bd92",
+      "bytes": 2324
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/rwmem.h",
+      "sha256": "d3273ebb85aafb701f0cc0b8bf365d0642265e7d595bda31226344d13931951c",
+      "bytes": 932
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/mrb-ext/time.cpp",
+      "sha256": "5a12d4106610b67a050d5644b864f80d342b04f45496b288343e3dd42ccee616",
+      "bytes": 5026
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/plane-binding.cpp",
+      "sha256": "af227bf49c286987c7ab0615443e8548b0a15a120c0c58a62bbff06cf93c7386",
+      "bytes": 2388
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/sceneelement-binding.h",
+      "sha256": "37cf913912c6e86c7dfb1996ce8cf690f7bf4a6b08d292816e9d2d6fb9f28e5e",
+      "bytes": 2305
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/serializable-binding.h",
+      "sha256": "ab6616d9d802aa3d8d8a0c4ad29dff05a58278966be5bfdc8679e5f0499a2ef3",
+      "bytes": 1385
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/sprite-binding.cpp",
+      "sha256": "a4e4977bff56b3e5e6d8ed7e272620b9af6f909e6a371628fe4532574fb3451a",
+      "bytes": 4011
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/table-binding.cpp",
+      "sha256": "be87cd98baf9ccc5137bf210bbe5a8bfbe79f4ae790a139a1cf747c315c5cf94",
+      "bytes": 3901
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/tilemap-binding.cpp",
+      "sha256": "21473fa10d485e58f928b379091433df128b768492bf3f82a4eab2482257eaf0",
+      "bytes": 4724
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/viewport-binding.cpp",
+      "sha256": "fa1588173bd0c47fb3dbc9bad60a2df4085a2427a1f51140b00e09428e5cffc5",
+      "bytes": 2673
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/viewportelement-binding.h",
+      "sha256": "296593190a0b1ac65b3c44169f42786db6a6c26dfd4a8ebaa72bd2cd25a867b9",
+      "bytes": 1991
+    },
+    {
+      "path": "refs/mkxp/binding-mruby/window-binding.cpp",
+      "sha256": "945f02988aecdf0498f2bc74a2666a59f9f54258226ab20708a57b7d331e2993",
+      "bytes": 3240
+    },
+    {
+      "path": "refs/mkxp/binding-null/binding-null.cpp",
+      "sha256": "6bd55014f29518cbaede302ac99a3512c4c3ce41dc921c28d5b08424e04ea649",
+      "bytes": 1287
+    },
+    {
+      "path": "refs/mkxp/cmake/PrepUtils.cmake",
+      "sha256": "3ca41da2f7307b0dea407787ca7267bba036a711e1e83ba18c578d87392c3046",
+      "bytes": 1822
+    },
+    {
+      "path": "refs/mkxp/mkxp.conf.sample",
+      "sha256": "4900ef9feeb19267b21e341cfaf08800931d0b9f7b7e24823102cce9c8b5e98a",
+      "bytes": 7437
+    },
+    {
+      "path": "refs/mkxp/mkxp.pro",
+      "sha256": "2108ca1b274cf3cd048218e066386271d404b1645ec23000f7e2ac8271dd63b1",
+      "bytes": 7187
+    },
+    {
+      "path": "refs/mkxp/patches/ruby/static_zlib.patch",
+      "sha256": "ff1ebdbf89d63e6e778456856821fb4bbe2c8d4f66a7f258c7ca85755b0ca59c",
+      "bytes": 867
+    },
+    {
+      "path": "refs/mkxp/shader/bitmapBlit.frag",
+      "sha256": "056eb24fed0c5893ed0090d92a9dee4fbfcefc15e190e452433066fa1ba7d388",
+      "bytes": 698
+    },
+    {
+      "path": "refs/mkxp/shader/blur.frag",
+      "sha256": "ff78f3c3af2284f01fee209cc5e840ecbaa060443ce1fc61bb919f2c33d593e7",
+      "bytes": 313
+    },
+    {
+      "path": "refs/mkxp/shader/blurH.vert",
+      "sha256": "ba7998d8ca605e0539172e1b0d59a5d2f0c471298f60822401e519767fb9f6e5",
+      "bytes": 406
+    },
+    {
+      "path": "refs/mkxp/shader/blurV.vert",
+      "sha256": "035c8a5fc62233a1b52e60556e4f05352cd558a5982ee88b0758354037732b4a",
+      "bytes": 406
+    },
+    {
+      "path": "refs/mkxp/shader/common.h",
+      "sha256": "83b722038ed0cf3cdd2d2ffbf139290bfbe8ea9c6772a0892c1115b18507ec6e",
+      "bytes": 250
+    },
+    {
+      "path": "refs/mkxp/shader/flashMap.frag",
+      "sha256": "6904a2ef21c1200c0aa24bc4e03e8e86af3dbc2c603577b86bdee4a63c4dff53",
+      "bytes": 127
+    },
+    {
+      "path": "refs/mkxp/shader/flatColor.frag",
+      "sha256": "1493e5e1c0e0d9a6aae91c4356dfed49c6a8594b0f0fb27312318e045a1c8058",
+      "bytes": 73
+    },
+    {
+      "path": "refs/mkxp/shader/gray.frag",
+      "sha256": "92cfd3749e689d5178d15beb252b916484267cbdb94ef6de5a1e54bb25722cbe",
+      "bytes": 354
+    },
+    {
+      "path": "refs/mkxp/shader/hue.frag",
+      "sha256": "264156b336572751f02e4f7898f5460321a491e642c85cbffd96be4cb7b8cc47",
+      "bytes": 1070
+    },
+    {
+      "path": "refs/mkxp/shader/minimal.vert",
+      "sha256": "c02df0949db0e0b3f0a4635007f6ec1d0673c2dd54d73afd21b7160451476b74",
+      "bytes": 120
+    },
+    {
+      "path": "refs/mkxp/shader/plane.frag",
+      "sha256": "a633c7ec8ca883b53bd68380a86ba2713c0a49e8365c733e1f14ba8c98ff5627",
+      "bytes": 674
+    },
+    {
+      "path": "refs/mkxp/shader/simple.frag",
+      "sha256": "b07adc17fc5a0cf77f871a506b081a1a45069dcf0791373c35f20a8a4e7832d7",
+      "bytes": 128
+    },
+    {
+      "path": "refs/mkxp/shader/simple.vert",
+      "sha256": "2e70d91d6edf86da4ac16ab4d27fcf9eae6e74aadc0dce0836a410c249ec798f",
+      "bytes": 285
+    },
+    {
+      "path": "refs/mkxp/shader/simpleAlpha.frag",
+      "sha256": "61e6e6798c007855bfb9dda52720a43c242c2bc74dceb53b3617364ae64be646",
+      "bytes": 187
+    },
+    {
+      "path": "refs/mkxp/shader/simpleAlphaUni.frag",
+      "sha256": "c50975241b6952172a862d82e0a8cc2d32a070d25b975c75eaf86e521a60ced7",
+      "bytes": 182
+    },
+    {
+      "path": "refs/mkxp/shader/simpleColor.frag",
+      "sha256": "c67f540b85f6ced97eecb199f288aacdbee61fc039f328f52886c27847ea25df",
+      "bytes": 77
+    },
+    {
+      "path": "refs/mkxp/shader/simpleColor.vert",
+      "sha256": "88be99c2526f1906edd60d8fc2e42bbf0688d4d98c67e013a3f6585e47d78f19",
+      "bytes": 360
+    },
+    {
+      "path": "refs/mkxp/shader/simpleMatrix.vert",
+      "sha256": "53e36b5523557795ae09f058172dd333f261f3c6e2d5c9c20802be428d800777",
+      "bytes": 350
+    },
+    {
+      "path": "refs/mkxp/shader/sprite.frag",
+      "sha256": "965b40d6a993b1dc0a025a10d3acf7bb1488201f451b8bc1c6877ff064684bd5",
+      "bytes": 797
+    },
+    {
+      "path": "refs/mkxp/shader/sprite.vert",
+      "sha256": "0ab31623742ffaed454ff0e90d9b243091847582d5dc52cacfcd6bd8024529db",
+      "bytes": 281
+    },
+    {
+      "path": "refs/mkxp/shader/tilemap.vert",
+      "sha256": "221bcaea3ac04ed472a95bcf5ddcc1331fb95c02c260fc13e670da42cdf30a3b",
+      "bytes": 543
+    },
+    {
+      "path": "refs/mkxp/shader/tilemapvx.vert",
+      "sha256": "212567da6076df4979f8dce89d038585dea9767d165a7df340b0924b618e0a25",
+      "bytes": 770
+    },
+    {
+      "path": "refs/mkxp/shader/trans.frag",
+      "sha256": "01779db1c333eccacc067177b8a9c83f36bfe28e8ab298d737886f7df9446f02",
+      "bytes": 621
+    },
+    {
+      "path": "refs/mkxp/shader/transSimple.frag",
+      "sha256": "ffdac5f6e89a6669f27039d57e26cac6b6750039fd93d5454d4b13c9e0c81b35",
+      "bytes": 390
+    },
+    {
+      "path": "refs/mkxp/src/al-util.h",
+      "sha256": "eaf4d198d58bf872006f6880c9aabe52e47dc6b1be4a94f9ba1c93fd2cce59bd",
+      "bytes": 4421
+    },
+    {
+      "path": "refs/mkxp/src/aldatasource.h",
+      "sha256": "2a4fbbb67e735a829ccb225ee853c26523f168b901c5af96f478fca17e71f164",
+      "bytes": 1880
+    },
+    {
+      "path": "refs/mkxp/src/alstream.cpp",
+      "sha256": "b96b416548640e7b1bbe9a01ef6b212a6652d8ec13b287c9fdf26766eb821b09",
+      "bytes": 9419
+    },
+    {
+      "path": "refs/mkxp/src/alstream.h",
+      "sha256": "1713d7310935072aec37d2f5bf7626ffa40da88e85da31c3456d7e7acc0fd789",
+      "bytes": 2432
+    },
+    {
+      "path": "refs/mkxp/src/audio.cpp",
+      "sha256": "43b94cc9e326d0d35e9e6bb7215c5cb24b0f6e9d0450e56db34c4a18abd081b0",
+      "bytes": 6576
+    },
+    {
+      "path": "refs/mkxp/src/audio.h",
+      "sha256": "abed49db81f5920218d317428a40e83919ab957e45802263158aa6167ceaa449",
+      "bytes": 2191
+    },
+    {
+      "path": "refs/mkxp/src/audiostream.cpp",
+      "sha256": "d014b6fbd16a4cc163ed18c24ca706382c60cb96feee20b71a1004cb01c136e2",
+      "bytes": 7082
+    },
+    {
+      "path": "refs/mkxp/src/audiostream.h",
+      "sha256": "698cee040a5efaf2363e5826db9273107ee1d37f1d5bb02fd0289c540f3a60e2",
+      "bytes": 3864
+    },
+    {
+      "path": "refs/mkxp/src/autotiles.cpp",
+      "sha256": "443defb6d3f02005c1cbbc2d102fb931711de8239ea57c81da09a4274792789e",
+      "bytes": 5142
+    },
+    {
+      "path": "refs/mkxp/src/autotilesvx.cpp",
+      "sha256": "809ce5373b5bb13881495f277beef6f6c591f5fe80aeecf2141ba905dcd0523a",
+      "bytes": 16222
+    },
+    {
+      "path": "refs/mkxp/src/binding.h",
+      "sha256": "cd0b9894d1be0b17e605dbd70d885b5ca5cbbd8b1967f9f2844563e687d367ce",
+      "bytes": 1536
+    },
+    {
+      "path": "refs/mkxp/src/bitmap.cpp",
+      "sha256": "32da176f62fdc114f7670dddf4a7cf37ed3ddd8b03cf30c206522e6bea30627a",
+      "bytes": 30044
+    },
+    {
+      "path": "refs/mkxp/src/bitmap.h",
+      "sha256": "1bcedbc76009d809dbb48d813a86beea7f1b9942b3d15f0cca4d411c5a36b91f",
+      "bytes": 3356
+    },
+    {
+      "path": "refs/mkxp/src/boost-hash.h",
+      "sha256": "3484c345335842e4716806d61a5ab07817f329ad2b68d5104a945a7a782045b1",
+      "bytes": 2720
+    },
+    {
+      "path": "refs/mkxp/src/bundledfont.cpp",
+      "sha256": "e4d9307bfa571427c2bdccae8aec6bd843322c2be9582f943f60d443f171d60d",
+      "bytes": 31
+    },
+    {
+      "path": "refs/mkxp/src/config.cpp",
+      "sha256": "ed5205cb385f55ab2798f41ecc2fd5f81d5041552bd60e77d515aa4d3acf5eba",
+      "bytes": 10413
+    },
+    {
+      "path": "refs/mkxp/src/config.h",
+      "sha256": "14e6427eef2588b203a410afdd7a3871bae754feed8d8215bb75f70d0255c623",
+      "bytes": 2202
+    },
+    {
+      "path": "refs/mkxp/src/debugwriter.h",
+      "sha256": "92022df7b2df2a9567255176afaa4f5676b493bf2ce1c55cd3f35c4fd833a910",
+      "bytes": 1563
+    },
+    {
+      "path": "refs/mkxp/src/disposable.h",
+      "sha256": "2f0ff65408457faec9869746b7091535a19afd0b31e3196f6380e8600dc7fa8e",
+      "bytes": 1958
+    },
+    {
+      "path": "refs/mkxp/src/etc-internal.h",
+      "sha256": "b7ed4cefa2cc8e181605475f798687023e1fd2a1787ce1c27c5eaa75c36a8c8f",
+      "bytes": 4986
+    },
+    {
+      "path": "refs/mkxp/src/etc.cpp",
+      "sha256": "44de1497f39a4de688f7abe80e76127f8cd4dcec198c9afeb91ba1296f411fd5",
+      "bytes": 7595
+    },
+    {
+      "path": "refs/mkxp/src/etc.h",
+      "sha256": "594b9415d39ea2467dabb5707c7d42c0c925986614c60c28bb02bead675a3d3f",
+      "bytes": 5413
+    },
+    {
+      "path": "refs/mkxp/src/eventthread.cpp",
+      "sha256": "9397679e7fc7c9ce2c6576b612e94ae12c319179dc2bb96fc3e41fec939a2b87",
+      "bytes": 16500
+    },
+    {
+      "path": "refs/mkxp/src/eventthread.h",
+      "sha256": "0b16e7864865c31eccf443a8a1598c588b2df8b9a6c3ee3b45a5474efaf1b3c7",
+      "bytes": 5251
+    },
+    {
+      "path": "refs/mkxp/src/exception.h",
+      "sha256": "3283bdeba790e01278249db9bd9e0ff6a25e12b02a97e6664e817db3ce277d1b",
+      "bytes": 1379
+    },
+    {
+      "path": "refs/mkxp/src/filesystem.cpp",
+      "sha256": "0dd4227a2422300331dcfd539612653762967d8074f75c5271c4312ebda59a04",
+      "bytes": 15931
+    },
+    {
+      "path": "refs/mkxp/src/filesystem.h",
+      "sha256": "fadc19856dcab252ff053b5d69451fe0c10b73ed862bc75b25e87061e0ecfdd9",
+      "bytes": 2274
+    },
+    {
+      "path": "refs/mkxp/src/flashable.h",
+      "sha256": "0d1bf2ca753a0a33cbcd06993196cc0931a4181fbd038d794c571b823f4556ae",
+      "bytes": 1886
+    },
+    {
+      "path": "refs/mkxp/src/fluid-fun.cpp",
+      "sha256": "2a686f25e3445162bd23344b4077078374a42609d9f2a35e6e16b94683ac5c4e",
+      "bytes": 1184
+    },
+    {
+      "path": "refs/mkxp/src/fluid-fun.h",
+      "sha256": "dcc0dbadc9196da7229e0bc3dbba7367b0ef57f889001db66a7927cc69acdcee",
+      "bytes": 2965
+    },
+    {
+      "path": "refs/mkxp/src/font.cpp",
+      "sha256": "6990108e26b21e8f10f9237ebc268fe1baffc6a8be2e8b1e25e17764b28cf572",
+      "bytes": 11459
+    },
+    {
+      "path": "refs/mkxp/src/font.h",
+      "sha256": "ebbbc2c7b1be89f0a2a0e2ccd28f29df2004d0d28dd0ef6b33a494eaa097fd5c",
+      "bytes": 3375
+    },
+    {
+      "path": "refs/mkxp/src/gl-debug.cpp",
+      "sha256": "50eedaf0b97b9e6380debc929212e71f91f9426d652109d50b6dca969b0cc4cb",
+      "bytes": 2197
+    },
+    {
+      "path": "refs/mkxp/src/gl-debug.h",
+      "sha256": "ec9cd2d54c9d7e8803f8dc92e63f4805aa7f8d80c929249f9d68a8d8f687a8d2",
+      "bytes": 1308
+    },
+    {
+      "path": "refs/mkxp/src/gl-fun.cpp",
+      "sha256": "287e7aae8e6da4425f28636c7c738f56857f9e12e7d5ce0f8b013cf253e8a221",
+      "bytes": 4120
+    },
+    {
+      "path": "refs/mkxp/src/gl-fun.h",
+      "sha256": "ce7785d642acbf614148c27909b3da3c296a5f97b5da8ac6a0a95f121ff0048e",
+      "bytes": 11100
+    },
+    {
+      "path": "refs/mkxp/src/gl-meta.cpp",
+      "sha256": "fc8d5de2b14c8106ddf567c6b94cd3f1bc3b0cc140249ffeb9727e6db517217a",
+      "bytes": 4793
+    },
+    {
+      "path": "refs/mkxp/src/gl-meta.h",
+      "sha256": "fda53294b938d9d10c9883550c274f33af3b44946b892ee22235906fe2fd5c9b",
+      "bytes": 2110
+    },
+    {
+      "path": "refs/mkxp/src/gl-util.h",
+      "sha256": "59eeae75d40180b95b8eea25d2a69c4c0b0d50e00f77c6de50cacc5a8113c0b7",
+      "bytes": 5318
+    },
+    {
+      "path": "refs/mkxp/src/global-ibo.h",
+      "sha256": "3d61a38d3afa29c8418d7c31723abdd39930c63e0cb1c19494566f46ea74ac7b",
+      "bytes": 1755
+    },
+    {
+      "path": "refs/mkxp/src/glstate.cpp",
+      "sha256": "b4f20970b2052ee58c6b9448ee2e72515f5090222bcf37aa311541f627c85bdc",
+      "bytes": 3159
+    },
+    {
+      "path": "refs/mkxp/src/glstate.h",
+      "sha256": "0085cf44a8c4c226db20c40a4575a3d3392cf0e5b85d00b7fce42fa786dfa7dd",
+      "bytes": 2593
+    },
+    {
+      "path": "refs/mkxp/src/graphics.cpp",
+      "sha256": "8fba8b6f1d63130fdbb0e4a36ccb85b150a47e7bb1c4bf5825f39a13f98c6a8d",
+      "bytes": 21613
+    },
+    {
+      "path": "refs/mkxp/src/graphics.h",
+      "sha256": "c9b0712de03f6b2a56276af6cd24846e39c51945d4e3cfe901d8e23a107c57fc",
+      "bytes": 2130
+    },
+    {
+      "path": "refs/mkxp/src/iniconfig.cpp",
+      "sha256": "7cb68e071248fb4d2a93af77d8c3a7e6b15f15ce450d2e1fa23921aa52c7953c",
+      "bytes": 2531
+    },
+    {
+      "path": "refs/mkxp/src/iniconfig.h",
+      "sha256": "5d976891eeb59eb798d653bc401aa9f2c2c9b748488c9e7983b6ee057c4a78d8",
+      "bytes": 1001
+    },
+    {
+      "path": "refs/mkxp/src/input.cpp",
+      "sha256": "f85166df29a3d9ede28a6f6848a5e68274355cb5ac5852cf406e0a8932b24662",
+      "bytes": 13673
+    },
+    {
+      "path": "refs/mkxp/src/input.h",
+      "sha256": "7ab89984853be4f3a145b197f707a0371c0cc9b318c9f6e453912ff03479cd74",
+      "bytes": 1581
+    },
+    {
+      "path": "refs/mkxp/src/intrulist.h",
+      "sha256": "341ec432e31b83f41a23cd69dc052ee0b95e3672b27b23859a040cb17f9937e1",
+      "bytes": 2520
+    },
+    {
+      "path": "refs/mkxp/src/keybindings.cpp",
+      "sha256": "ed42ce0c1669386b9a532c4c8b7ee3597df049899c45351780ed2026bb03345a",
+      "bytes": 7414
+    },
+    {
+      "path": "refs/mkxp/src/keybindings.h",
+      "sha256": "6c4f1b04859e784325c30eb3dc2410ad4168f333174436b343ef3c2d9f19e946",
+      "bytes": 2393
+    },
+    {
+      "path": "refs/mkxp/src/main.cpp",
+      "sha256": "7b724716b776e1e656f4367a29f099f9c7e1c2cd45868bb75f4fe2eac64ca5d1",
+      "bytes": 8792
+    },
+    {
+      "path": "refs/mkxp/src/midisource.cpp",
+      "sha256": "e672cabc0830028df3b7357aa25a196302b2d3afa65f9a75eecb2f064dafe185",
+      "bytes": 19982
+    },
+    {
+      "path": "refs/mkxp/src/plane.cpp",
+      "sha256": "c201c38e6e436c0fa93441769b61b5064fa6ff543d2fbdb5d1bdf38f26bf5fd3",
+      "bytes": 6242
+    },
+    {
+      "path": "refs/mkxp/src/plane.h",
+      "sha256": "ef5c0d2d0aaee277d8b0ef89c4c37c6dceda6b643b3dc34c5f38a11f0b12544c",
+      "bytes": 1604
+    },
+    {
+      "path": "refs/mkxp/src/quad.h",
+      "sha256": "65732104f386f61ea5dbcc5d3fa8a2474b404b8ca17d66aa2450f41e2701e2c5",
+      "bytes": 2985
+    },
+    {
+      "path": "refs/mkxp/src/quadarray.h",
+      "sha256": "dc645c10f15ee2b54a77a1af2514096dfeb4ec1fcad08a5231ea770cff73a1b8",
+      "bytes": 2657
+    },
+    {
+      "path": "refs/mkxp/src/rgssad.cpp",
+      "sha256": "286cbf7ffca62a3d0f7a5ca2a8379a53bacb0d5b02d4809f0c33348643ad377c",
+      "bytes": 13799
+    },
+    {
+      "path": "refs/mkxp/src/rgssad.h",
+      "sha256": "eaa6cc3faa7e4cef9154863a3676dd595dbfa5a77f44679c8ffe5fdefc1b241f",
+      "bytes": 992
+    },
+    {
+      "path": "refs/mkxp/src/scene.cpp",
+      "sha256": "80034fe8c2e14518519a21e806407971d35d3c459464b2ee1a997776a53cf98e",
+      "bytes": 3908
+    },
+    {
+      "path": "refs/mkxp/src/scene.h",
+      "sha256": "7fb476cc3bf30ab2dfb983e2823100d2c867cbcd873dd649b012cc76f4694604",
+      "bytes": 4438
+    },
+    {
+      "path": "refs/mkxp/src/sdl-util.h",
+      "sha256": "b54e6bec4f748eef6b98769561848773571fb75c74250d68be65e3181149e5d0",
+      "bytes": 2827
+    },
+    {
+      "path": "refs/mkxp/src/sdlsoundsource.cpp",
+      "sha256": "a78e457f1a2bb9f763fcf3df5edf0d177aad44b7ab870123c6b69e61aa7dc51d",
+      "bytes": 3044
+    },
+    {
+      "path": "refs/mkxp/src/serial-util.h",
+      "sha256": "abe98f380b4e79d724466dc8cbec71591358f9592eb96b3a1a415653f74fd4c8",
+      "bytes": 1531
+    },
+    {
+      "path": "refs/mkxp/src/serializable.h",
+      "sha256": "2f5c309f457c81e3223fc478934ca8a018c749a6e0dd3a4d8dfc75a8eae1cdee",
+      "bytes": 1063
+    },
+    {
+      "path": "refs/mkxp/src/settingsmenu.cpp",
+      "sha256": "2c60aa064f6f20f64d4138f275e4d9ecb4e87da29de6391d8eaf155bc28b0734",
+      "bytes": 24817
+    },
+    {
+      "path": "refs/mkxp/src/settingsmenu.h",
+      "sha256": "91ddd78eeb8a04278c32d80b7a0d4ec63e66b8d3383da1df22a6e8014a34af9a",
+      "bytes": 1216
+    },
+    {
+      "path": "refs/mkxp/src/shader.cpp",
+      "sha256": "f90d90da35d10d9ca3a1fe28730ab1c43756c5164d831516f641449904a078f1",
+      "bytes": 13067
+    },
+    {
+      "path": "refs/mkxp/src/shader.h",
+      "sha256": "446b9205851f56ce6e20afbd23204e7f562b84e4a25bbbcba3b27a871eb7cd95",
+      "bytes": 6238
+    },
+    {
+      "path": "refs/mkxp/src/sharedmidistate.h",
+      "sha256": "68b3210b9b23f17b74b9c24f148ff3a7d03ea22c8fca142c9af7bcd5f47f69a6",
+      "bytes": 3318
+    },
+    {
+      "path": "refs/mkxp/src/sharedstate.cpp",
+      "sha256": "461c7bac0678197095e252b883b783b519cd02e7b890d6b36692b2705a28c0e5",
+      "bytes": 7728
+    },
+    {
+      "path": "refs/mkxp/src/sharedstate.h",
+      "sha256": "a77d510151590b8f6595ad7f2d6bfc2c20699f9fa7468232165b13f0cc0175a8",
+      "bytes": 3120
+    },
+    {
+      "path": "refs/mkxp/src/soundemitter.cpp",
+      "sha256": "a5ed40b4edaa10d9f7b6b19149bbab0cc096fb29bff783667d994494f256b238",
+      "bytes": 6446
+    },
+    {
+      "path": "refs/mkxp/src/soundemitter.h",
+      "sha256": "4f201045581c266494ccbfb1aa07bc8dedeb7c826831273b9dadf264a3157421",
+      "bytes": 1671
+    },
+    {
+      "path": "refs/mkxp/src/sprite.cpp",
+      "sha256": "15bef8cfc1481d195a0b018902ed52d500a08ccd2eaac297077da10d1ccbc9df",
+      "bytes": 13019
+    },
+    {
+      "path": "refs/mkxp/src/sprite.h",
+      "sha256": "8df4794e0ccaeeb0ef4f52bd7932088faaa5badd03dbcd20b62de4f0e6a3fb2b",
+      "bytes": 2194
+    },
+    {
+      "path": "refs/mkxp/src/table.cpp",
+      "sha256": "7c262653ce448d72afcffe56502f49a584a66d0247bcbd252c8be60466789e85",
+      "bytes": 3088
+    },
+    {
+      "path": "refs/mkxp/src/table.h",
+      "sha256": "41817bc9c09a64f84256d86c14b65da0db6117f0f076d21c514d6eb82d836640",
+      "bytes": 1832
+    },
+    {
+      "path": "refs/mkxp/src/texpool.cpp",
+      "sha256": "f699393fc4383172d2e3c640aaa63ade335ed1b8051145c3c9776640d29c205d",
+      "bytes": 4957
+    },
+    {
+      "path": "refs/mkxp/src/texpool.h",
+      "sha256": "2d69708efb3a81684697d3e507a5b121bf254a937c334b1afca4130662006ac7",
+      "bytes": 1110
+    },
+    {
+      "path": "refs/mkxp/src/tileatlas.cpp",
+      "sha256": "028df268e76fb10aaee3c2447a044c86484e759ee3774c2c06fe39a30e533920",
+      "bytes": 4947
+    },
+    {
+      "path": "refs/mkxp/src/tileatlas.h",
+      "sha256": "4fc1f6d579e45b53784755b37602cc5855b5470bb44fa39d1e66b4d6afe40b57",
+      "bytes": 1838
+    },
+    {
+      "path": "refs/mkxp/src/tileatlasvx.cpp",
+      "sha256": "8270ad095694015b8fcd50643dd182c29eff940cac0afa7e37e31f36160d965c",
+      "bytes": 14486
+    },
+    {
+      "path": "refs/mkxp/src/tileatlasvx.h",
+      "sha256": "9a6a3c6ed54a0f5c43b9a92facd9848a05e15e28348aed1ce7dad6737ed71292",
+      "bytes": 1500
+    },
+    {
+      "path": "refs/mkxp/src/tilemap-common.h",
+      "sha256": "8f7867bcc9683d9addad7abeaa99f22849a82db61a0e3d17b15120c2c8e23fba",
+      "bytes": 5342
+    },
+    {
+      "path": "refs/mkxp/src/tilemap.cpp",
+      "sha256": "a7e71fe15bd522cd3d85894af4714e18ef2b2016ee214bc52a88f220afc13f97",
+      "bytes": 28999
+    },
+    {
+      "path": "refs/mkxp/src/tilemap.h",
+      "sha256": "c038b0c1c93e49465685a9d440f7584a2fb27ffbde91314999dd8f9de6b26330",
+      "bytes": 1774
+    },
+    {
+      "path": "refs/mkxp/src/tilemapvx.cpp",
+      "sha256": "4b0cf702ad47f20c6436313525a06351e4c012db1b362d33f511f5d75d90c260",
+      "bytes": 11288
+    },
+    {
+      "path": "refs/mkxp/src/tilemapvx.h",
+      "sha256": "0df4d8799e5e75c6ab9e44b040af3036cf87491bbec0df1ccfa23f56b79aac53",
+      "bytes": 1775
+    },
+    {
+      "path": "refs/mkxp/src/tilequad.cpp",
+      "sha256": "8e68befca76978cab9d54c499a1716d4051a5d9b593c773ddbb318c2c8344977",
+      "bytes": 4859
+    },
+    {
+      "path": "refs/mkxp/src/tilequad.h",
+      "sha256": "6b61e57fcbe379a2884eae3ae17d772c163781a057084f30e7ae4e659330ec6b",
+      "bytes": 1839
+    },
+    {
+      "path": "refs/mkxp/src/transform.h",
+      "sha256": "3a0439aa0d4b7c854f1c8491a4e9abbcb5498a49f6c7599f5c4445181c936545",
+      "bytes": 4047
+    },
+    {
+      "path": "refs/mkxp/src/util.h",
+      "sha256": "544a5bf7355ac60760fba5161cb8b654147f15d1392630998aad1347da621e9e",
+      "bytes": 3908
+    },
+    {
+      "path": "refs/mkxp/src/vertex.cpp",
+      "sha256": "0f5f97ddee3150e0653a4b71e4b983e299c4de1ad5d7a3221628993aac1644aa",
+      "bytes": 1851
+    },
+    {
+      "path": "refs/mkxp/src/vertex.h",
+      "sha256": "39a42ac487dca7a0958bdf68d9d729cf26792ade051687533c1ba3fa13f41610",
+      "bytes": 1379
+    },
+    {
+      "path": "refs/mkxp/src/viewport.cpp",
+      "sha256": "2b90acee9060f7726bdaecc338cb57629efa9c7eba4408f6e5c097f1de291e4b",
+      "bytes": 5345
+    },
+    {
+      "path": "refs/mkxp/src/viewport.h",
+      "sha256": "6b3796d1de40592a73092934e9ec426ca1ba1955639b64e5ce68d8dd86df74f1",
+      "bytes": 2055
+    },
+    {
+      "path": "refs/mkxp/src/vorbissource.cpp",
+      "sha256": "2e43abfba8a24c3690678c06a13bcbebff107f06712d3731b023959bd7f8dd43",
+      "bytes": 6114
+    },
+    {
+      "path": "refs/mkxp/src/window.cpp",
+      "sha256": "e66ebd7dd8838b1d08e25f336697fba9323f57a377e96528b013531d78315dfb",
+      "bytes": 19759
+    },
+    {
+      "path": "refs/mkxp/src/window.h",
+      "sha256": "3536cbaffd91b2ad0fa47b1b5cb61f81ffb5fd485442bf126868e73e04a17caf",
+      "bytes": 2017
+    },
+    {
+      "path": "refs/mkxp/src/windowvx.cpp",
+      "sha256": "dec07b9a15c24f973ea481dcfff0f18e7ad145b2a4581bb0d5b66b63decd71b1",
+      "bytes": 24456
+    },
+    {
+      "path": "refs/mkxp/src/windowvx.h",
+      "sha256": "31737d81a528169cc0a89e6759c7ae778fb6d9c2a135667ce1260f7751d4fe0d",
+      "bytes": 2275
+    },
+    {
+      "path": "refs/mkxp/windows/icon.ico",
+      "sha256": "933ecab2dfa22012f1bebccfe87b8eeac976333e0fbbb1d7ea9ea829a1c43198",
+      "bytes": 16958
+    },
+    {
+      "path": "refs/mkxp/windows/resource.h",
+      "sha256": "8c93018e109f713e0a5129a58920f6bc2ff674186a7ddd8e0d4acc5565505447",
+      "bytes": 25
+    },
+    {
+      "path": "refs/mkxp/windows/resource.rc",
+      "sha256": "d8aebf9fcd282fc8f001891b70fb373d41f99f59146724d774875f035b156e8d",
+      "bytes": 76
+    },
+    {
+      "path": "refs/mkxp/xxd+/main.cpp",
+      "sha256": "98e1f9974ec837e8d3f8ac1ad22f1c89e1929e333b943908752d866e211bd081",
+      "bytes": 3479
+    },
+    {
+      "path": "refs/mkxp/xxd+/xxd+.pro",
+      "sha256": "98278ffd56bd9a98580b8e4f4db3e4d355f17fe7e40a55d7dcd1fffb9ae9ba2f",
+      "bytes": 320
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/.gitignore",
+      "sha256": "67ec3a9593303f505a9ade2e7d1ea0e96a3753f9e9051c9a8bab40da6eb95efc",
+      "bytes": 859
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/CONTRIBUTORS.md",
+      "sha256": "14f0b15205b311dda3ee64bb4b44a470471409cff7716435324257aec9429fd3",
+      "bytes": 377
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/LICENSE",
+      "sha256": "ef821289bd0fe5e4bf2d9f040c4e653a9bc78aafad44e376cf2c7097d1dc5e7c",
+      "bytes": 1110
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/README.md",
+      "sha256": "cafc9c43a3a8dd06c50ce3e4359cfdbe31c3d92bb7212912b0ef085c78bdbf0e",
+      "bytes": 6777
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/RELEASENOTE.md",
+      "sha256": "29cc3b8aab88a9f673f3a1664a9bb6d7b7499036654f30a232beeeb9b1ecd715",
+      "bytes": 3967
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/concat.js",
+      "sha256": "bc3cabdb88623c0e228cf9b0c5beeac8e7212fd4b1c69cc71c36fe50fb5173fe",
+      "bytes": 817
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/copy-all.js",
+      "sha256": "e16a7408772fceb79b815e2fc77325c80b4b72c56979c0ffd114bed103e892cf",
+      "bytes": 283
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/healthcheck/Debug_HealthCheck.js",
+      "sha256": "be27da405b436036f8ca9ae6a8c94c8a71cb39f2273ae3e662c816b14ab1469f",
+      "bytes": 6059
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/healthcheck/generate_crc.js",
+      "sha256": "9385c866d0208288073a2f19ebbcd2ddc7f8cc2167507611b6ad51d63d580126",
+      "bytes": 849
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/json_docs.js",
+      "sha256": "bad08b141fcd512920e8a06cb012cd34db844478e81d747f622833fe22c0fd0f",
+      "bytes": 36306
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/libs/fpsmeter.js",
+      "sha256": "2ab8de40739b189b5c2729d7a0a5bb48f3f64beb53e1bfd2091f0a3f0e493f1f",
+      "bytes": 7586
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/libs/iphone-inline-video.browser.js",
+      "sha256": "68d7edfc56c4fc6a21de7d55107fd6a334e1a3ff72eb21c14a2553ab9c92eeba",
+      "bytes": 3666
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/libs/lz-string.js",
+      "sha256": "d1f1c4dc42720d2aa2d0a5a2cff9761757f4691f8b44a003a16267430f6647d4",
+      "bytes": 6703
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/libs/pixi-picture.js",
+      "sha256": "93fd8355e6847e791f363718c400aa7087c153123cea4b3186f325e2b1976075",
+      "bytes": 23354
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/libs/pixi-tilemap.js",
+      "sha256": "18e1f1d138643392733998fb428d1134eb35a645db57d336baa7fe5e5b996405",
+      "bytes": 43638
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/libs/pixi.js",
+      "sha256": "e8c3aba19cbdb6bfdfe7e9e06753329171731d1a05d5c49b750cc6656a31444a",
+      "bytes": 1335538
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/main.js",
+      "sha256": "60bf13e822beea48a3ccc97f4a6207815f50310c3bc48005a017fc80072a2ecf",
+      "bytes": 279
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Bitmap.js",
+      "sha256": "186d5764e551152ffb8553ce9bdcca705a39e44b44a63a973b58a977ab9c8d05",
+      "bytes": 30735
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/CacheEntry.js",
+      "sha256": "60b4f11469cf26c4a4db6c37a12f0a4295d9936f68c6af7b5213459572dcc973",
+      "bytes": 2291
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/CacheMap.js",
+      "sha256": "526e9124d831ebaced1b7ff8b894b293e977484b637667ddb74595b2f74c4e76",
+      "bytes": 1696
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Decrypter.js",
+      "sha256": "9036e268da5f3cb7c7b53aae0cc905c87ddcbefd043dd440cb67325f9f4e0043",
+      "bytes": 3868
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Graphics.js",
+      "sha256": "91b8e48b5ab04a765dd22d78d10ea5522254cbfeff0c4f10db1c78b0de5873fe",
+      "bytes": 38338
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Html5Audio.js",
+      "sha256": "b478c51b5e53ae45504d4a7f2ae58ac9a52a0974e3f8deaae088b715fbe58afd",
+      "bytes": 10428
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/ImageCache.js",
+      "sha256": "9d8a04ba7fa824e32fa1978845135ee9e45988660a1637ba9de6c42a11aa5e8e",
+      "bytes": 2748
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Input.js",
+      "sha256": "033f22f799bb65ce5dca61b9e7fa0f9fa00cb20b9cb76f5b3943fe6b259ae2ba",
+      "bytes": 11240
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/JsExtensions.js",
+      "sha256": "61f7a425950209553ef1a7a4950377ba74d8ff4551ce4c06d7283e648efc7570",
+      "bytes": 4087
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/JsonEx.js",
+      "sha256": "42c53e6a10689b03c66694d7b5d5232d8bc56262c0f3c64dc37f5e9044bab23a",
+      "bytes": 6822
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Point.js",
+      "sha256": "e858bd47b3f63e6ab82318362602245cc92ba952fc4398d4b88ef108dfe4e24e",
+      "bytes": 621
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/ProgressWatcher.js",
+      "sha256": "49bf9289449c2da1737d9ea0f2374e3b823dfe03491a66cfe79da27131a9a48b",
+      "bytes": 1181
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Rectangle.js",
+      "sha256": "c1751eca94edec5e3bb63b487682be31d552ccf4a18a954444dde81dd79bc168",
+      "bytes": 1212
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/RequestQueue.js",
+      "sha256": "7791b842b8ab7e1c93d2e4fe11d740af264df9a2a2885b2125102fedee49cdfc",
+      "bytes": 1007
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/ResourceHandler.js",
+      "sha256": "4a20a01b1c56986f4a5b473c5d78e3a808462148920ab699493f6829b3cc5c5c",
+      "bytes": 1574
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/ScreenSprite.js",
+      "sha256": "33383f96acc4e25aa5bbab9aa499414dcb3f3a09d0bd85870910c58fe8c875a9",
+      "bytes": 3234
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/ShaderTilemap.js",
+      "sha256": "4a1df83bd751110c79a7cdb7caee2a3c2c62a9e1c494f2a0420f2a6224e00412",
+      "bytes": 13207
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Sprite.js",
+      "sha256": "0d3e40e78cc26ec297021c676289e2fcc05284ddf524aa02e279b9a54d01aef7",
+      "bytes": 15182
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Stage.js",
+      "sha256": "5e531b2919cdd4927d8556b4b839f9e13235b8b4077aeb0e64bffe199639bf55",
+      "bytes": 1390
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Tilemap.js",
+      "sha256": "1b2f626c61b91f6ecdbd7fb837934c5ca0a1012bc015e689fdbcad2e0d01ce86",
+      "bytes": 26999
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/TilingSprite.js",
+      "sha256": "7e7e60cc01b36e4efde54588b70118ecfd7c74d78b0d106f2bd25cabf750236f",
+      "bytes": 5380
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/ToneFilter.js",
+      "sha256": "cc599bf084d55e9771479f20bee20f5cf65863ff85246e641682ab469f32df0b",
+      "bytes": 1586
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/ToneSprite.js",
+      "sha256": "2ead538e066dcc6fb1f7fb16d63567f339df6aa1df669db639eae97a5ee843ea",
+      "bytes": 3396
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/TouchInput.js",
+      "sha256": "7f8a344ef51868896af2fe225535efac08182c1d9eae29a3908051ce6ed74afd",
+      "bytes": 12005
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Utils.js",
+      "sha256": "b1a943817a656b923d05ac5ce90f370c6d0fcafbc3f5e5e059432e9d1e307f9c",
+      "bytes": 4306
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Weather.js",
+      "sha256": "6fd03a54d06680338dc6d70906b5632e0906a47d16f53709320c9133db12faf7",
+      "bytes": 4772
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/WebAudio.js",
+      "sha256": "51c787449cf2bdea964163686928c030465919d82bb151fae694d6fce01bab2c",
+      "bytes": 20982
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/Window.js",
+      "sha256": "9a679addd90510e9bac45d04f06db706facee743dbbe8c7bfd1ff86cebc839f2",
+      "bytes": 17928
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/WindowLayer.js",
+      "sha256": "ccb771f39ed489511c59ef85aa0c27c89fbe0295b1f9968fffcf480952b5606b",
+      "bytes": 7823
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_core/_header.js",
+      "sha256": "bb6559b76f598c2ea2e1812446b9c065070cd0a46742bc012d6b6d4a2cbcbb0f",
+      "bytes": 202
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/AudioManager.js",
+      "sha256": "cc07636e8df465f30f632e136409ab96e04dd02fbb24f41223bee946e8fd158f",
+      "bytes": 12201
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/BattleManager.js",
+      "sha256": "36807c0d90d41182e6423082486e52cd1a28659ce9ba438beb311dac7c9f0308",
+      "bytes": 18040
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/ConfigManager.js",
+      "sha256": "edf37afd2467c55e122fc2fd64a14756dc938f09ae03c230ca24958b8eff633b",
+      "bytes": 2676
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/DataManager.js",
+      "sha256": "2a5a50e4bed3731ad42def88f8cb94b3d49234f29eb0e928cbc580050817d2f3",
+      "bytes": 14660
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/ImageManager.js",
+      "sha256": "6aa1d1aeb828f52761238a3b0a2342d3e138f092a2bfde3c32c56dbd8303f60c",
+      "bytes": 10391
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/PluginManager.js",
+      "sha256": "939ecf6cd49900aab3130936c938048ed589927502f11613cef425ff27758588",
+      "bytes": 1546
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/SceneManager.js",
+      "sha256": "902e14a2015680267927364665904b1cfcbf902ed8965c5d681230a22d72c825",
+      "bytes": 10227
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/SoundManager.js",
+      "sha256": "7e2c47a98d04b6d4eba6be7d9a9ca72e93e4dec7de5078e7ec07b417a5c11124",
+      "bytes": 2604
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/StorageManager.js",
+      "sha256": "f0f69ef0605f71b9a26131bda086af537fc2ed3980b01bef3eacb4e4721f57fb",
+      "bytes": 7784
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/TextManager.js",
+      "sha256": "66a8f8d07932e4f13f015488bf5c63b63a49651310e27e74474971bfc1f79e5c",
+      "bytes": 6424
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_managers/_header.js",
+      "sha256": "9762ce3c87b74cfd6c2598ece31e7f646c4284372db3fa5f267475798e836a50",
+      "bytes": 206
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Action.js",
+      "sha256": "4bde698b96c1358bfbcc8dd0d462eace9a66250292c37af88035218f5269c49b",
+      "bytes": 23955
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_ActionResult.js",
+      "sha256": "fb1746032be8a135ff2add8b4f7ef7122c7ab15891197c05e195d94f99fd74e2",
+      "bytes": 2980
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Actor.js",
+      "sha256": "97f78ace3f4705275d61ded5ea04dcb0fdd9450e8131d23ab1d33e49ecffb8e9",
+      "bytes": 25301
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Actors.js",
+      "sha256": "761058eb6d4a72a4e6e57f38dd09d4fd0524809f60441e3bc35479b10eff8c82",
+      "bytes": 556
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Battler.js",
+      "sha256": "4c5482232294722153a4b5f5a82ba4deaa439178027cc241c776f108f67dac7f",
+      "bytes": 14273
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_BattlerBase.js",
+      "sha256": "acbba7309f4aacb2657b500fca45fe7d0b9b5ef5ddd13c44789c0fd6e03aadd1",
+      "bytes": 23601
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Character.js",
+      "sha256": "23291295f8ba5cbf94c73e608dc8ff27e6506e310ead5e65f946feab5045d347",
+      "bytes": 17693
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_CharacterBase.js",
+      "sha256": "3836c7c6ac27015273c6268bed2e7117d447c5ced4f6b7d2ff43ed038942709a",
+      "bytes": 17193
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_CommonEvent.js",
+      "sha256": "2fd282f4ed0133ed6f9c02af7d72209bf131f1280934bc76714be15ef70f52ad",
+      "bytes": 1384
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Enemy.js",
+      "sha256": "3ebe96d57affe912308048e023aa26b4c6dbdc23415d99fd6f1252692be086e2",
+      "bytes": 7915
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Event.js",
+      "sha256": "17678b3147e4364aed946759b8829d0ed40e3e7ca681d7f99340d97e6ee5d219",
+      "bytes": 9518
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Follower.js",
+      "sha256": "ae9ca0bdbdc6734752ea96409df4649a59d097234e9ff3555795d5b6f786056d",
+      "bytes": 2103
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Followers.js",
+      "sha256": "c8a141cbf1eb3cb25bcc88117db032fc61ea1e94324d07045265b563504f4742",
+      "bytes": 3337
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Interpreter.js",
+      "sha256": "b2865110da4680a33f700569ee17d74187b0fbd2720f84ff8d12b593f4b438be",
+      "bytes": 58316
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Item.js",
+      "sha256": "8e1c96834987890748b1e6445c74a771593039ed98d000e018be7a5cf9af864f",
+      "bytes": 2225
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Map.js",
+      "sha256": "a930251b1ca2b730838548f50577b87f1db5e05d13af1e2039962b8940338a06",
+      "bytes": 22321
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Message.js",
+      "sha256": "c82b2c0bfd3b4b0bed40ccd39b2243cd6b97d36222025659158c1f4e888f45e2",
+      "bytes": 4904
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Party.js",
+      "sha256": "0322d7b5b0b4eadfff0fbc59e33d928dd3731bd663cbb8fa90f012286c1083d0",
+      "bytes": 12326
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Picture.js",
+      "sha256": "1596870bb7f2610cdf883f8ea88877c4474bafc29f5feeec6f19af36cf8efc03",
+      "bytes": 4339
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Player.js",
+      "sha256": "ba82826b6bb7a8fd446a5228bb82ad590dbba0cade02bcfa432a6d3afc13d619",
+      "bytes": 18678
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Screen.js",
+      "sha256": "0a67e863585e7a3dd9d85489428ec3968dbae83da532a922504c5094cbef1402",
+      "bytes": 8714
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_SelfSwitches.js",
+      "sha256": "51828da14a659800663f521c2740394dfbf04f3f9dd9f6970e5adef1f1b0b846",
+      "bytes": 769
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Switches.js",
+      "sha256": "e5631824fe5f787fdb26f22ddf359c9725e2ea6e1653a631ba768db8964b7fee",
+      "bytes": 763
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_System.js",
+      "sha256": "a272cf8c169459258b4780dc7d6afb40d4a2ef8ab777039dc04838cecaf08347",
+      "bytes": 5580
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Temp.js",
+      "sha256": "5c3476f61ccf3ec9ebbd2679697178ae08664bfe676e8b243466ace81d066952",
+      "bytes": 1571
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Timer.js",
+      "sha256": "4e90e2a9956bd087b55b2b8cc1d9e16a3856a29dddd2102144b6f376a3bcc9c2",
+      "bytes": 989
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Troop.js",
+      "sha256": "e285aa94a960974c8e6dfa3312052a2336f441ae16f5b97c683d17a78405d712",
+      "bytes": 5980
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Unit.js",
+      "sha256": "92017c9c663fd89d0349d029b781e933625af20bfdb189915e0909b82ce521db",
+      "bytes": 3696
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Variables.js",
+      "sha256": "b267bd3f976f11e438bbf30c4ea50aca27848f17f6189f9b8b4f2d1a01a3035a",
+      "bytes": 880
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/Game_Vehicle.js",
+      "sha256": "e137cbd55a66dfa5f8ad624a9b5450294e5310a97930732e1291a9b60dbda5e7",
+      "bytes": 6198
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_objects/_header.js",
+      "sha256": "7a66df38dad2630bf66a20fdfbcb4862e03d1328a898d8b9ad583f445a350bbf",
+      "bytes": 205
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Base.js",
+      "sha256": "44d4be956c7a6714c8dbcdb0a128ef2778b8c7a4ed2ddc6c6c811df752ff9728",
+      "bytes": 7561
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Battle.js",
+      "sha256": "5c0f9457d4d76cb1e9286ed548b7e14afda23202d44c07dc73d1fe594cf0d244",
+      "bytes": 13157
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Boot.js",
+      "sha256": "81d099804edee90ec0eec5ea06c977b292ed660c89ba8e3e5d076bba9b0e45bd",
+      "bytes": 2720
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Debug.js",
+      "sha256": "546098fb1f136376b4f3fb6fb5738981b37d9010d8c8457177d7959eb5ae6808",
+      "bytes": 2460
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Equip.js",
+      "sha256": "e6b23cb32115b8a71e830ac092677507a773fc3796b67c513866bfb9987fb771",
+      "bytes": 4663
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_File.js",
+      "sha256": "4f741708d3b44a6788831180a14f1ad044b1eb8d9ce5abccddb563e2369d79e2",
+      "bytes": 2082
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_GameEnd.js",
+      "sha256": "83c8f8453c1fe588dfd20532786af3a897481e658e4b4af6c2b05944363b7428",
+      "bytes": 1320
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Gameover.js",
+      "sha256": "36c771667effedc42988806c7001a4632988d275e3a3d3c23c988a8b816a9102",
+      "bytes": 1820
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Item.js",
+      "sha256": "6d492ff452000d499b8e5854f1328871c0923aefa0a6393482c0f50359c24f1b",
+      "bytes": 2594
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_ItemBase.js",
+      "sha256": "954ad3b46e4e61bfa2a1927667226fb1f08be3b16af335adcb691d3045c4eacb",
+      "bytes": 3826
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Load.js",
+      "sha256": "05e1ea7924c1851fec65a8989ae913eb2a613a05bcfe0cccd42d5babd0055872",
+      "bytes": 1738
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Map.js",
+      "sha256": "790ec737e7a82b273fef27bff4bbfcba08576fc513da4aaae3cec1e32c68219f",
+      "bytes": 10692
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Menu.js",
+      "sha256": "0d5aa8f81408857d35749c61e3d5a8d3dfd3ee80a4fdda3b094c1bd253144bb3",
+      "bytes": 4430
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_MenuBase.js",
+      "sha256": "fc3c7b9a0326dd9841d4a0e930d675e806928f9680eeb9f606ae2eeb9e9fd653",
+      "bytes": 1677
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Name.js",
+      "sha256": "0f5739b9514b6b9e0a883553da9f8a2d79aa782caebc364ccb00a8665e9a0e1a",
+      "bytes": 1453
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Options.js",
+      "sha256": "eb0e6656aa5a7658a1a2709d9e94721d19e9fafad6ac50437d9b6581ab6e8d98",
+      "bytes": 958
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Save.js",
+      "sha256": "9d9dc0091e13bbc1045466d327dc150e314d5883433a4c4a4f258f452267550d",
+      "bytes": 1377
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Shop.js",
+      "sha256": "3c00158aac17caca41c5690318cb32f04d40525553e7a7c01a3c8cb307ae3cd7",
+      "bytes": 8586
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Skill.js",
+      "sha256": "fc7f8188b93c75f4716d64d3069383ee9d89243fa202730e39da4fb2f796cc14",
+      "bytes": 3423
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Status.js",
+      "sha256": "031f0269ec1dcfd70ff1dfa39b3152150a57a017ea69f3072ce5ffb79e9f9165",
+      "bytes": 1289
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/Scene_Title.js",
+      "sha256": "a45a28ed94f01e3d35a7355ab4e3de3f3dff88690e2827dc28d2f4c76bd65343",
+      "bytes": 3605
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_scenes/_header.js",
+      "sha256": "175e0aea93f9808c8479791ddf5070046ba13e1c4d1c8ddabf49d51df097e088",
+      "bytes": 204
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Actor.js",
+      "sha256": "83067c915888a49c45d8a9d14da2e8fdc846dcaafc0aebf6240c3f340484d710",
+      "bytes": 8441
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Animation.js",
+      "sha256": "20d4267143cbcf900e7dd0a0598454cd4539cdd368d80f13e675b2bd2b1f8ec1",
+      "bytes": 9246
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Balloon.js",
+      "sha256": "b7466eb4bea87273bd25f0341a6fb3381282034dd1de8d605944ef32013f5c47",
+      "bytes": 1838
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Base.js",
+      "sha256": "5d814f39a8de0ea8b3b14650aed53a9a2ead1a766938fb65ccfa42d4c285e1fa",
+      "bytes": 1863
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Battler.js",
+      "sha256": "aca768d05d67807cc9e8f31de712040f5768689bed79cc8168ea75e9bbc2784e",
+      "bytes": 5580
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Button.js",
+      "sha256": "cd05495fb43dafbe9733a9198b1bbf542afd64758af32c1f8e13a355aec80b5b",
+      "bytes": 2826
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Character.js",
+      "sha256": "33e7db7c91693bc3c667a89e2cda40bd287a38869196af0fc4f634a7305a36e1",
+      "bytes": 8378
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Damage.js",
+      "sha256": "7ee297ad9b7a66971992f634bbeb14badbc740c63d6c30d6b9c6a55e669b3e64",
+      "bytes": 3477
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Destination.js",
+      "sha256": "288aced67b305fa3cfc7e63813561a7826e32c4c8a0f28ab589c9149a62c286b",
+      "bytes": 1802
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Enemy.js",
+      "sha256": "62a3cba78d6e124152b9e7537029ba2b1170395aad26be736f8eb212e72ff0ad",
+      "bytes": 7329
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Picture.js",
+      "sha256": "2931fe8ad451e05df59a556230ea2496b3a07bd3e8529744b0cec874da6d226e",
+      "bytes": 2617
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_StateIcon.js",
+      "sha256": "8bf686085a768cd4cfec5c10a325379b4b5a11febdfb9e26bd4fdd6d9528bb2b",
+      "bytes": 2180
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_StateOverlay.js",
+      "sha256": "d1babff61df93d5b7f30dd78f9c83d07239b6aedf34f540ba3e33ce1e70c92d5",
+      "bytes": 1929
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Timer.js",
+      "sha256": "f30af10bd6e62204b1f6b544b02a58d80eec94855c9d03e4ea516d1504a1d009",
+      "bytes": 1673
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Sprite_Weapon.js",
+      "sha256": "b86c8c1350836d6460073cc56de699a16201fd541b93a2cd0c2c51d84e22f035",
+      "bytes": 2211
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Spriteset_Base.js",
+      "sha256": "e75866d164590e59a9b56bab8f57961beff92ff4efce74931a022158f1169706",
+      "bytes": 4616
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Spriteset_Battle.js",
+      "sha256": "375d141f51199b6bf53550572d723f31b348c018ec0a49cf5665ad9b3eba0507",
+      "bytes": 8515
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/Spriteset_Map.js",
+      "sha256": "bc692a494b2a2991b9a7c448352047223da8b76a105800212e12e273d9c1b5d6",
+      "bytes": 6019
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_sprites/_header.js",
+      "sha256": "72b7fa4f9b01d07c8730922cf1dad5aae99df583a870f3386afd61b14a74e5d8",
+      "bytes": 205
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ActorCommand.js",
+      "sha256": "5dcf4aac0844887ae272a8d466d573640a11c0a2f17789259c6b5fb15848e091",
+      "bytes": 2815
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Base.js",
+      "sha256": "9961b268291be590b02c9cf13e8373bb61265175a773b536dbf023d9cd614900",
+      "bytes": 21392
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_BattleActor.js",
+      "sha256": "263e88771689ff41b904f515949dfa76ce0e9eefd25ea135d7e5d939d3d42f63",
+      "bytes": 1137
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_BattleEnemy.js",
+      "sha256": "baf9c5a470cd8861047d4fd8782eb3015d9e6a3b8bdef92b84427c8099cec04a",
+      "bytes": 2222
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_BattleItem.js",
+      "sha256": "ea476ec092de856312f88ac97ab92b10dd0d1bb4b6b91ce118b039435f13949d",
+      "bytes": 951
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_BattleLog.js",
+      "sha256": "a4315c819e11d5dbcf945d0f4f5272c5917e9c567d64419c0178e8d80dde1a86",
+      "bytes": 18657
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_BattleSkill.js",
+      "sha256": "dbd2fd59e61efce0092c74a8c2d7887948b2cec5d2fe0ed6ec93b60702368c15",
+      "bytes": 863
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_BattleStatus.js",
+      "sha256": "65fdb0f412d9a9f3e92fed01463321e7c24178b0105b3d0a8215e8fd2718ddc9",
+      "bytes": 2903
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ChoiceList.js",
+      "sha256": "fd6c8b6c3d1f34005003c66a8dbf3eba9d7dda1af73444f4c2b380bbefc00926",
+      "bytes": 4035
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Command.js",
+      "sha256": "8464af6ca0a2c973ac1ccb32d7738b5f0001a4de1e7f0ad61f95477ce40db744",
+      "bytes": 4179
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_DebugEdit.js",
+      "sha256": "fa98e5fc49ae598284101da23e1ef48679139448c19215d79c91c2ebc7ee8d87",
+      "bytes": 3637
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_DebugRange.js",
+      "sha256": "95d6033723b5c79b19273be0a4d1a7ba99823749ea2d7a1f76c02577588d35ff",
+      "bytes": 2973
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_EquipCommand.js",
+      "sha256": "774fcfdc6bf43066c5b9ced2c7092d522d7d134677cbc3af59689b16a252da43",
+      "bytes": 972
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_EquipItem.js",
+      "sha256": "ad2217811b64744f9a68ac0f90856f89bb8fabe32a27e153bb5c23e14cbc902d",
+      "bytes": 1930
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_EquipSlot.js",
+      "sha256": "9bb28e7b70f542f14767b573e05ffcdfb72a5a2877a2200b3b6882f23ec090cc",
+      "bytes": 2570
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_EquipStatus.js",
+      "sha256": "f4c47bc26c4bfc006e7d883ab2af36779b684934b1c80e9817ec9fca1b22a58e",
+      "bytes": 2784
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_EventItem.js",
+      "sha256": "91090d4f1851c3b4a6af8b723983fdaf54b2cbb7eb5b351e4353e102160f37ba",
+      "bytes": 2098
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_GameEnd.js",
+      "sha256": "4ed16ff39d5a529f6faff750964737d3b3ae71fa0a83b7857327bf2c35d77a14",
+      "bytes": 980
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Gold.js",
+      "sha256": "4431abf39c3e609024b89adbd1ac8144abcaec069dfc2e46c0837645ec200412",
+      "bytes": 1275
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Help.js",
+      "sha256": "70c047442c0c063aede9db5b36fb78f7511a2a2e2acbe6cc678054f4c9f01b22",
+      "bytes": 1068
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_HorzCommand.js",
+      "sha256": "e462a6534cbe2a1ac1493a5efb96dbbebc4152afb2fe45e2d6daaa01bd8e5182",
+      "bytes": 757
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ItemCategory.js",
+      "sha256": "c071da7c49975baaa945bcc8df3071ab59d89b54444efdb7af7e530df255102d",
+      "bytes": 1313
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ItemList.js",
+      "sha256": "aad4d9287617237b2153e8e040297899e487d89ab72f2faee018a16e794d75d6",
+      "bytes": 3392
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_MapName.js",
+      "sha256": "1442e1abd2f3007706f20a95c602817e16597d71e9ee37ba613e4f2d94ab9681",
+      "bytes": 2112
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_MenuActor.js",
+      "sha256": "763395efd03800eee00de6bfe53911da807d03a923bf8626d13eb79ad6a950f0",
+      "bytes": 1457
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_MenuCommand.js",
+      "sha256": "d90bf3da93f08b4458b7c6310d9bdba62350c36bed76ed172e9d0f88b0201eae",
+      "bytes": 3976
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_MenuStatus.js",
+      "sha256": "8e11a6b20fed35f139c01ef949b00fcc376411862412da43a4ad30c9cf32177a",
+      "bytes": 3762
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Message.js",
+      "sha256": "68dc1a38af0fb0c550ef41e3a272108519215ad257c1b3af9f6549fa3685702b",
+      "bytes": 9847
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_NameEdit.js",
+      "sha256": "8c32234a87a4d367dde1c5bdf0194cb8c683f8d096f1e189e0148970d7362f31",
+      "bytes": 3877
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_NameInput.js",
+      "sha256": "37a02f6294ef20eba6f7dcd5fb124d29a5b75a58a9cc2efbaf9d98f8111513ef",
+      "bytes": 9402
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_NumberInput.js",
+      "sha256": "13f954ac6b170bcebb48ba1fec79dc4792b9b8a099508734dc23772b033f4d95",
+      "bytes": 6382
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Options.js",
+      "sha256": "bdc7181d9508087e258e8c7f0c42107ef1b33080beab41c10c81d54743f99593",
+      "bytes": 4519
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_PartyCommand.js",
+      "sha256": "544ce7ed4761545063b7c71f6b87d25a1112b603f84f71955902618cbb9951c4",
+      "bytes": 1198
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_SavefileList.js",
+      "sha256": "63ad00823bf16397cbd9f9f21d60f5ec1fefa1ec79734b9460dd049cb3408921",
+      "bytes": 3183
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ScrollText.js",
+      "sha256": "ed15fbc760ccd0e84e15c414da1c2c62b7d12751fc9ee125054272e4ab596d10",
+      "bytes": 2575
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Selectable.js",
+      "sha256": "920108a6ea2323d9af4f18f1855afdc8ae2ec036da414812fbdf239316754c53",
+      "bytes": 16768
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ShopBuy.js",
+      "sha256": "514453dc30b4bdba5dc8350c538e7d9c40fc894b3bbe28352e67242ebd1f05f1",
+      "bytes": 3001
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ShopCommand.js",
+      "sha256": "12e9fca689769502bceaf1b8b8d4e9af543207ab1d7c75995a2507f21eff3d11",
+      "bytes": 1017
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ShopNumber.js",
+      "sha256": "ab7fe02d70f2961c8d968610f49badd5c4020cb996cabe3b19ab3c718df66d91",
+      "bytes": 6772
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ShopSell.js",
+      "sha256": "0022007a7be7d2553478fc32275b61971a83463f85fcd1f3db0ab0ca29ab8a2d",
+      "bytes": 632
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_ShopStatus.js",
+      "sha256": "b1f109122a8a0706fdf58a0d1cc46d3b2074fcfa7c938416bb864595ecdef3a6",
+      "bytes": 5016
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_SkillList.js",
+      "sha256": "7146a3cdc63c78876811b980f08ebe471b975a72057b219b6775b915a0e99b26",
+      "bytes": 3570
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_SkillStatus.js",
+      "sha256": "34478e7f1fe7ab44a205f89d6c864c4591cc9b35e69aa6843d4a406ebad414b4",
+      "bytes": 1177
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_SkillType.js",
+      "sha256": "9230d1a932fd6ba2e872563dbede1a7c0c966f4810b576b4ae78e55d658ff1af",
+      "bytes": 1817
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_Status.js",
+      "sha256": "add0df9eda627fa1c699243bb8392576f78142927a987c18ac0e7e6e1f2caba1",
+      "bytes": 4215
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/Window_TitleCommand.js",
+      "sha256": "650e3c75dd73a92e478b428fb2004463c8cb5a98a5e63425700813267f0d48f2",
+      "bytes": 1840
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/js/rpg_windows/_header.js",
+      "sha256": "e57314b74369ca89604b766e7c1c9ed8ad8da60d2f73b2b52a36f4104477d342",
+      "bytes": 205
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/modules.json",
+      "sha256": "fd00ab85bcff4d214bb49ccf02ee2ecc673a83a3b8232cdba959f58758664c99",
+      "bytes": 108
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/package.json",
+      "sha256": "dac09504b28bbfbd8c747977d936526e3f63296755129dee368f72d1cf9cfcce",
+      "bytes": 1430
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/plugins/Community_Basic.js",
+      "sha256": "459359035e0909bbdcd97f2f8d63d077c1a8e0a6be99fb0b3c295bc2f3c9c8ea",
+      "bytes": 9513
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/plugins/Debug_FailLoading.js",
+      "sha256": "b89ad3f78dadc2c057f8afc4235e9046cf4122b1030d7cf15e00f43f46a18b48",
+      "bytes": 3391
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/plugins/Debug_ReportMemory.js",
+      "sha256": "bb0211f12f153fdc38a329795d5163144853c4c79925eacdc791e70118d9a4ea",
+      "bytes": 5216
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/plugins/Debug_ThrottleImage.js",
+      "sha256": "7eebf9cccfd691ca1ff9be4d229108733f5fa618f3e78785f1c656007c1b9482",
+      "bytes": 760
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/rpg_core.json",
+      "sha256": "2e4b7a9b7c61b41c76f6e7b8d1663376e9fe334f5f50b10fcf0dd29a835fef34",
+      "bytes": 932
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/rpg_managers.json",
+      "sha256": "6ff01c266883be726e5bfaa34a24dc35950ffa61c1bf375a8d04115d8310707d",
+      "bytes": 419
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/rpg_objects.json",
+      "sha256": "874350e3ccc016cc03ebc9192e9841658477e7d9bf2bf27e97479c1210f7f0d6",
+      "bytes": 1151
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/rpg_scenes.json",
+      "sha256": "04f0a8176d839251c5f6ffeb00cb26369d9057dcddc34b37861f4e73733fbb7d",
+      "bytes": 773
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/rpg_sprites.json",
+      "sha256": "9a6515448d30538c97131c2d28866920527e1d5fbb2b982c651d54c1bbfe9184",
+      "bytes": 741
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/rpg_windows.json",
+      "sha256": "bd05f5fdd45b7d56fa85de30c5ef6a98d3aac83ebd1c66f182889a160433a6ad",
+      "bytes": 1935
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/template/fonts/gamefont.css",
+      "sha256": "75e4e7577b837aefbc959ec6355301e163910fd62367217cd23731fc0d5b8792",
+      "bytes": 246
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/template/index.html",
+      "sha256": "36cd11e2892d3330a18160f5286f8df16f87b0956d42278f648f32a37339ba17",
+      "bytes": 1645
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/tests/test-save.js",
+      "sha256": "956c606d5685a1d8957e7e21881e7a7064c016770342cf5f87ef4418a41136bf",
+      "bytes": 618
+    },
+    {
+      "path": "refs/rpgmaker-mv-corescript/watch.js",
+      "sha256": "90b2daf651577d350aa5fdf2d70bcbd5b3e33239c19be1ec032911a48e8eed28",
+      "bytes": 506
+    },
+    {
+      "path": "tools/acquire_godot_research.py",
+      "sha256": "3942afc8936e9413ab3fa3fa913ce2bb0e67bd7e40d0e6ff0324bd4ffd39ab9a",
+      "bytes": 3951
+    },
+    {
+      "path": "tools/collect_foundation_sources.py",
+      "sha256": "afe688e8cdc14885fd72061c5b5b8fc3a4142b6e9cefde961128ab8a70b8c80f",
+      "bytes": 2539
+    },
+    {
+      "path": "tools/migrate_naru_workspace.py",
+      "sha256": "e4158d8bace5c95532636f18137d90ec2156b27b5893ddc160025960a4482d2f",
+      "bytes": 3668
+    },
+    {
+      "path": "tools/run_godot_probe.py",
+      "sha256": "f0e65d793e3a09c3562a5a87ccf18b39c11255f142eba8ec5364867b01c1090d",
+      "bytes": 1192
+    },
+    {
+      "path": "tools/verify_ghidra.py",
+      "sha256": "75cd06dd97873cd4a0a679e84a0f52067456f899f741ba695fde750477eff665",
+      "bytes": 2130
+    },
+    {
+      "path": "tools/verify_rea_mcp.py",
+      "sha256": "c3efaeef151ca42364660f18344cc3757320f523028afe22253706e9b396e223",
+      "bytes": 4151
+    }
+  ],
+  "note": "Hashes describe the initial copied snapshot; later development can change files."
+}

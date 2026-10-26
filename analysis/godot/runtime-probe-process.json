@@ -1,0 +1,17 @@
+{
+  "command": [
+    "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\godot-4.7.2\\bin\\Godot_v4.7.2-stable_win64_console.exe",
+    "--headless",
+    "--path",
+    "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\probes\\godot-foundation",
+    "--script",
+    "probe.gd",
+    "--log-file",
+    "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\probes\\godot-foundation\\godot.log"
+  ],
+  "returncode": 0,
+  "stdout": "Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org\r\n\r\nFOUNDATION_PROBE_RESULT={\"checks\":{\"camera_attached\":true,\"horizontal_motion_and_wall\":true,\"independent_instances\":true,\"pack_scene\":true,\"resource_round_trip\":true,\"save_resource_text\":true,\"save_scene_text\":true,\"scene_ownership\":true,\"signal_delivery\":true,\"signal_disconnect\":true},\"engine_version\":{\"build\":\"official\",\"hash\":\"ed1daf0bf001b61586d9930840f2f1394092c079\",\"hex\":263938,\"major\":4,\"minor\":7,\"patch\":2,\"status\":\"stable\",\"string\":\"4.7.2-stable (official)\",\"timestamp\":0},\"physics_ticks\":90,\"scope\":\"Headless structural and runtime probe; no visual UI, Android export, jump or combat test\",\"wall_stop_x\":69.9974975585938}\r\n",
+  "stderr": "",
+  "launcher_sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+  "probe_sha256": "84d8beb7d21d8b43cf0a284e635c3c0ddb74ccc1286a7fed6b9ddf7113a94041"
+}

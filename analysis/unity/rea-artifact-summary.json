@@ -1,0 +1,226 @@
+{
+  "evidence_id": "ev_7fd70bf5f128be2db3472c27f2feda8b2be7fc7665219a928abeed700bf71966",
+  "subject": {
+    "name": "UnityEditor.dll",
+    "digest": {
+      "sha256": "5f5648cf51994a87c48b512522556f1489b94c80c1a87337ebde8a92b185ef2b"
+    },
+    "local_path": "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Data\\Managed\\UnityEditor.dll",
+    "format": "pe",
+    "architecture": "x86"
+  },
+  "provider": {
+    "id": "rea-analysis-view",
+    "name": "REA analysis view projection",
+    "version": "1"
+  },
+  "analysis_profile": null,
+  "predicate_type": "rea.analysis-view",
+  "operation": "inspect_analysis_view",
+  "parameters": {
+    "parent_evidence_id": "ev_de68c20982a6dd83f772b7596b14290898136e0da83d4c63be093c5ef490d05e",
+    "view": {
+      "kind": "summary"
+    }
+  },
+  "raw_result": null,
+  "normalized_result": {
+    "kind": "summary",
+    "view": {
+      "kind": "summary"
+    },
+    "parent_evidence_id": "ev_de68c20982a6dd83f772b7596b14290898136e0da83d4c63be093c5ef490d05e",
+    "parent_operation": "inspect_managed_artifact",
+    "parent_digest": "de68c20982a6dd83f772b7596b14290898136e0da83d4c63be093c5ef490d05e",
+    "view_digest": "b3a278d67df9b8240146c97a9f869b35b96d1f5e89431dc8289d1ce4194ae930",
+    "artifact": {
+      "path": "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Data\\Managed\\UnityEditor.dll",
+      "sha256": "5f5648cf51994a87c48b512522556f1489b94c80c1a87337ebde8a92b185ef2b"
+    },
+    "coverage": {
+      "status": "complete-within-view",
+      "examined": 52820,
+      "total": 52820,
+      "next_offset": null,
+      "exhausted": true
+    },
+    "limitations": [
+      "Static inspection did not load the assembly, resolve dependencies through a CLR, decompile C#, or execute target code."
+    ],
+    "unknowns": [
+      "Collection counts and pages cover producer-returned rows; metadata completeness remains the original metadata status and coverage, not an absence claim about unreturned rows.",
+      "Metadata tokens are build-local coordinates bound to the recorded artifact SHA-256 and module MVID; this view does not load or execute the assembly."
+    ],
+    "summary": {
+      "artifact": {
+        "path": "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Data\\Managed\\UnityEditor.dll",
+        "sha256": "5f5648cf51994a87c48b512522556f1489b94c80c1a87337ebde8a92b185ef2b",
+        "byte_length": 23752192,
+        "format": "pe"
+      },
+      "pe": {
+        "machine": 332,
+        "machine_hex": "0x014c",
+        "architecture": "x86",
+        "optional_header": "pe32",
+        "section_count": 3,
+        "characteristics": 8450,
+        "cli": {
+          "header_offset": 520,
+          "header_size": 72,
+          "runtime_version": "2.5",
+          "flags": 1,
+          "flag_names": [
+            "il-only"
+          ],
+          "entry_point": {
+            "kind": "none",
+            "value": null
+          },
+          "metadata_rva": 9333004,
+          "metadata_size": 14424760,
+          "resources_rva": 0,
+          "resources_size": 0,
+          "strong_name_rva": 0,
+          "strong_name_size": 0,
+          "managed_native_header_rva": 0,
+          "managed_native_header_size": 0,
+          "ready_to_run_signature": false
+        }
+      },
+      "classification": {
+        "status": "managed",
+        "container": "pe",
+        "runtime_family": "unity-mono",
+        "implementation": "cil",
+        "managed_architecture": "anycpu",
+        "evidence": [
+          {
+            "code": "cli-header-observed",
+            "detail": "A file-backed PE CLI header and metadata root were admitted.",
+            "file_offset": 520
+          },
+          {
+            "code": "unity-reference-observed",
+            "detail": "The admitted AssemblyRef table contains a UnityEngine reference.",
+            "file_offset": 15879964
+          },
+          {
+            "code": "target-framework-observed",
+            "detail": "An assembly-level TargetFrameworkAttribute names .NET Standard, an API specification that does not identify a runtime family.",
+            "file_offset": 14601886
+          },
+          {
+            "code": "managed-architecture-derived",
+            "detail": "Managed architecture anycpu is derived from PE machine and CLI flags.",
+            "file_offset": 536
+          }
+        ]
+      },
+      "metadata": {
+        "status": "complete",
+        "version": "v4.0.30319",
+        "stream_names": [
+          "#Blob",
+          "#GUID",
+          "#Strings",
+          "#US",
+          "#~"
+        ],
+        "table_row_counts": {
+          "Module": 1,
+          "TypeRef": 2783,
+          "TypeDef": 16859,
+          "Field": 76426,
+          "MethodDef": 121959,
+          "Param": 117530,
+          "InterfaceImpl": 4965,
+          "MemberRef": 41704,
+          "Constant": 16993,
+          "CustomAttribute": 52800,
+          "FieldMarshal": 16,
+          "DeclSecurity": 1,
+          "ClassLayout": 89,
+          "FieldLayout": 31,
+          "StandAloneSig": 25073,
+          "EventMap": 394,
+          "Event": 898,
+          "PropertyMap": 4646,
+          "Property": 19154,
+          "MethodSemantics": 28047,
+          "MethodImpl": 4736,
+          "ModuleRef": 2,
+          "TypeSpec": 12272,
+          "ImplMap": 19,
+          "FieldRVA": 165,
+          "Assembly": 1,
+          "AssemblyRef": 20,
+          "NestedClass": 8273,
+          "GenericParam": 2367,
+          "MethodSpec": 8358,
+          "GenericParamConstraint": 1106
+        }
+      },
+      "module": {
+        "name": "UnityEditor.dll",
+        "generation": 0,
+        "mvid": "797618a9-0c5e-4590-b3ab-208db85a8631",
+        "enc_id": null,
+        "enc_base_id": null,
+        "token": "0x00000001",
+        "row_offset": 9325580
+      },
+      "assembly": {
+        "name": "UnityEditor",
+        "version": "0.0.0.0",
+        "culture": null,
+        "flags": 0,
+        "hash_algorithm": 32772,
+        "public_key": {
+          "kind": "none",
+          "byte_length": 0,
+          "sha256": null,
+          "token": null
+        },
+        "token": "0x20000001",
+        "row_offset": 15879936
+      },
+      "target_frameworks": [
+        ".NETStandard,Version=v2.1"
+      ],
+      "coverage": {
+        "state": "complete",
+        "issues": []
+      },
+      "limitations": [
+        "Static inspection did not load the assembly, resolve dependencies through a CLR, decompile C#, or execute target code."
+      ],
+      "reported_counts": {
+        "references": 20,
+        "resources": 0,
+        "attributes": 52800
+      },
+      "identity_scope": {
+        "token_identity": "build-local",
+        "requires_artifact_sha256": "5f5648cf51994a87c48b512522556f1489b94c80c1a87337ebde8a92b185ef2b",
+        "requires_mvid": "797618a9-0c5e-4590-b3ab-208db85a8631"
+      }
+    }
+  },
+  "confidence": "derived",
+  "authority": "shipped-artifact",
+  "environment": null,
+  "limitations": [
+    "Static inspection did not load the assembly, resolve dependencies through a CLR, decompile C#, or execute target code."
+  ],
+  "relationship_coverage": null,
+  "locations": [
+    {
+      "kind": "artifact-path",
+      "path": "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Data\\Managed\\UnityEditor.dll"
+    }
+  ],
+  "evidence_links": [
+    "ev_de68c20982a6dd83f772b7596b14290898136e0da83d4c63be093c5ef490d05e"
+  ]
+}

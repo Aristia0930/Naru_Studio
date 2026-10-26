@@ -1,0 +1,272 @@
+{
+  "evidence_id": "ev_85b9ca1c227e6c44b1deba9773ec85413b93e814d7a7e311a020bac5d4f6bfd3",
+  "subject": {
+    "name": "UnityEditor.dll",
+    "digest": {
+      "sha256": "5f5648cf51994a87c48b512522556f1489b94c80c1a87337ebde8a92b185ef2b"
+    },
+    "local_path": "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Data\\Managed\\UnityEditor.dll",
+    "format": "pe",
+    "architecture": "x86"
+  },
+  "provider": {
+    "id": "rea-analysis-view",
+    "name": "REA analysis view projection",
+    "version": "1"
+  },
+  "analysis_profile": null,
+  "predicate_type": "rea.analysis-view",
+  "operation": "inspect_analysis_view",
+  "parameters": {
+    "parent_evidence_id": "ev_959e4fd4f624d219b9168b087fe68c97238f9a651845a23624d8dfc14cd5f1f2",
+    "view": {
+      "kind": "managed-members",
+      "collection": "types",
+      "offset": 0,
+      "limit": 7
+    }
+  },
+  "raw_result": null,
+  "normalized_result": {
+    "kind": "managed-members",
+    "view": {
+      "kind": "managed-members",
+      "collection": "types",
+      "offset": 0,
+      "limit": 7
+    },
+    "page": {
+      "collection": "types",
+      "rows": [
+        {
+          "token": "0x02001773",
+          "row_offset": 9497470,
+          "namespace": "UnityEditor",
+          "name": "EditorApplication",
+          "full_name": "UnityEditor.EditorApplication",
+          "name_sha256": "9aa98d7a2a6603c3a7606b23c6fd1c28cfdac85914e39689db176d60448adec2",
+          "flags": 1048833,
+          "extends_token": "0x01000001",
+          "enclosing_type_token": null,
+          "field_list": {
+            "first_row": 26788,
+            "last_row": 26824,
+            "count": 37
+          },
+          "method_list": {
+            "first_row": 40689,
+            "last_row": 40850,
+            "count": 162
+          }
+        },
+        {
+          "token": "0x02001b02",
+          "row_offset": 9519334,
+          "namespace": "UnityEditor",
+          "name": "InspectorWindow",
+          "full_name": "UnityEditor.InspectorWindow",
+          "name_sha256": "76f2c61a74f1c033b12d9629ce44f08f0bc6bc521318322980f16523bfff868d",
+          "flags": 1048576,
+          "extends_token": "0x02001b0d",
+          "enclosing_type_token": null,
+          "field_list": {
+            "first_row": 32000,
+            "last_row": 32010,
+            "count": 11
+          },
+          "method_list": {
+            "first_row": 49759,
+            "last_row": 49815,
+            "count": 57
+          }
+        },
+        {
+          "token": "0x02001b42",
+          "row_offset": 9520870,
+          "namespace": "UnityEditor",
+          "name": "Editor",
+          "full_name": "UnityEditor.Editor",
+          "name_sha256": "5e9d2ef85de1d45ed52057a8090341ade0619059a8496a4dbde1f067e839d7a2",
+          "flags": 1048585,
+          "extends_token": "0x010000a0",
+          "enclosing_type_token": null,
+          "field_list": {
+            "first_row": 32320,
+            "last_row": 32343,
+            "count": 24
+          },
+          "method_list": {
+            "first_row": 50274,
+            "last_row": 50390,
+            "count": 117
+          }
+        },
+        {
+          "token": "0x02001e31",
+          "row_offset": 9538894,
+          "namespace": "UnityEditor",
+          "name": "PrefabUtility",
+          "full_name": "UnityEditor.PrefabUtility",
+          "name_sha256": "0189a9280af1b0a5e81d0fd9336136b3b9811c85ea1cabad9298d41b2f848765",
+          "flags": 1048833,
+          "extends_token": "0x01000001",
+          "enclosing_type_token": null,
+          "field_list": {
+            "first_row": 37595,
+            "last_row": 37607,
+            "count": 13
+          },
+          "method_list": {
+            "first_row": 57208,
+            "last_row": 57572,
+            "count": 365
+          }
+        },
+        {
+          "token": "0x02001faa",
+          "row_offset": 9547942,
+          "namespace": "UnityEditor",
+          "name": "SerializedObject",
+          "full_name": "UnityEditor.SerializedObject",
+          "name_sha256": "0526a3ce8091172bce5e53256b05a9079d12b8872651cab6161bc17687ccc7e0",
+          "flags": 1048577,
+          "extends_token": "0x01000001",
+          "enclosing_type_token": null,
+          "field_list": {
+            "first_row": 39499,
+            "last_row": 39499,
+            "count": 1
+          },
+          "method_list": {
+            "first_row": 60846,
+            "last_row": 60929,
+            "count": 84
+          }
+        },
+        {
+          "token": "0x02001fae",
+          "row_offset": 9548038,
+          "namespace": "UnityEditor",
+          "name": "SerializedProperty",
+          "full_name": "UnityEditor.SerializedProperty",
+          "name_sha256": "b678ffc9d279baeedd8ef6e7b8e4e540a6831582b11728352ae38fe1db5f8826",
+          "flags": 1048585,
+          "extends_token": "0x01000001",
+          "enclosing_type_token": null,
+          "field_list": {
+            "first_row": 39545,
+            "last_row": 39552,
+            "count": 8
+          },
+          "method_list": {
+            "first_row": 60932,
+            "last_row": 61394,
+            "count": 463
+          }
+        },
+        {
+          "token": "0x02002087",
+          "row_offset": 9553246,
+          "namespace": "UnityEditor",
+          "name": "Undo",
+          "full_name": "UnityEditor.Undo",
+          "name_sha256": "c3a157bf17e901e5c6d9e82c9cd3fee698f45be54c69000d00c31b233730bdf2",
+          "flags": 1048577,
+          "extends_token": "0x01000001",
+          "enclosing_type_token": null,
+          "field_list": {
+            "first_row": 40378,
+            "last_row": 40386,
+            "count": 9
+          },
+          "method_list": {
+            "first_row": 63196,
+            "last_row": 63287,
+            "count": 92
+          }
+        }
+      ]
+    },
+    "parent_evidence_id": "ev_959e4fd4f624d219b9168b087fe68c97238f9a651845a23624d8dfc14cd5f1f2",
+    "parent_operation": "inspect_managed_members",
+    "parent_digest": "959e4fd4f624d219b9168b087fe68c97238f9a651845a23624d8dfc14cd5f1f2",
+    "view_digest": "8c6bca9df70f33e2922ed003a367f2f59008344da430b7e17fa758fd75c29539",
+    "artifact": {
+      "path": "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Data\\Managed\\UnityEditor.dll",
+      "sha256": "5f5648cf51994a87c48b512522556f1489b94c80c1a87337ebde8a92b185ef2b"
+    },
+    "coverage": {
+      "status": "page",
+      "examined": 7,
+      "total": 7,
+      "next_offset": null,
+      "exhausted": true
+    },
+    "limitations": [
+      "Member decoding exceeded capacity after the type inventory was admitted; fields, methods, member references, call edges, field accesses, exported types and user strings are not examined to completion. Empty member collections do not establish absence.",
+      "Metadata tokens are build-local coordinates and require the reported artifact SHA-256 and MVID. Type names and list ranges retain their original metadata and nesting uncertainty.",
+      "Types, fields, methods, call edges, field accesses, and user strings cover only the selected declaring types; coverage describes that selection. Edge targets outside it keep their names but are not described.",
+      "Use the returned TypeDef full_name values with type_names (CLI --type) to inspect a smaller selection; a single selected type can still exceed capacity."
+    ],
+    "unknowns": [
+      "Collection counts and pages cover producer-returned rows; member completeness remains the original coverage, not an absence claim about unreturned rows.",
+      "Exported types and member references cover the whole assembly; the other collections cover only the selected declaring types.",
+      "Metadata tokens are build-local coordinates bound to the recorded artifact SHA-256 and module MVID; this view does not load or execute the assembly."
+    ],
+    "signature_resolution": null,
+    "nesting_read": true,
+    "identity_scope": {
+      "token_identity": "build-local",
+      "requires_artifact_sha256": "5f5648cf51994a87c48b512522556f1489b94c80c1a87337ebde8a92b185ef2b",
+      "requires_mvid": "797618a9-0c5e-4590-b3ab-208db85a8631"
+    },
+    "selection": {
+      "type_names": [
+        "UnityEditor.SerializedObject",
+        "UnityEditor.SerializedProperty",
+        "UnityEditor.Undo",
+        "UnityEditor.PrefabUtility",
+        "UnityEditor.Editor",
+        "UnityEditor.EditorApplication",
+        "UnityEditor.InspectorWindow"
+      ],
+      "unmatched_type_names": []
+    },
+    "method_rows": {
+      "offset": 0,
+      "count": 121959,
+      "total": 121959
+    },
+    "source_metadata_status": "partial",
+    "source_coverage": {
+      "state": "partial",
+      "issues": [
+        {
+          "code": "resource-limit",
+          "scope": "metadata.representation",
+          "offset": 21787904,
+          "detail": "Managed metadata exceeds the 67108864 byte representation budget"
+        }
+      ]
+    }
+  },
+  "confidence": "derived",
+  "authority": "shipped-artifact",
+  "environment": null,
+  "limitations": [
+    "Member decoding exceeded capacity after the type inventory was admitted; fields, methods, member references, call edges, field accesses, exported types and user strings are not examined to completion. Empty member collections do not establish absence.",
+    "Metadata tokens are build-local coordinates and require the reported artifact SHA-256 and MVID. Type names and list ranges retain their original metadata and nesting uncertainty.",
+    "Types, fields, methods, call edges, field accesses, and user strings cover only the selected declaring types; coverage describes that selection. Edge targets outside it keep their names but are not described.",
+    "Use the returned TypeDef full_name values with type_names (CLI --type) to inspect a smaller selection; a single selected type can still exceed capacity."
+  ],
+  "relationship_coverage": null,
+  "locations": [
+    {
+      "kind": "artifact-path",
+      "path": "C:\\Program Files\\Unity\\Hub\\Editor\\6000.6.5f1\\Editor\\Data\\Managed\\UnityEditor.dll"
+    }
+  ],
+  "evidence_links": [
+    "ev_959e4fd4f624d219b9168b087fe68c97238f9a651845a23624d8dfc14cd5f1f2"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "source": "C:\\WINDOWS\\System32\\hostname.exe",
+  "target": "C:\\Users\\kjk98\\OneDrive\\\ubc14\ud0d5 \ud654\uba74\\game\\engine-tool\\analysis\\rea-connection\\native-verification\\hostname.exe",
+  "sha256": "f8b207720d8673feb5839df1e52360f72c2ad2ce9917d5f3da4f30368dc747c9",
+  "entry": "0x140001300",
+  "command": [
+    "node",
+    "C:\\Users\\kjk98\\AppData\\Local\\npm-cache\\_npx\\da7caeae9db9c589\\node_modules\\rea-agents\\scripts\\rea.mjs",
+    "decompile",
+    "C:\\Users\\kjk98\\OneDrive\\\ubc14\ud0d5 \ud654\uba74\\game\\engine-tool\\analysis\\rea-connection\\native-verification\\hostname.exe",
+    "0x140001300",
+    "--provider",
+    "ghidra",
+    "--format",
+    "json"
+  ],
+  "target_executed": false
+}

@@ -1,0 +1,93 @@
+{
+  "evidence_id": "ev_bd84e7473e581448c1111e81d72b4234eb9d9ef46c5f720f976f0c1aea566164",
+  "subject": {
+    "name": "Godot_v4.7.2-stable_win64_console.exe",
+    "digest": {
+      "sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643"
+    },
+    "local_path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\godot-4.7.2\\bin\\Godot_v4.7.2-stable_win64_console.exe",
+    "format": "pe",
+    "architecture": "x86_64"
+  },
+  "provider": {
+    "id": "ghidra",
+    "name": "Ghidra",
+    "version": "12.1.4"
+  },
+  "analysis_profile": {
+    "provider": {
+      "id": "ghidra",
+      "name": "Ghidra",
+      "version": "12.1.4"
+    },
+    "parameters": {
+      "target_kind": "executable",
+      "target_format": "pe",
+      "executable_role": "application",
+      "managed": false,
+      "native_aot_metadata": {
+        "contract_revision": "rtr-9.1-x64-pe-read-only-v7",
+        "source_bytes": 134217728,
+        "work_units": 67108864,
+        "working_memory_bytes": 67108864,
+        "report_bytes": 4194304
+      },
+      "architecture": "x86_64",
+      "available_architectures": [
+        "x86_64"
+      ],
+      "import_mode": "ephemeral-source-immutable",
+      "pdb_observations": "program-info-v5",
+      "annotation_policy": "atomic-function-entry-metadata-v1",
+      "load_image_observations": "source-mappings-entry-context-v2",
+      "function_body_evidence": "complete-inclusive-ranges-v1",
+      "function_references": "complete-body-and-entry-reference-manager-v2",
+      "call_relationship_coverage": "function-body-call-coverage-v5",
+      "function_dossier_coverage": "observed-facets-and-call-relationships-v1",
+      "string_inventory_evidence": "defined-data-coverage-v1",
+      "location_resolution": "explicit-address-exact-entry-symbol-first-v3",
+      "procedure_file_offset_resolution": "address-first-unique-target-source-mapping-v2",
+      "instruction_flow_evidence": "decoded-return-pcode-v1",
+      "instruction_references": "exact-address-incoming-without-synthetic-entry-v2",
+      "function_boundary_observations": "ghidra-function-boundary-limitations-v4",
+      "no_return_repair": "disabled-windows-p0",
+      "process_launch": "official-headless-script-v1",
+      "jump_table_evidence": "typed-case-default-blocks-v1",
+      "decompiler_jump_loads": true,
+      "loader": "auto-from-header",
+      "language_id": "auto-from-header",
+      "compiler_spec_id": "auto-default",
+      "analyzer_preset": "ghidra-default",
+      "function_coordinate_context": {
+        "kind": "native-function-coordinate-context-v1",
+        "selected_image": null,
+        "mapping_sha256": "55a7964dc0bcdf067484a281c658e6ca8457a49405e0ea9dbd080366ee4c3198"
+      }
+    },
+    "digest": "9b537ee6fdad293e1c8ea50e7b50d0b6b22972a83032bca093d279ab7e770ce4"
+  },
+  "predicate_type": "rea.analysis",
+  "operation": "procedure_pseudo_code",
+  "parameters": {
+    "procedure": "0x1400086a0"
+  },
+  "raw_result": null,
+  "normalized_result": "\r\nundefined4 FUN_1400086a0(void)\r\n\r\n{\r\n  LPCWSTR lpFilename;\r\n  uint uVar1;\r\n  longlong lVar2;\r\n  DWORD DVar3;\r\n  BOOL BVar4;\r\n  ulonglong uVar5;\r\n  HANDLE pvVar6;\r\n  LPWSTR pWVar7;\r\n  HANDLE CompletionPort;\r\n  HANDLE pvVar8;\r\n  PUINT lpData;\r\n  longlong lVar9;\r\n  double dVar10;\r\n  undefined **ppuVar11;\r\n  undefined4 *puVar12;\r\n  undefined4 *puVar13;\r\n  undefined8 uVar14;\r\n  wchar_t *lpSrch;\r\n  undefined1 *lpJobObjectInformation;\r\n  PUINT in_R9;\r\n  undefined8 uVar15;\r\n  undefined8 uVar16;\r\n  longlong alStackX_8 [4];\r\n  undefined8 uStack_40;\r\n  \r\n  uStack_40 = 0x1400086b4;\r\n  uVar5 = FUN_140002620();\r\n  lVar2 = -uVar5;\r\n  *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400086bc;\r\n  FUN_140001530();\r\n  lpFilename = (LPCWSTR)(&stack0x00000178 + lVar2);\r\n  *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400086d4;\r\n  memset(lpFilename,0,0xfffe);\r\n  uVar14 = 0x7fff;\r\n  *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400086e5;\r\n  DVar3 = GetModuleFileNameW((HMODULE)0x0,lpFilename,0x7fff);\r\n  if (DVar3 == 0) {\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008ad8;\r\n    DVar3 = GetLastError();\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008ae6;\r\n    FUN_140002650((ushort *)L\"GetModuleFileName failed, error %d\\n\",(double)(ulonglong)DVar3,uVar14,\r\n                  in_R9);\r\n  }\r\n  else {\r\n    *(undefined4 *)(&stack0x00000028 + lVar2) = 0;\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008702;\r\n    DVar3 = GetFileVersionInfoSizeW(lpFilename,(LPDWORD)(&stack0x00000028 + lVar2));\r\n    if (DVar3 != 0) {\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008a3c;\r\n      lpData = malloc((ulonglong)DVar3);\r\n      if (lpData != (PUINT)0x0) {\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008a5a;\r\n        in_R9 = lpData;\r\n        BVar4 = GetFileVersionInfoW(lpFilename,*(DWORD *)(&stack0x00000028 + lVar2),DVar3,lpData);\r\n        if (BVar4 != 0) {\r\n          *(undefined8 *)(&stack0x00010178 + lVar2) = 0;\r\n          in_R9 = (PUINT)(&stack0x000000e8 + lVar2);\r\n          *(undefined4 *)(&stack0x000000e8 + lVar2) = 0;\r\n          *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008aa0;\r\n          BVar4 = VerQueryValueW(lpData,L\"\\\\StringFileInfo\\\\040904b0\\\\ProductName\",\r\n                                 (LPVOID *)(&stack0x00010178 + lVar2),in_R9);\r\n          if ((BVar4 != 0) && (*(int *)(&stack0x000000e8 + lVar2) != 0)) {\r\n            *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008abc;\r\n            SetConsoleTitleW(*(LPCWSTR *)(&stack0x00010178 + lVar2));\r\n          }\r\n        }\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008a66;\r\n        free(lpData);\r\n      }\r\n    }\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x14000871a;\r\n    pvVar6 = GetStdHandle(0xfffffff5);\r\n    *(undefined4 *)(&stack0x0000002c + lVar2) = 0;\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008733;\r\n    GetConsoleMode(pvVar6,(LPDWORD)(&stack0x0000002c + lVar2));\r\n    uVar1 = *(uint *)(&stack0x0000002c + lVar2);\r\n    ppuVar11 = &PTR_u__console_exe_14000a400;\r\n    *(uint *)(&stack0x0000002c + lVar2) = uVar1 | 5;\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x14000874e;\r\n    SetConsoleMode(pvVar6,uVar1 | 5);\r\n    lpSrch = L\".console.exe\";\r\n    while( true ) {\r\n      dVar10 = 0.0;\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008778;\r\n      pWVar7 = StrRStrIW(lpFilename,(LPCWSTR)0x0,lpSrch);\r\n      if (pWVar7 != (LPWSTR)0x0) break;\r\n      lpSrch = (wchar_t *)ppuVar11[1];\r\n      ppuVar11 = ppuVar11 + 1;\r\n      if (lpSrch == (LPCWSTR)0x0) {\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008a2e;\r\n        FUN_140002650((ushort *)L\"Invalid wrapper executable name.\\n\",dVar10,0,in_R9);\r\n        return 0xffffffff;\r\n      }\r\n    }\r\n    builtin_memcpy(pWVar7,L\".exe\",10);\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008799;\r\n    DVar3 = GetFileAttributesW(lpFilename);\r\n    if ((DVar3 == 0xffffffff) || ((DVar3 & 0x10) != 0)) {\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008acd;\r\n      FUN_140002650((ushort *)L\"Main executable %ls not found.\\n\",(double)lpFilename,lpSrch,in_R9);\r\n      return 0xffffffff;\r\n    }\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400087b8;\r\n    pvVar6 = CreateJobObjectW((LPSECURITY_ATTRIBUTES)0x0,(LPCWSTR)0x0);\r\n    if (pvVar6 == (HANDLE)0x0) {\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b55;\r\n      DVar3 = GetLastError();\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b63;\r\n      FUN_140002650((ushort *)L\"CreateJobObject failed, error %d\\n\",(double)(ulonglong)DVar3,lpSrch,\r\n                    in_R9);\r\n      return 0xffffffff;\r\n    }\r\n    uVar15 = 1;\r\n    uVar14 = 0;\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400087dc;\r\n    CompletionPort = CreateIoCompletionPort((HANDLE)0xffffffffffffffff,(HANDLE)0x0,0,1);\r\n    if (CompletionPort == (HANDLE)0x0) {\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b6e;\r\n      DVar3 = GetLastError();\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b7c;\r\n      FUN_140002650((ushort *)L\"CreateIoCompletionPort failed, error %d\\n\",(double)(ulonglong)DVar3,\r\n                    uVar14,uVar15);\r\n      return 0xffffffff;\r\n    }\r\n    *(HANDLE *)(&stack0x00000048 + lVar2) = pvVar6;\r\n    uVar14 = 0x10;\r\n    *(HANDLE *)(&stack0x00000050 + lVar2) = CompletionPort;\r\n    lpJobObjectInformation = &stack0x00000048 + lVar2;\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008818;\r\n    BVar4 = SetInformationJobObject\r\n                      (pvVar6,JobObjectAssociateCompletionPortInformation,lpJobObjectInformation,\r\n                       0x10);\r\n    if (BVar4 == 0) {\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b23;\r\n      DVar3 = GetLastError();\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b31;\r\n      FUN_140002650((ushort *)\r\n                    L\"SetInformationJobObject(AssociateCompletionPortInformation) failed, error %d\\n\"\r\n                    ,(double)(ulonglong)DVar3,lpJobObjectInformation,uVar14);\r\n      return 0xffffffff;\r\n    }\r\n    puVar13 = (undefined4 *)(&stack0x000000e8 + lVar2);\r\n    uVar14 = 0x90;\r\n    puVar12 = puVar13;\r\n    for (lVar9 = 0x24; lVar9 != 0; lVar9 = lVar9 + -1) {\r\n      *puVar12 = 0;\r\n      puVar12 = puVar12 + 1;\r\n    }\r\n    *(undefined4 *)(&stack0x000000f8 + lVar2) = 0x2000;\r\n    *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008851;\r\n    BVar4 = SetInformationJobObject(pvVar6,JobObjectExtendedLimitInformation,puVar13,0x90);\r\n    if (BVar4 == 0) {\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b3c;\r\n      DVar3 = GetLastError();\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b4a;\r\n      FUN_140002650((ushort *)\r\n                    L\"SetInformationJobObject(ExtendedLimitInformation) failed, error %d\\n\",\r\n                    (double)(ulonglong)DVar3,puVar13,uVar14);\r\n    }\r\n    else {\r\n      *(undefined4 *)(&stack0x00000078 + lVar2) = 0x68;\r\n      puVar13 = (undefined4 *)(&stack0x00000058 + lVar2);\r\n      for (lVar9 = 6; lVar9 != 0; lVar9 = lVar9 + -1) {\r\n        *puVar13 = 0;\r\n        puVar13 = puVar13 + 1;\r\n      }\r\n      *(undefined1 **)((longlong)alStackX_8 + lVar2 + 0x18) = &stack0x00000078 + lVar2;\r\n      puVar13 = (undefined4 *)(&stack0x0000007c + lVar2);\r\n      for (lVar9 = 0x19; lVar9 != 0; lVar9 = lVar9 + -1) {\r\n        *puVar13 = 0;\r\n        puVar13 = puVar13 + 1;\r\n      }\r\n      *(undefined4 *)(&stack0x000000b4 + lVar2) = 0x100;\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400088a7;\r\n      pvVar8 = GetStdHandle(0xfffffff6);\r\n      *(HANDLE *)(&stack0x000000c8 + lVar2) = pvVar8;\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400088b6;\r\n      pvVar8 = GetStdHandle(0xfffffff5);\r\n      *(HANDLE *)(&stack0x000000d0 + lVar2) = pvVar8;\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400088c5;\r\n      pvVar8 = GetStdHandle(0xfffffff4);\r\n      *(HANDLE *)(&stack0x000000d8 + lVar2) = pvVar8;\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400088d3;\r\n      pWVar7 = GetCommandLineW();\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400088dc;\r\n      pWVar7 = PathGetArgsW(pWVar7);\r\n      *(LPWSTR *)(&stack0xfffffffffffffff0 + lVar2) = pWVar7;\r\n      *(LPCWSTR *)(&stack0xffffffffffffffe8 + lVar2) = lpFilename;\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008907;\r\n      _snwprintf_s((wchar_t *)(&stack0x00010178 + lVar2),0x7fff,0xffffffffffffffff,L\"%ls %ls\");\r\n      uVar14 = *(undefined8 *)((longlong)alStackX_8 + lVar2 + 0x18);\r\n      uVar16 = 0;\r\n      *(undefined8 *)((longlong)alStackX_8 + lVar2 + -8) = 0;\r\n      *(undefined8 *)(&stack0xfffffffffffffff8 + lVar2) = 0;\r\n      uVar15 = 0;\r\n      *(undefined1 **)((longlong)alStackX_8 + lVar2 + 8) = &stack0x00000058 + lVar2;\r\n      *(undefined8 *)((longlong)alStackX_8 + lVar2) = uVar14;\r\n      *(undefined4 *)(&stack0xfffffffffffffff0 + lVar2) = 4;\r\n      *(undefined4 *)(&stack0xffffffffffffffe8 + lVar2) = 1;\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008949;\r\n      BVar4 = CreateProcessW((LPCWSTR)0x0,(LPWSTR)(&stack0x00010178 + lVar2),\r\n                             (LPSECURITY_ATTRIBUTES)0x0,(LPSECURITY_ATTRIBUTES)0x0,\r\n                             *(BOOL *)(&stack0xffffffffffffffe8 + lVar2),\r\n                             *(DWORD *)(&stack0xfffffffffffffff0 + lVar2),\r\n                             *(LPVOID *)(&stack0xfffffffffffffff8 + lVar2),\r\n                             *(LPCWSTR *)((longlong)alStackX_8 + lVar2 + -8),\r\n                             *(LPSTARTUPINFOW *)((longlong)alStackX_8 + lVar2),\r\n                             *(LPPROCESS_INFORMATION *)((longlong)alStackX_8 + lVar2 + 8));\r\n      if (BVar4 == 0) {\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008af1;\r\n        DVar3 = GetLastError();\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008aff;\r\n        FUN_140002650((ushort *)L\"CreateProcess failed, error %d\\n\",(double)(ulonglong)DVar3,uVar15,\r\n                      uVar16);\r\n        return 0xffffffff;\r\n      }\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008962;\r\n      BVar4 = AssignProcessToJobObject(pvVar6,*(HANDLE *)(&stack0x00000058 + lVar2));\r\n      if (BVar4 != 0) {\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x14000897d;\r\n        ResumeThread(*(HANDLE *)(&stack0x00000060 + lVar2));\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x14000898f;\r\n        CloseHandle(*(HANDLE *)(&stack0x00000060 + lVar2));\r\n        *(undefined4 *)(&stack0x00000030 + lVar2) = 0;\r\n        *(undefined8 *)(&stack0x00000038 + lVar2) = 0;\r\n        *(undefined8 *)(&stack0x00000040 + lVar2) = 0;\r\n        do {\r\n          *(undefined4 *)(&stack0xffffffffffffffe8 + lVar2) = 0xffffffff;\r\n          *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400089ca;\r\n          BVar4 = GetQueuedCompletionStatus\r\n                            (CompletionPort,(LPDWORD)(&stack0x00000030 + lVar2),\r\n                             (PULONG_PTR)(&stack0x00000038 + lVar2),\r\n                             (LPOVERLAPPED *)(&stack0x00000040 + lVar2),\r\n                             *(DWORD *)(&stack0xffffffffffffffe8 + lVar2));\r\n          if (BVar4 == 0) break;\r\n        } while ((pvVar6 != *(HANDLE *)(&stack0x00000038 + lVar2)) ||\r\n                (*(int *)(&stack0x00000030 + lVar2) != 4));\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400089e2;\r\n        CloseHandle(pvVar6);\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x1400089e8;\r\n        CloseHandle(CompletionPort);\r\n        *(undefined4 *)(&stack0x00000034 + lVar2) = 0;\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008a01;\r\n        GetExitCodeProcess(*(HANDLE *)(&stack0x00000058 + lVar2),(LPDWORD)(&stack0x00000034 + lVar2)\r\n                          );\r\n        *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008a0c;\r\n        CloseHandle(*(HANDLE *)(&stack0x00000058 + lVar2));\r\n        return *(undefined4 *)(&stack0x00000034 + lVar2);\r\n      }\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b0a;\r\n      DVar3 = GetLastError();\r\n      *(undefined8 *)((longlong)&uStack_40 + lVar2) = 0x140008b18;\r\n      FUN_140002650((ushort *)L\"AssignProcessToJobObject failed, error %d\\n\",\r\n                    (double)(ulonglong)DVar3,uVar15,uVar16);\r\n    }\r\n  }\r\n  return 0xffffffff;\r\n}\r\n\r\n",
+  "confidence": "observed",
+  "authority": "shipped-artifact",
+  "environment": null,
+  "limitations": [
+    "The session serves operations only after Ghidra reports default auto-analysis complete; incomplete analysis does not expose partial results.",
+    "The imported Program and temporary project are ephemeral and deleted on close. Annotation operations edit session database metadata; original executable bytes are never written.",
+    "Cancelling an active Ghidra request terminates its ephemeral database and discards session annotations. The selected target remains open; the next provider query imports the original artifact again.",
+    "Default-space addresses use lowercase 0x-prefixed hexadecimal; other address spaces use <percent-encoded-space>:0x<hex>.",
+    "Pseudocode is Ghidra decompiler output, not original source and not text-equivalent to Hopper output.",
+    "External functions and functions without an analyzable body return null; other decompiler failures remain explicit.",
+    "Windows Ghidra P0 accepts native x86, x86-64, ARMNT (Thumb-2) and ARM64 PE applications and DLLs, and explicitly selected raw 6502 images; managed, hostile, sensitive, and mutable-path targets are unsupported.",
+    "The Windows bridge uses authenticated IPv4 loopback because Node path-based IPC does not expose Java AF_UNIX sockets; the endpoint file contains no bearer token.",
+    "Windows sessions require the matching packaged Windows x64 native addon, local NTFS targets and runtimes, and Windows 10 or later. Native handles enforce path admission, private DACLs, and Job Object ownership automatically."
+  ],
+  "relationship_coverage": null,
+  "locations": [],
+  "evidence_links": []
+}

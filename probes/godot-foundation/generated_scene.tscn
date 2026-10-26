@@ -1,0 +1,5 @@
+[gd_scene format=3]
+
+[node name="ResearchScene" type="Node2D" unique_id=158313105]
+
+[node name="SavedChild" type="Node2D" parent="." unique_id=1721958337]

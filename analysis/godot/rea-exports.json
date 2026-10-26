@@ -1,0 +1,88 @@
+{
+  "evidence_id": "ev_df46345c41283e3b883aebd21ccb79c8138f2176501171b44fcbb85ef9674a38",
+  "subject": {
+    "name": "Godot_v4.7.2-stable_win64.exe",
+    "digest": {
+      "sha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424"
+    },
+    "local_path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\godot-4.7.2\\bin\\Godot_v4.7.2-stable_win64.exe",
+    "format": "pe",
+    "architecture": null
+  },
+  "provider": {
+    "id": "rea-native-exports",
+    "name": "REA PE/ELF export table reader",
+    "version": "1"
+  },
+  "analysis_profile": null,
+  "predicate_type": "rea.analysis",
+  "operation": "inspect_native_exports",
+  "parameters": {
+    "path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\godot-4.7.2\\bin\\Godot_v4.7.2-stable_win64.exe",
+    "max_file_bytes": 268435456
+  },
+  "raw_result": null,
+  "normalized_result": {
+    "artifact": {
+      "path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\godot-4.7.2\\bin\\Godot_v4.7.2-stable_win64.exe",
+      "sha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+      "bytes": 180858888
+    },
+    "format": "pe",
+    "architecture": "amd64",
+    "bits": 64,
+    "export_directory": {
+      "rva": 181911552,
+      "size": 170,
+      "dll_name": "godot.windows.editor.x86_64.exe",
+      "ordinal_base": 1,
+      "timestamp": 1786930510
+    },
+    "exports": [
+      {
+        "name": "AmdPowerXpressRequestHighPerformance",
+        "ordinal": 1,
+        "address": "0x14667f000",
+        "forwarder": null
+      },
+      {
+        "name": "NoHotPatch",
+        "ordinal": 2,
+        "address": "0x140002c30",
+        "forwarder": null
+      },
+      {
+        "name": "NvOptimusEnablement",
+        "ordinal": 3,
+        "address": "0x14667f004",
+        "forwarder": null
+      }
+    ],
+    "coverage": {
+      "status": "complete",
+      "reason": null,
+      "examined_entries": 3,
+      "exports": 3
+    },
+    "issues": [],
+    "limitations": [
+      "Rows reproduce the PE export directory; they do not establish that an export is reachable, safe to call or loaded at runtime.",
+      "Forwarded exports resolve in another DLL, which is not opened; ordinal-only exports have no name in this image."
+    ]
+  },
+  "confidence": "observed",
+  "authority": "shipped-artifact",
+  "environment": null,
+  "limitations": [
+    "Rows reproduce the PE export directory; they do not establish that an export is reachable, safe to call or loaded at runtime.",
+    "Forwarded exports resolve in another DLL, which is not opened; ordinal-only exports have no name in this image."
+  ],
+  "relationship_coverage": null,
+  "locations": [
+    {
+      "kind": "artifact-path",
+      "path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\godot-4.7.2\\bin\\Godot_v4.7.2-stable_win64.exe"
+    }
+  ],
+  "evidence_links": []
+}

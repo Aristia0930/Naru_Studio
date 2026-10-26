@@ -1,0 +1,94 @@
+{
+  "tag": "4.7.2-stable",
+  "source_commit": "ed1daf0bf001b61586d9930840f2f1394092c079",
+  "release_url": "https://github.com/godotengine/godot-builds/releases/tag/4.7.2-stable",
+  "asset_url": "https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip",
+  "official_asset_digest": "sha256:731980f9608d61333e5baf54a2ef17210acc7a538446c0cb9969f002aca1e953",
+  "actual_asset_digest": "sha256:731980f9608d61333e5baf54a2ef17210acc7a538446c0cb9969f002aca1e953",
+  "binary_files": [
+    {
+      "name": "Godot_v4.7.2-stable_win64.exe",
+      "sha256": "ab1824f85bfd8e0e4128182c000c4003a3e042245b2967848d089b2a04b22424",
+      "bytes": 180858888
+    },
+    {
+      "name": "Godot_v4.7.2-stable_win64_console.exe",
+      "sha256": "c8f0a6bc45a19b33541501e57f6f7cd972ab18453743266339d495cbbe846643",
+      "bytes": 198152
+    }
+  ],
+  "source_scope": "Selected source excerpts only, not a complete repository",
+  "sources": [
+    {
+      "path": "LICENSE.txt",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/LICENSE.txt",
+      "sha256": "b0435e3b3e4e55238f05f4b306f30524a1b2e20147810d436eaa554fa6855c80",
+      "bytes": 1149
+    },
+    {
+      "path": "scene/main/node.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/scene/main/node.cpp",
+      "sha256": "0db10a968bd027fec03f6b78ddf793660001f61eacb369cf4cf2cf6dd48f2b80",
+      "bytes": 130466
+    },
+    {
+      "path": "scene/main/scene_tree.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/scene/main/scene_tree.cpp",
+      "sha256": "eed6dbff323344efff19f2de6763705aff062a76e00fd7cbe42a4ee849b7e5a4",
+      "bytes": 75907
+    },
+    {
+      "path": "scene/resources/packed_scene.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/scene/resources/packed_scene.cpp",
+      "sha256": "0f94c3728f2415a03c0383536fa586a17788fc96597ea292827aa798b0c84b66",
+      "bytes": 85129
+    },
+    {
+      "path": "core/object/object.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/core/object/object.cpp",
+      "sha256": "d16943098177c719820de78f664d4cde3a9c4f997f25ccfa6a1f9b7e18098bd4",
+      "bytes": 76810
+    },
+    {
+      "path": "core/io/resource.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/core/io/resource.cpp",
+      "sha256": "d6bf138aae0c24f06c1456e20d4bcc37cc47d7bac4616cc8e7cb3934b3bfffd2",
+      "bytes": 28597
+    },
+    {
+      "path": "core/io/resource_loader.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/core/io/resource_loader.cpp",
+      "sha256": "35de9b6e4771228fcb61d90248b5f79cc036768c6a046635647970ebd4db9173",
+      "bytes": 59294
+    },
+    {
+      "path": "scene/2d/physics/character_body_2d.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/scene/2d/physics/character_body_2d.cpp",
+      "sha256": "8ca8564b3de89081232c3aea983d91096985f76cd4619f809f5eaca8ef10f200",
+      "bytes": 31953
+    },
+    {
+      "path": "scene/2d/camera_2d.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/scene/2d/camera_2d.cpp",
+      "sha256": "33708375bad0f8983644bcf13e15195333f6d8de4efa65f1b1c18cf8591216fa",
+      "bytes": 37967
+    },
+    {
+      "path": "editor/inspector/editor_inspector.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/editor/inspector/editor_inspector.cpp",
+      "sha256": "fe45a1c885a03c95bd0954feb7bffdc0c4772d42319d3324ac80a0eb5abd315f",
+      "bytes": 223585
+    },
+    {
+      "path": "editor/scene/scene_tree_dock.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/editor/scene/scene_tree_dock.cpp",
+      "error": "HTTP Error 404: Not Found"
+    },
+    {
+      "path": "editor/editor_undo_redo_manager.cpp",
+      "url": "https://raw.githubusercontent.com/godotengine/godot/ed1daf0bf001b61586d9930840f2f1394092c079/editor/editor_undo_redo_manager.cpp",
+      "sha256": "1c15631d3ba66e878aad02b9c22fbcdcd3713875f5e192bb8216b7081f1aea03",
+      "bytes": 20621
+    }
+  ]
+}

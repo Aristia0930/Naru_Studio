@@ -1,0 +1,11 @@
+{
+  "input_path": "C:\\Users\\kjk98\\OneDrive\\바탕 화면\\game\\engine-tool\\refs\\rpgmaker-mv-corescript",
+  "format": "directory",
+  "detail": "summary",
+  "source_paths": [
+    "js/rpg_managers/DataManager.js",
+    "js/rpg_managers/BattleManager.js",
+    "js/rpg_objects/Game_Event.js",
+    "js/rpg_objects/Game_Interpreter.js"
+  ]
+}

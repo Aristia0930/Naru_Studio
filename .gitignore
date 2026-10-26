@@ -1,0 +1,37 @@
+# Generated development files and local settings
+.env
+.env.*
+!.env.example
+.codex/
+.agents/
+.idea/
+.vs/
+.vscode/
+__pycache__/
+*.py[cod]
+.venv/
+.cache/
+.tools/
+build/
+build-*/
+out/
+CMakeUserPresets.json
+
+# Analysis-engine distributions (download separately)
+/ghidra_*/
+/ghidra_*.zip
+/refs/godot-*/bin/
+/refs/godot-*/*.zip
+/refs/unity-csreference/source/
+/analysis/rea-connection/native-verification/*.exe
+
+# Experimental Godot caches, logs and generated test artifacts
+**/.godot/
+/app/logs/
+/app/test-output/
+/app/workspaces/
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
