@@ -12,10 +12,14 @@ RPG Maker의 데이터베이스·맵·이벤트·전투 등 제작 기능을 출
 
 ## 현재 상태
 
-**C++/Qt/Python 제품 구현은 아직 시작 전입니다.** 조사 자료와 과거 Godot 실험본을 이관하고 새 엔진 구축 계획을 정리한 상태입니다. 새 엔진의 설치 파일이나 실행 파일이 이미 완성된 것은 아닙니다.
+**M0(개발 환경 + 최소 빌드)을 완료했습니다.** C++ 엔진 라이브러리·Python 임베딩·Qt 제작툴 창이 CMake로 빌드되고 테스트 3종(엔진 7·Python 8 케이스·에디터 스모크)이 통과합니다. 장면·이벤트 편집 UI, 대기형 스크립트, 렌더링/오디오, 배포는 아직 없습니다. 빌드 방법은 **[docs/BUILD.md](docs/BUILD.md)**.
 
 | 위치 | 내용 |
 |---|---|
+| `engine/` | Qt 비의존 엔진: 로그, 변수, 이벤트 명령 실행기(running/waiting/completed/failed/cancelled), 고정 틱 Session |
+| `scripting/python/` | CPython 임베딩: `run(ctx)` 호출, `ctx.variables`/`ctx.log`, print→로그, 오류 파일·행·traceback |
+| `editor/` | Qt Widgets 제작툴(`NaruStudio.exe`): 스크립트 편집·문법 검사(F7)·실행(F5)·로그·결과 변수 |
+| `tests/` | 엔진·Python 테스트와 테스트용 스크립트 |
 | `analysis/rpgmaker/` | RPG Maker 과거 분석 01~07, MV 코어 4파일 REA 재조사 08, 요약/원시 Evidence |
 | `analysis/godot/` | Godot 소스 관측·실행 검증·REA export·Ghidra 콘솔 래퍼 분석 |
 | `analysis/unity/` | 설치 확인·문서 비교, REA 메타데이터/7타입 관측과 인스펙터·직렬화·Undo·프리팹 공개 소스 조사 |
@@ -34,7 +38,7 @@ git clone https://github.com/Aristia0930/Naru_Studio.git
 cd Naru_Studio
 ```
 
-이후 `NARU_NEXT_STEPS.md`를 읽고 개발 도구부터 준비합니다. C++ 컴파일러·Qt kit·CMake·Python 임베딩 버전과 빌드 설정은 다음 작업에서 검증하고 고정합니다. 현재 문서에 없는 빌드 명령을 동작이 검증된 것처럼 안내하지 않습니다. 개발 도구와 SDK를 Git에 묶어 올리는 대신 설치 방법/버전을 기록합니다.
+이후 [docs/BUILD.md](docs/BUILD.md)대로 VS 2022 Build Tools·CMake·Ninja·Qt 6.8.3·Python 3.13+를 준비하고 빌드합니다. 개발 도구와 SDK를 Git에 묶어 올리는 대신 설치 방법/버전을 기록합니다.
 
 Godot·Ghidra·REA는 이전 조사 도구이며 새 엔진의 필수 실행 환경이 아닙니다. 참고 자료를 조사할 때만 별도로 준비합니다. PC별 경로·캐시·자격증명을 공유하지 않습니다.
 

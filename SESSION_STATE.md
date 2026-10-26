@@ -2,7 +2,18 @@
 
 이 파일은 게임 기획/에셋 기록과 별개인 제작툴 전용 기록이다. 개발툴 재개 시 NARU_NEXT_STEPS.md와 이 파일을 먼저 읽고 실제 환경을 확인한다. 최신 사용자 지시가 우선한다.
 
-## 최신 종료·재개 기준 — 2026-10-27
+## M0 완료 — 2026-10-27 (다른 PC: DKSYSTEMS)
+
+- 저장소를 새 PC에 clone해 이어감. 이 PC에는 MSVC·CMake·Qt가 없어서 사용자 승인 후 설치: VS 2022 Build Tools(MSVC 14.44, C++ 워크로드), CMake 4.4.4, Ninja 1.13.2(winget), **Qt 6.8.3 LTS msvc2022_64**(aqtinstall → `C:\Qt`). Python은 기존 **3.14.3 x64**(헤더·lib 포함) 사용.
+- 이 PC는 Python HTTPS가 `SSLError`(인증서 검사 환경)로 실패했다. aqt venv에 `pip-system-certs`를 넣어 해결. curl은 정상.
+- 새 소스: `CMakeLists.txt`, `CMakePresets.json`(windows-msvc / engine-only), `engine/`(Log, Value/Variables, Command·EventRunner·기본 명령 Log/Wait/SetVariable/Call, 고정 틱 Session), `scripting/python/`(PythonRuntime: 격리 config, `_naru` 내장 모듈 + `naru.Context`, print→로그, 오류 파일·행·traceback, 매 실행 파일 재로드), `editor/`(Qt Widgets `NaruStudio.exe`), `tests/`, `docs/BUILD.md`, `tools/build.ps1`.
+- **검증:** RelWithDebInfo 빌드 경고 0(/W4). ctest 3/3 통과 — 엔진 7케이스, Python 8케이스, 에디터 스모크. 에디터에 `runtime_error.py --run`을 열어 오류 행 선택·로그 위치 표시를 스크린샷으로 확인.
+- 테스트가 실제 버그 1건을 잡음: `PyErr_Format`에 한글 서식 문자열 → ValueError로 바뀜. `PyErr_SetString`으로 수정.
+- **미검증:** `tools/build.ps1`은 이 세션에서 실행 정책 우회가 차단되어 직접 실행하지 못했다(같은 단계를 수동으로 실행해 검증). 다른 PC에서의 clone→빌드 재현, Debug 구성(python314_d.lib 필요)도 미검증.
+- **아직 없음:** async/대기형 스크립트(명확한 NotImplementedError로 보고), 실시간 게임 루프 연결, 장면·이벤트·인스펙터 UI, JSON 프로젝트 저장, 렌더링/오디오(SDL3 등 미정), 배포.
+- 다음: M1 나머지 — Project/Scene/Object 데이터와 JSON 왕복 저장, 에디터에서 Session을 QTimer 실시간 루프로 돌리고 F8 중지, 대기형 Python 명령(awaitable) 설계.
+
+## 이전 종료·재개 기준 — 2026-10-27
 
 - 새 `game_tool` 폴더로 548개 파일을 복사해 SHA-256 대조 완료. 후속 Unity REA/공개 소스 조사와 최신 문서를 추가 동기화했다. 원본 game/engine-tool은 보존용이며 구현은 새 폴더에서만 진행한다. 새 폴더의 MIGRATION_MANIFEST.json/HANDOFF_MANIFEST.json이 각각 초기/추가 이관의 근거다. 원격 푸시 결과는 Git HEAD와 origin/main 대조로 별도 확인한다.
 

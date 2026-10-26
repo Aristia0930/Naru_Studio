@@ -1,0 +1,44 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 25, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "windows-msvc",
+      "displayName": "Windows x64 MSVC + Ninja (RelWithDebInfo)",
+      "description": "VS 2022 개발자 환경에서 실행한다. Qt/Python 경로는 NARU_QT_DIR/NARU_PYTHON_DIR 환경변수 또는 CMakeUserPresets.json으로 지정한다.",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+        "CMAKE_PREFIX_PATH": "$env{NARU_QT_DIR}",
+        "Python3_ROOT_DIR": "$env{NARU_PYTHON_DIR}"
+      },
+      "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
+    },
+    {
+      "name": "windows-msvc-engine-only",
+      "inherits": "windows-msvc",
+      "displayName": "Windows x64 MSVC — 엔진만 (Qt·Python 없이)",
+      "cacheVariables": {
+        "NARU_BUILD_PYTHON": "OFF",
+        "NARU_BUILD_EDITOR": "OFF"
+      }
+    }
+  ],
+  "buildPresets": [
+    { "name": "windows-msvc", "configurePreset": "windows-msvc" },
+    { "name": "windows-msvc-engine-only", "configurePreset": "windows-msvc-engine-only" }
+  ],
+  "testPresets": [
+    {
+      "name": "windows-msvc",
+      "configurePreset": "windows-msvc",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "windows-msvc-engine-only",
+      "configurePreset": "windows-msvc-engine-only",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}
