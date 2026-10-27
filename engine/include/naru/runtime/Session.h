@@ -18,7 +18,8 @@ const char* toString(SessionState state);
 // 게임 로직은 고정 간격(기본 1/60초)으로 진행하고, 표시 쪽은 advance()에 실제 경과 시간을 넘긴다.
 class Session {
 public:
-    explicit Session(const Variables& initialVariables, double fixedStep = 1.0 / 60.0);
+    explicit Session(const Variables& initialVariables, double fixedStep = 1.0 / 60.0,
+                     DialogueHost* dialogue = nullptr);
     // ctx_가 자기 멤버를 참조하므로 복사·이동하지 않는다.
     Session(const Session&) = delete;
     Session& operator=(const Session&) = delete;

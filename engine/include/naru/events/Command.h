@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstddef>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -12,10 +14,22 @@ enum class CommandStatus { Pending, Running, Waiting, Completed, Failed, Cancell
 
 const char* toString(CommandStatus status);
 
+// 대사 창을 보여 주는 쪽 (에디터 미리보기, 이후 게임 화면). 플레이어가 넘길 때까지 대사 명령이 기다린다.
+class DialogueHost {
+public:
+    virtual ~DialogueHost() = default;
+    virtual void showMessage(const std::string& speaker, const std::string& text) = 0;
+    virtual bool messageClosed() const = 0;
+    virtual void closeMessage() = 0;
+};
+
 // 명령이 실행 중 접근할 수 있는 세션 상태. 편집 문서가 아니라 실행용 복사본을 가리킨다.
 struct CommandContext {
     Variables& variables;
     Logger& logger;
+    DialogueHost* dialogue = nullptr;
+    // 명령이 Completed와 함께 설정하면 다음 명령 대신 이 위치로 이동한다 (조건 분기).
+    std::optional<std::size_t> jump{};
 };
 
 // 이벤트 명령 하나. start()에서 즉시 끝나면 Completed를, 시간이 필요하면 Waiting을 반환하고

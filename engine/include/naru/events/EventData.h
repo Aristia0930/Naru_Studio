@@ -1,0 +1,60 @@
+#pragma once
+
+#include "naru/core/Value.h"
+
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace naru {
+
+// 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
+enum class EventCommandType { Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment };
+enum class VariableOp { Set, Add, Subtract };
+enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
+
+struct EventCommand {
+    EventCommandType type = EventCommandType::Comment;
+
+    std::string speaker;            // Say
+    std::string text;               // Say 대사, Log 메시지, Comment 내용
+    double seconds = 0.0;           // Wait
+    std::string variable;           // SetVariable, IfVariable
+    VariableOp op = VariableOp::Set; // SetVariable
+    CompareOp compare = CompareOp::Equal; // IfVariable
+    Value value;                    // SetVariable, IfVariable
+    std::string script;             // CallScript: scripts/ 안의 파일 이름
+    std::string function = "run";   // CallScript
+    std::vector<EventCommand> thenCommands; // IfVariable
+    std::vector<EventCommand> elseCommands; // IfVariable
+
+    bool operator==(const EventCommand& other) const;
+};
+
+// 이벤트가 시작되는 조건. 게임 실행 화면이 생기면 런타임이 이 값을 사용한다.
+enum class EventTrigger { Action, Touch, Autorun };
+
+struct ObjectEvent {
+    EventTrigger trigger = EventTrigger::Action;
+    std::vector<EventCommand> commands;
+
+    bool operator==(const ObjectEvent& other) const;
+};
+
+// 저장 형식의 문자열 이름 ("say", "if_variable", ">=" ...).
+const char* toKey(EventCommandType type);
+const char* toKey(VariableOp op);
+const char* toKey(CompareOp op);
+const char* toKey(EventTrigger trigger);
+std::optional<EventCommandType> commandTypeFromKey(const std::string& key);
+std::optional<VariableOp> variableOpFromKey(const std::string& key);
+std::optional<CompareOp> compareOpFromKey(const std::string& key);
+std::optional<EventTrigger> triggerFromKey(const std::string& key);
+
+// 명령 위치 ID. 최상위 i번째는 "i", 조건 분기 안은 "<분기 ID>/t/<i>" 또는 "<분기 ID>/e/<i>".
+// 실행 오류 위치를 편집 화면의 명령과 연결하는 데 쓴다.
+std::string commandId(const std::string& listPrefix, std::size_t index);
+std::string thenPrefix(const std::string& id);
+std::string elsePrefix(const std::string& id);
+
+} // namespace naru

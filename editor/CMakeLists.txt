@@ -7,8 +7,24 @@ qt_standard_project_setup()
 
 qt_add_executable(naru_editor
   main.cpp
+  CommandDialog.cpp
+  CommandDialog.h
+  EventEditor.cpp
+  EventEditor.h
+  Inspector.cpp
+  Inspector.h
   MainWindow.cpp
   MainWindow.h
+  ProjectDocument.cpp
+  ProjectDocument.h
+  SceneView.cpp
+  SceneView.h
+  ScriptEditor.cpp
+  ScriptEditor.h
+  StartDialog.cpp
+  StartDialog.h
+  UndoCommands.cpp
+  UndoCommands.h
 )
 
 set_target_properties(naru_editor PROPERTIES

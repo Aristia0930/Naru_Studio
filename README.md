@@ -12,14 +12,17 @@ RPG Maker의 데이터베이스·맵·이벤트·전투 등 제작 기능을 출
 
 ## 현재 상태
 
-**M0(개발 환경 + 최소 빌드)을 완료했습니다.** C++ 엔진 라이브러리·Python 임베딩·Qt 제작툴 창이 CMake로 빌드되고 테스트 3종(엔진 7·Python 8 케이스·에디터 스모크)이 통과합니다. 장면·이벤트 편집 UI, 대기형 스크립트, 렌더링/오디오, 배포는 아직 없습니다. 빌드 방법은 **[docs/BUILD.md](docs/BUILD.md)**.
+**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 테스트 6종(엔진·프로젝트 저장·Python·에디터 스모크·에디터 자동 편집 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. 이미지·음원, 데이터베이스, 선택지, 실제 게임 실행 화면, 배포는 아직 없습니다. **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md).
 
 | 위치 | 내용 |
 |---|---|
-| `engine/` | Qt 비의존 엔진: 로그, 변수, 이벤트 명령 실행기(running/waiting/completed/failed/cancelled), 고정 틱 Session |
+| `engine/` | Qt 비의존 엔진: 로그, 변수, 이벤트 명령 실행기, 고정 틱 Session, **프로젝트 모델·JSON 저장/불러오기·검증** |
 | `scripting/python/` | CPython 임베딩: `run(ctx)` 호출, `ctx.variables`/`ctx.log`, print→로그, 오류 파일·행·traceback |
-| `editor/` | Qt Widgets 제작툴(`NaruStudio.exe`): 스크립트 편집·문법 검사(F7)·실행(F5)·로그·결과 변수 |
-| `tests/` | 엔진·Python 테스트와 테스트용 스크립트 |
+| `editor/` | Qt Widgets 제작툴: 시작 화면(새로 만들기/열기/최근), 장면 트리, 2D 캔버스(드래그 배치·휠 확대), 인스펙터, Undo/Redo, 스크립트 탭, 로그 |
+| `tests/` | 엔진·프로젝트·Python 테스트와 테스트용 스크립트 |
+| `third_party/` | nlohmann/json 3.11.3 (MIT) |
+
+프로젝트 폴더 구조: `project.json`(이름·형식 버전·시작 장면·장면 순서), `scenes/<id>.json`, `scripts/*.py`, `assets/`.
 | `analysis/rpgmaker/` | RPG Maker 과거 분석 01~07, MV 코어 4파일 REA 재조사 08, 요약/원시 Evidence |
 | `analysis/godot/` | Godot 소스 관측·실행 검증·REA export·Ghidra 콘솔 래퍼 분석 |
 | `analysis/unity/` | 설치 확인·문서 비교, REA 메타데이터/7타입 관측과 인스펙터·직렬화·Undo·프리팹 공개 소스 조사 |

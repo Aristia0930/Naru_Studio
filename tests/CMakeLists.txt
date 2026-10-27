@@ -2,6 +2,14 @@ add_executable(naru_engine_tests engine_tests.cpp)
 target_link_libraries(naru_engine_tests PRIVATE naru_engine)
 add_test(NAME engine COMMAND naru_engine_tests)
 
+add_executable(naru_event_tests event_tests.cpp)
+target_link_libraries(naru_event_tests PRIVATE naru_engine)
+add_test(NAME events COMMAND naru_event_tests)
+
+add_executable(naru_project_tests project_tests.cpp)
+target_link_libraries(naru_project_tests PRIVATE naru_engine)
+add_test(NAME project COMMAND naru_project_tests)
+
 if(NARU_BUILD_PYTHON)
   add_executable(naru_python_tests python_tests.cpp)
   target_link_libraries(naru_python_tests PRIVATE naru_python)
@@ -13,6 +21,13 @@ if(NARU_BUILD_PYTHON)
 endif()
 
 if(NARU_BUILD_EDITOR)
-  # 창을 띄운 뒤 일정 시간 후 스스로 닫히는지 확인하는 스모크 테스트.
-  add_test(NAME editor_smoke COMMAND naru_editor --smoke-test 1500)
+  # 매번 새 프로젝트를 만들어 연다.
+  set(_naru_smoke_project ${CMAKE_BINARY_DIR}/test_projects/smoke)
+  add_test(NAME editor_smoke_prepare COMMAND ${CMAKE_COMMAND} -E rm -rf ${_naru_smoke_project})
+  # 창을 띄운 뒤 일정 시간 후 스스로 닫히는지 확인한다.
+  add_test(NAME editor_smoke COMMAND naru_editor --new-project ${_naru_smoke_project} --smoke-test 1500)
+  # 객체 추가·이동·Undo·저장·재로드·스크립트 실행을 실제 창에서 검사한다.
+  add_test(NAME editor_selftest COMMAND naru_editor --new-project ${_naru_smoke_project} --self-test)
+  set_tests_properties(editor_smoke PROPERTIES DEPENDS editor_smoke_prepare)
+  set_tests_properties(editor_selftest PROPERTIES DEPENDS editor_smoke)
 endif()

@@ -2,6 +2,27 @@
 
 이 파일은 게임 기획/에셋 기록과 별개인 제작툴 전용 기록이다. 개발툴 재개 시 NARU_NEXT_STEPS.md와 이 파일을 먼저 읽고 실제 환경을 확인한다. 최신 사용자 지시가 우선한다.
 
+## 이벤트 편집기 — 2026-10-27
+
+- 엔진: `EventData`(명령 7종: say/wait/set_variable/if_variable/log/call_script/comment, 실행 조건 action/touch/autorun), `EventCompiler`(조건 분기를 점프로 펼침, 명령 ID = 편집 위치 "1/t/0"), `DialogueHost`(대사는 넘길 때까지 대기), EventRunner 점프·즉시 명령 1만 개 한도. 없는 변수는 숫자 연산/비교에서 0. 스크립트 호출은 ScriptRunner 콜백으로 엔진이 Python에 직접 의존하지 않음.
+- 저장: 객체 `event` 필드. JSON 읽기는 nlohmann 예외 대신 필드별 한국어 오류("'x'은(는) 숫자이어야 합니다"). 중첩 32단계 제한.
+- 에디터: "이벤트" 탭(EventEditor) — 명령 트리, 빈 ◆ 줄 더블클릭 추가, CommandDialog 입력 폼, 삭제·이동, 모든 편집 Undo. F6 테스트 실행(QTimer 실시간, 현재 명령 노란 강조, 대사 미리보기 "다음 ▶"), F8 중지, 실패 명령 빨간 선택. 객체 더블클릭/Enter로 열기. 새 프로젝트의 "상자"에 예제 이벤트.
+- **버그 수정:** 창 종료 시 QGraphicsScene 정리 중 선택 변경 신호가 이미 삭제된 인스펙터에 전달되던 use-after-free(이전 커밋부터 있었음, 객체 선택 상태로 종료 시). ASan으로 찾아 SceneView 소멸자에서 신호 차단.
+- **검증:** ctest 7/7 (engine 7, events 9, project 9, python 8, editor smoke, editor self-test 16단계). 별도 ASan 빌드(`build/asan`, 커밋 안 함)에서 전 테스트·self-test 오류 없음. 이벤트 탭 스크린샷 확인.
+- **원인 미확정:** ASan 빌드에서만 nlohmann type_error가 ProjectIO 안에서 던져지면 프로세스가 0xC0000409로 종료됐다(단독 재현은 정상). 필드 형식 직접 검사로 바꿔 nlohmann 예외를 쓰지 않게 했으므로 현재 코드는 영향 없음. 디버거가 없어 근본 원인은 확인 못 함.
+- **미검증/한계:** 명령 추가 메뉴·입력 대화상자는 모달이라 자동 검사하지 않음(편집 API 경로로 검사). 테스트 실행의 변수는 매번 비어 있음(프로젝트 변수 정의 없음). 실행 조건은 저장만 되고 게임 런타임이 없어 아직 동작하지 않음. 선택지·장면 이동·이미지/음원 명령 없음.
+- 사용자 질문: 고정된 아이템/캐릭터/몬스터 대신 **속성을 커스텀할 수 있는 데이터베이스** 방향 논의 중 (답변에 스키마 기반 설계 제안).
+
+## 프로젝트 단위 제작툴 + 장면 편집 — 2026-10-27
+
+- 사용자 방향: **프로젝트 단위로 작업한다. exe에서 프로젝트를 만들거나 불러와 그 안에서 작업.** 첫 UI는 장면 편집(사용자 선택).
+- 엔진: `engine/project/` Project·Scene·SceneObject 모델, ProjectIO(create/load/save). 폴더 `project.json` + `scenes/<id>.json` + `scripts/` + `assets/`. formatVersion 1, 새 버전·깨진 JSON·ID 불일치·경로 문자 ID·중복 객체 ID·필드 형식 오류를 파일 이름과 함께 거부. 임시 파일 후 교체 저장, 삭제한 장면 파일 정리. JSON은 `third_party/nlohmann` 3.11.3 (MIT, 해시 기록).
+- 에디터: StartDialog(새로 만들기/열기/최근 — QSettings), ProjectDocument(QUndoStack), UndoCommands(장면 추가/삭제/속성/시작 장면, 객체 추가/삭제/속성·이동, 숫자 칸 연속 변경 병합), SceneView(QGraphicsView 드래그 배치·휠 확대·창 맞춤), Inspector, ScriptEditor 탭, 프로젝트 닫기→시작 화면.
+- **검증:** ctest 6/6 — engine 7, project 8, python 8, editor_smoke, editor_selftest 10단계(객체 추가·선택·이동·Undo·저장·재로드 동일·삭제·main.py 실행). 프로젝트 창 스크린샷 확인. 빌드 경고 0.
+- **미검증:** 시작 화면·새 프로젝트 대화상자는 모달이라 자동 검사/스크린샷을 하지 않았다(사용자 실행으로 확인 필요). 마우스로 실제 드래그하는 동작은 자동 검사가 아니라 이동 신호 경로로만 검사했다.
+- **아직 없음:** 객체 이미지/에셋 가져오기, 이벤트(명령 목록) 편집, 객체에 스크립트·이벤트 연결, 복사/붙여넣기, 격자 스냅, 장면 실행 미리보기(게임 화면), 대기형 스크립트, 변수 정의 데이터.
+- 다음 후보: (1) 에셋 가져오기 + 객체 이미지 표시, (2) RPG Maker식 이벤트 편집기와 객체 연결, (3) 실시간 실행 루프·F8 중지.
+
 ## M0 완료 — 2026-10-27 (다른 PC: DKSYSTEMS)
 
 - 저장소를 새 PC에 clone해 이어감. 이 PC에는 MSVC·CMake·Qt가 없어서 사용자 승인 후 설치: VS 2022 Build Tools(MSVC 14.44, C++ 워크로드), CMake 4.4.4, Ninja 1.13.2(winget), **Qt 6.8.3 LTS msvc2022_64**(aqtinstall → `C:\Qt`). Python은 기존 **3.14.3 x64**(헤더·lib 포함) 사용.

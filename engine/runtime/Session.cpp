@@ -20,8 +20,8 @@ const char* toString(SessionState state) {
     return "unknown";
 }
 
-Session::Session(const Variables& initialVariables, double fixedStep)
-    : variables_(initialVariables), ctx_{variables_, logger_}, fixedStep_(fixedStep) {}
+Session::Session(const Variables& initialVariables, double fixedStep, DialogueHost* dialogue)
+    : variables_(initialVariables), ctx_{variables_, logger_, dialogue}, fixedStep_(fixedStep) {}
 
 void Session::start(std::vector<std::unique_ptr<Command>> commands, std::size_t startIndex) {
     runner_ = EventRunner(std::move(commands));

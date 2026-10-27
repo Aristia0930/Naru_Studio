@@ -1,16 +1,40 @@
+#include "CommandDialog.h"
 #include "MainWindow.h"
+#include "ProjectDocument.h"
+#include "StartDialog.h"
 
 #include "naru/python/PythonRuntime.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
+#include <QDir>
+#include <QFileInfo>
 #include <QMessageBox>
+#include <QStatusBar>
 #include <QTimer>
 
+#include <cstdio>
 #include <memory>
+
+namespace {
+
+struct LaunchRequest {
+    QString directory;
+    QString newName; // 비어 있지 않으면 새 프로젝트를 만든다
+};
+
+std::unique_ptr<ProjectDocument> openOrCreate(const LaunchRequest& request, QString* error) {
+    if (!request.newName.isEmpty()) {
+        return ProjectDocument::create(request.directory, request.newName, error);
+    }
+    return ProjectDocument::open(request.directory, error);
+}
+
+} // namespace
 
 int main(int argc, char* argv[]) {
     QApplication app(argc, argv);
+    QApplication::setOrganizationName(QStringLiteral("Naru"));
     QApplication::setApplicationName(QStringLiteral("Naru Studio"));
     QApplication::setApplicationVersion(QStringLiteral(NARU_STUDIO_VERSION));
 
@@ -18,18 +42,68 @@ int main(int argc, char* argv[]) {
     parser.setApplicationDescription(QStringLiteral("Naru Studio 제작툴"));
     parser.addHelpOption();
     parser.addVersionOption();
+    QCommandLineOption newOption(QStringLiteral("new-project"),
+                                 QStringLiteral("<dir>에 새 프로젝트를 만들어 연다. 이미 프로젝트가 있으면 연다."),
+                                 QStringLiteral("dir"));
     QCommandLineOption smokeOption(QStringLiteral("smoke-test"),
-                                   QStringLiteral("창을 띄운 뒤 <ms> 후 종료한다 (자동 검사용)."),
-                                   QStringLiteral("ms"));
+                                   QStringLiteral("창을 띄운 뒤 <ms> 후 종료한다 (자동 검사용)."), QStringLiteral("ms"));
     QCommandLineOption screenshotOption(QStringLiteral("screenshot"),
                                         QStringLiteral("smoke-test 종료 직전 창을 <path>에 PNG로 저장한다."),
                                         QStringLiteral("path"));
-    QCommandLineOption runOption(QStringLiteral("run"), QStringLiteral("열린 스크립트를 시작하자마자 실행한다."));
-    parser.addOption(smokeOption);
-    parser.addOption(screenshotOption);
-    parser.addOption(runOption);
-    parser.addPositionalArgument(QStringLiteral("script"), QStringLiteral("열 Python 스크립트"));
+    QCommandLineOption selfTestOption(QStringLiteral("self-test"),
+                                      QStringLiteral("편집 흐름 자동 검사를 실행하고 결과를 종료 코드로 돌려준다."));
+    QCommandLineOption eventOption(QStringLiteral("event"),
+                                   QStringLiteral("시작 장면의 <objectId> 객체를 선택하고 이벤트 탭을 연다."),
+                                   QStringLiteral("objectId"));
+    // 사용 설명서(docs/guide) 스크린샷 촬영용 옵션
+    QCommandLineOption runEventOption(QStringLiteral("run-event"),
+                                      QStringLiteral("--event로 연 이벤트를 바로 테스트 실행한다."));
+    QCommandLineOption startScreenOption(QStringLiteral("start-screen"),
+                                         QStringLiteral("시작 화면을 띄워 --screenshot으로 저장하고 종료한다."));
+    QCommandLineOption commandDialogOption(QStringLiteral("command-dialog"),
+                                           QStringLiteral("<type> 명령 입력 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."),
+                                           QStringLiteral("type"));
+    parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, runEventOption,
+                       startScreenOption, commandDialogOption});
+    parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
+
+    // 창 하나를 띄우고 잠시 뒤 PNG로 저장한 다음 종료한다.
+    auto captureDialog = [&](QDialog& dialog) {
+        QString path = parser.value(screenshotOption);
+        QTimer::singleShot(800, &dialog, [&dialog, path] {
+            if (!path.isEmpty()) {
+                dialog.grab().save(path);
+            }
+            dialog.reject();
+        });
+        dialog.exec();
+        return 0;
+    };
+    if (parser.isSet(startScreenOption)) {
+        // 설명서 이미지에 실제 사용자의 최근 프로젝트 경로가 찍히지 않도록 빈 설정을 쓴다.
+        QApplication::setOrganizationName(QStringLiteral("NaruGuideCapture"));
+        StartDialog start;
+        return captureDialog(start);
+    }
+    if (parser.isSet(commandDialogOption)) {
+        auto type = naru::commandTypeFromKey(parser.value(commandDialogOption).toStdString());
+        if (!type) {
+            return 3;
+        }
+        naru::EventCommand sample;
+        sample.type = *type;
+        sample.speaker = "촌장";
+        sample.text = "어서 오게, 여행자여.\n이 마을은 처음인가?";
+        sample.variable = "visits";
+        sample.value = std::int64_t{3};
+        sample.compare = naru::CompareOp::GreaterEqual;
+        sample.op = naru::VariableOp::Add;
+        sample.seconds = 1.0;
+        sample.script = "main.py";
+        CommandDialog dialog(sample, {QStringLiteral("main.py")});
+        return captureDialog(dialog);
+    }
 
     std::unique_ptr<naru::python::PythonRuntime> python;
     try {
@@ -40,28 +114,80 @@ int main(int argc, char* argv[]) {
         return 2;
     }
 
-    MainWindow window(python.get());
-    if (!parser.positionalArguments().isEmpty()) {
-        window.openScript(parser.positionalArguments().first());
-        if (parser.isSet(runOption)) {
-            QTimer::singleShot(0, &window, [&window] {
-                QMetaObject::invokeMethod(&window, "runScript");
-            });
+    LaunchRequest request;
+    if (parser.isSet(newOption)) {
+        request.directory = parser.value(newOption);
+        if (!QFileInfo(QDir(request.directory).filePath(QStringLiteral("project.json"))).isFile()) {
+            request.newName = QDir(request.directory).dirName();
         }
+    } else if (!parser.positionalArguments().isEmpty()) {
+        request.directory = parser.positionalArguments().first();
     }
-    window.show();
+    const bool automated = parser.isSet(smokeOption) || parser.isSet(selfTestOption);
 
-    if (parser.isSet(smokeOption)) {
-        int ms = parser.value(smokeOption).toInt();
-        QString screenshot = parser.value(screenshotOption);
-        QTimer::singleShot(ms > 0 ? ms : 1000, &app, [&window, screenshot] {
-            if (!screenshot.isEmpty()) {
-                window.grab().save(screenshot);
+    // 프로젝트 닫기를 고르면 시작 화면으로 돌아간다.
+    while (true) {
+        if (request.directory.isEmpty()) {
+            if (automated) {
+                return 3;
             }
-            QApplication::exit(0);
-        });
-    }
+            StartDialog start;
+            if (start.exec() != QDialog::Accepted) {
+                return 0;
+            }
+            request.directory = start.projectDirectory();
+            request.newName = start.createRequested() ? start.newProjectName() : QString();
+        }
 
-    int code = app.exec();
-    return code;
+        QString error;
+        auto doc = openOrCreate(request, &error);
+        if (!doc) {
+            QString message = QStringLiteral("프로젝트를 열지 못했습니다.\n%1\n\n%2")
+                                  .arg(QDir::toNativeSeparators(request.directory), error);
+            if (automated) {
+                std::fprintf(stderr, "%s\n", message.toUtf8().constData());
+                return 3;
+            }
+            QMessageBox::warning(nullptr, QStringLiteral("Naru Studio"), message);
+            request = {};
+            continue;
+        }
+        if (!automated) {
+            StartDialog::addRecentProject(doc->directory());
+        }
+
+        MainWindow window(doc.get(), python.get());
+        window.show();
+        if (parser.isSet(eventOption)) {
+            window.showObjectEvent(parser.value(eventOption));
+            if (parser.isSet(runEventOption)) {
+                window.startEventTest();
+            }
+        }
+
+        if (parser.isSet(selfTestOption)) {
+            return window.runSelfTest() ? 0 : 1;
+        }
+        if (parser.isSet(smokeOption)) {
+            int ms = parser.value(smokeOption).toInt();
+            QString screenshot = parser.value(screenshotOption);
+            if (!screenshot.isEmpty()) {
+                // 스크린샷에는 개인 폴더 경로 대신 프로젝트 폴더 이름만 보인다.
+                window.statusBar()->showMessage(QDir(doc->directory()).dirName());
+            }
+            QTimer::singleShot(ms > 0 ? ms : 1000, &app, [&window, screenshot] {
+                if (!screenshot.isEmpty()) {
+                    window.grab().save(screenshot);
+                }
+                QApplication::exit(0);
+            });
+            return app.exec();
+        }
+
+        app.exec();
+        if (!window.returnToStart()) {
+            return 0;
+        }
+        request = {};
+    }
 }

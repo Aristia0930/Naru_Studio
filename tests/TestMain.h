@@ -34,10 +34,14 @@ struct Registrar {
 inline int runAll() {
     int failedCases = 0;
     for (const auto& c : registry()) {
+        // 테스트 도중 프로세스가 죽어도 어느 테스트였는지 보이도록 먼저 출력한다.
+        std::printf("[....] %s\n", c.name);
+        std::fflush(stdout);
         int before = failures();
         c.body();
         bool passed = failures() == before;
         std::printf("[%s] %s\n", passed ? "PASS" : "FAIL", c.name);
+        std::fflush(stdout);
         if (!passed) {
             ++failedCases;
         }

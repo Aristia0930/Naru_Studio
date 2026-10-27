@@ -42,6 +42,7 @@ void EventRunner::update(CommandContext& ctx, double dt) {
     if (status_ != CommandStatus::Waiting) {
         return;
     }
+    ctx.jump.reset();
     advance(ctx, commands_[index_]->update(ctx, dt));
 }
 
@@ -55,10 +56,19 @@ void EventRunner::cancel(CommandContext& ctx) {
     status_ = CommandStatus::Cancelled;
 }
 
+void EventRunner::moveNext(CommandContext& ctx) {
+    if (ctx.jump) {
+        index_ = *ctx.jump;
+        ctx.jump.reset();
+    } else {
+        ++index_;
+    }
+}
+
 void EventRunner::advance(CommandContext& ctx, CommandStatus result) {
     switch (result) {
     case CommandStatus::Completed:
-        ++index_;
+        moveNext(ctx);
         status_ = CommandStatus::Running;
         runUntilBlocked(ctx);
         break;
@@ -84,14 +94,24 @@ void EventRunner::advance(CommandContext& ctx, CommandStatus result) {
 
 void EventRunner::runUntilBlocked(CommandContext& ctx) {
     // 즉시 끝나는 명령은 같은 틱 안에서 연속 실행하고, 대기가 필요한 명령에서 멈춘다.
+    // 대기 없이 끝없이 도는 이벤트가 편집기를 멈추지 않도록 한 번에 실행할 수를 제한한다.
+    std::size_t budget = kImmediateCommandBudget;
     while (status_ == CommandStatus::Running) {
         if (index_ >= commands_.size()) {
             status_ = CommandStatus::Completed;
             return;
         }
+        if (budget-- == 0) {
+            failedCommandId_ = commands_[index_]->id();
+            failureMessage_ = "대기 없이 실행되는 명령이 너무 많습니다 (무한 반복 의심)";
+            status_ = CommandStatus::Failed;
+            ctx.logger.error(failureMessage_, {"", 0, failedCommandId_});
+            return;
+        }
+        ctx.jump.reset();
         CommandStatus result = commands_[index_]->start(ctx);
         if (result == CommandStatus::Completed) {
-            ++index_;
+            moveNext(ctx);
             continue;
         }
         advance(ctx, result);

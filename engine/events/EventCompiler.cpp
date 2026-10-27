@@ -1,0 +1,265 @@
+#include "naru/events/EventCompiler.h"
+
+#include "naru/core/Log.h"
+#include "naru/core/Value.h"
+#include "naru/events/BuiltinCommands.h"
+
+#include <utility>
+
+namespace naru {
+
+namespace {
+
+bool isNumber(const Value& v) {
+    return std::holds_alternative<std::int64_t>(v) || std::holds_alternative<double>(v);
+}
+
+double asDouble(const Value& v) {
+    if (const auto* i = std::get_if<std::int64_t>(&v)) {
+        return static_cast<double>(*i);
+    }
+    return std::get<double>(v);
+}
+
+const char* typeName(const Value& v) {
+    switch (v.index()) {
+    case 0: return "없음";
+    case 1: return "참/거짓";
+    case 2: return "정수";
+    case 3: return "실수";
+    case 4: return "문자열";
+    }
+    return "?";
+}
+
+class SayCommand : public Command {
+public:
+    SayCommand(std::string id, std::string speaker, std::string text)
+        : Command(std::move(id)), speaker_(std::move(speaker)), text_(std::move(text)) {}
+
+    CommandStatus start(CommandContext& ctx) override {
+        ctx.logger.info(speaker_.empty() ? text_ : "[" + speaker_ + "] " + text_, {"", 0, id()});
+        if (ctx.dialogue == nullptr) {
+            return CommandStatus::Completed;
+        }
+        ctx.dialogue->showMessage(speaker_, text_);
+        return CommandStatus::Waiting;
+    }
+
+    CommandStatus update(CommandContext& ctx, double) override {
+        return ctx.dialogue->messageClosed() ? CommandStatus::Completed : CommandStatus::Waiting;
+    }
+
+    void cancel(CommandContext& ctx) override {
+        if (ctx.dialogue) {
+            ctx.dialogue->closeMessage();
+        }
+    }
+
+private:
+    std::string speaker_;
+    std::string text_;
+};
+
+class VariableCommand : public Command {
+public:
+    VariableCommand(std::string id, std::string name, VariableOp op, Value value)
+        : Command(std::move(id)), name_(std::move(name)), op_(op), value_(std::move(value)) {}
+
+    CommandStatus start(CommandContext& ctx) override {
+        if (name_.empty()) {
+            setError("변수 이름이 비어 있습니다");
+            return CommandStatus::Failed;
+        }
+        std::string error;
+        auto result = applyVariableOp(ctx.variables.get(name_).value_or(Value{}), op_, value_, error);
+        if (!result) {
+            setError("변수 '" + name_ + "': " + error);
+            return CommandStatus::Failed;
+        }
+        ctx.variables.set(name_, *result);
+        return CommandStatus::Completed;
+    }
+
+private:
+    std::string name_;
+    VariableOp op_;
+    Value value_;
+};
+
+// 조건이 거짓이면 elseTarget(아니라면 분기 시작 또는 분기 끝)으로 이동한다.
+class BranchCommand : public Command {
+public:
+    BranchCommand(std::string id, std::string name, CompareOp compare, Value value)
+        : Command(std::move(id)), name_(std::move(name)), compare_(compare), value_(std::move(value)) {}
+
+    void setElseTarget(std::size_t target) { elseTarget_ = target; }
+
+    CommandStatus start(CommandContext& ctx) override {
+        std::string error;
+        // 아직 없는 변수를 숫자와 비교하면 0으로 본다 (변수 더하기와 같은 규칙).
+        Value current = ctx.variables.get(name_).value_or(
+            isNumber(value_) ? Value{std::int64_t{0}} : Value{});
+        bool result = compareValues(current, compare_, value_, error);
+        if (!error.empty()) {
+            setError("조건 '" + name_ + "': " + error);
+            return CommandStatus::Failed;
+        }
+        if (!result) {
+            ctx.jump = elseTarget_;
+        }
+        return CommandStatus::Completed;
+    }
+
+private:
+    std::string name_;
+    CompareOp compare_;
+    Value value_;
+    std::size_t elseTarget_ = 0;
+};
+
+// "그렇다면" 분기 끝에서 "아니라면" 분기를 건너뛴다.
+class JumpCommand : public Command {
+public:
+    using Command::Command;
+    void setTarget(std::size_t target) { target_ = target; }
+
+    CommandStatus start(CommandContext& ctx) override {
+        ctx.jump = target_;
+        return CommandStatus::Completed;
+    }
+
+private:
+    std::size_t target_ = 0;
+};
+
+void emit(const std::vector<EventCommand>& list, const std::string& prefix,
+          std::vector<std::unique_ptr<Command>>& out, const ScriptRunner& runScript) {
+    for (std::size_t i = 0; i < list.size(); ++i) {
+        const EventCommand& c = list[i];
+        std::string id = commandId(prefix, i);
+        switch (c.type) {
+        case EventCommandType::Say:
+            out.push_back(std::make_unique<SayCommand>(id, c.speaker, c.text));
+            break;
+        case EventCommandType::Wait:
+            out.push_back(std::make_unique<WaitCommand>(id, c.seconds));
+            break;
+        case EventCommandType::SetVariable:
+            out.push_back(std::make_unique<VariableCommand>(id, c.variable, c.op, c.value));
+            break;
+        case EventCommandType::Log:
+            out.push_back(std::make_unique<LogCommand>(id, c.text));
+            break;
+        case EventCommandType::CallScript: {
+            std::string script = c.script;
+            std::string function = c.function.empty() ? std::string("run") : c.function;
+            out.push_back(std::make_unique<CallCommand>(
+                id, [runScript, script, function](CommandContext& ctx) -> std::string {
+                    if (script.empty()) {
+                        return "호출할 스크립트를 지정하지 않았습니다";
+                    }
+                    if (!runScript) {
+                        return "스크립트 실행기가 연결되지 않았습니다";
+                    }
+                    return runScript(script, function, ctx);
+                }));
+            break;
+        }
+        case EventCommandType::IfVariable: {
+            auto branch = std::make_unique<BranchCommand>(id, c.variable, c.compare, c.value);
+            BranchCommand* branchPtr = branch.get();
+            out.push_back(std::move(branch));
+            emit(c.thenCommands, thenPrefix(id), out, runScript);
+            if (c.elseCommands.empty()) {
+                branchPtr->setElseTarget(out.size());
+            } else {
+                auto jump = std::make_unique<JumpCommand>(id);
+                JumpCommand* jumpPtr = jump.get();
+                out.push_back(std::move(jump));
+                branchPtr->setElseTarget(out.size());
+                emit(c.elseCommands, elsePrefix(id), out, runScript);
+                jumpPtr->setTarget(out.size());
+            }
+            break;
+        }
+        case EventCommandType::Comment:
+            break; // 실행하지 않는다
+        }
+    }
+}
+
+} // namespace
+
+std::vector<std::unique_ptr<Command>> compileEvent(const std::vector<EventCommand>& commands,
+                                                   const ScriptRunner& runScript) {
+    std::vector<std::unique_ptr<Command>> out;
+    emit(commands, std::string(), out, runScript);
+    return out;
+}
+
+bool compareValues(const Value& left, CompareOp op, const Value& right, std::string& error) {
+    error.clear();
+    if (isNumber(left) && isNumber(right)) {
+        double a = asDouble(left);
+        double b = asDouble(right);
+        switch (op) {
+        case CompareOp::Equal: return a == b;
+        case CompareOp::NotEqual: return a != b;
+        case CompareOp::Less: return a < b;
+        case CompareOp::LessEqual: return a <= b;
+        case CompareOp::Greater: return a > b;
+        case CompareOp::GreaterEqual: return a >= b;
+        }
+    }
+    if (op == CompareOp::Equal) {
+        return left == right;
+    }
+    if (op == CompareOp::NotEqual) {
+        return left != right;
+    }
+    const auto* a = std::get_if<std::string>(&left);
+    const auto* b = std::get_if<std::string>(&right);
+    if (a && b) {
+        switch (op) {
+        case CompareOp::Less: return *a < *b;
+        case CompareOp::LessEqual: return *a <= *b;
+        case CompareOp::Greater: return *a > *b;
+        case CompareOp::GreaterEqual: return *a >= *b;
+        default: break;
+        }
+    }
+    error = std::string(typeName(left)) + "와(과) " + typeName(right) + "의 크기를 비교할 수 없습니다";
+    return false;
+}
+
+std::optional<Value> applyVariableOp(const Value& current, VariableOp op, const Value& operand, std::string& error) {
+    error.clear();
+    if (op == VariableOp::Set) {
+        return operand;
+    }
+    // 아직 없는 변수는 0으로 보고 더하거나 뺀다.
+    Value base = std::holds_alternative<std::monostate>(current) ? Value{std::int64_t{0}} : current;
+    if (isNumber(base) && isNumber(operand)) {
+        const auto* ai = std::get_if<std::int64_t>(&base);
+        const auto* bi = std::get_if<std::int64_t>(&operand);
+        if (ai && bi) {
+            return Value{op == VariableOp::Add ? *ai + *bi : *ai - *bi};
+        }
+        double a = asDouble(base);
+        double b = asDouble(operand);
+        return Value{op == VariableOp::Add ? a + b : a - b};
+    }
+    if (op == VariableOp::Add) {
+        const auto* a = std::get_if<std::string>(&base);
+        const auto* b = std::get_if<std::string>(&operand);
+        if (a && b) {
+            return Value{*a + *b};
+        }
+    }
+    error = std::string(typeName(base)) + "에 " + typeName(operand) + "을(를) " +
+            (op == VariableOp::Add ? "더할" : "뺄") + " 수 없습니다";
+    return std::nullopt;
+}
+
+} // namespace naru

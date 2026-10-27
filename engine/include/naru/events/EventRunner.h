@@ -30,7 +30,10 @@ public:
     const std::string& failedCommandId() const { return failedCommandId_; }
     const std::string& failureMessage() const { return failureMessage_; }
 
+    static constexpr std::size_t kImmediateCommandBudget = 10000;
+
 private:
+    void moveNext(CommandContext& ctx);
     void advance(CommandContext& ctx, CommandStatus result);
     void runUntilBlocked(CommandContext& ctx);
 
