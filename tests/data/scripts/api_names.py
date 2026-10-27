@@ -4,6 +4,6 @@ import naru
 
 def run(ctx):
     names = set(vars(naru.Context()))  # ctx.variables, ctx.db, ctx.input ...
-    for cls in (naru.Context, naru.Variables, naru.Database, naru.Input, naru.Player, naru.Scene):
+    for cls in (naru.Context, naru.Variables, naru.Database, naru.Input, naru.Player, naru.Scene, naru.SceneObject):
         names.update(n for n in vars(cls) if not n.startswith("_"))
     return ",".join(sorted(names))

@@ -251,6 +251,13 @@ std::optional<Value> var(GameWorld& world, const char* name) {
     return world.variables().get(name);
 }
 
+// 테스트에서 게임 상태로 모듈 함수를 직접 부를 때 쓰는 컨텍스트 (world보다 짧게 산다).
+CommandContext& f_ctxOf(GameWorld& world) {
+    static std::unique_ptr<CommandContext> ctx;
+    ctx = std::make_unique<CommandContext>(
+        CommandContext{world.variables(), world.logger(), &world, std::nullopt, &world.project().database, &world});
+    return *ctx;
+}
 } // namespace
 
 TEST_CASE("전역 스크립트: 훅·모듈 전역 변수 유지·이벤트에서 모듈 함수 호출·import") {
@@ -323,8 +330,41 @@ TEST_CASE("오류가 난 전역 스크립트 훅은 한 번만 보고하고 다�
     CHECK(var(world, "ticks") == Value{std::int64_t{105}});
 }
 
-TEST_CASE("스크립트에 공개된 모든 이름과 훅이 docs/SCRIPT_API.md에 적혀 있다") {
-    // 새 ctx 값·함수나 훅을 추가하면 이 테스트가 문서 갱신을 요구한다.
+TEST_CASE("스크립트로 다른 객체를 찾고 바꾸고 움직인다 (ctx.scene.object/find/objects)") {
+    Project p = globalProject();
+    SceneObject box;
+    box.id = "box";
+    box.name = "상자";
+    box.x = 100;
+    p.scenes[0].objects.push_back(box);
+    p.scenes[0].objects[1].event.commands.clear(); // 자동 실행 호출 이벤트는 쓰지 않는다
+    python::PythonGameScripts globals(*g_runtime, {script("objects.py")});
+    GameWorld world(p, globalAwareRunner(globals));
+    world.setGameScripts(&globals);
+    world.startGame("scene_001");
+    InputState input;
+    world.update(1.0 / 60.0, input);
+    world.update(1.0 / 60.0, input);
+    CHECK(world.object("box")->x == 108.0); // on_update에서 4px씩 두 번
+
+    Value returned;
+    CHECK(g_runtime->callModuleFunction(*globals.loadedPath("objects.py"), "inspect", f_ctxOf(world), nullptr,
+                                        &returned) == python::CallStatus::Ok);
+    CHECK(returned == Value{10.0});
+    CHECK(var(world, "box_id") == Value{std::string("box")});
+    CHECK(var(world, "hero_is_player") == Value{true});
+    CHECK(var(world, "count") == Value{std::int64_t{3}});
+    CHECK(var(world, "missing") == Value{true});
+    CHECK(world.object("box")->color == "#ff8800");
+    CHECK(world.object("box")->passable);
+
+    python::ScriptResult bad;
+    CHECK(g_runtime->callModuleFunction(*globals.loadedPath("objects.py"), "bad_color", f_ctxOf(world), &bad) ==
+          python::CallStatus::Failed);
+    CHECK(bad.error.type == "ValueError");
+}
+
+TEST_CASE("스크립트에 공개된 모든 이름과 훅이 docs/SCRIPT_API.md에 적혀 있다") {    // 새 ctx 값·함수나 훅을 추가하면 이 테스트가 문서 갱신을 요구한다.
     std::ifstream in(std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_SCRIPT_API_DOC)), std::ios::binary);
     std::string doc((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     CHECK(!doc.empty());

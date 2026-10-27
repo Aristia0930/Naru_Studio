@@ -35,8 +35,9 @@ std::optional<Facing> facingFromKey(const std::string& key);
 //
 // 실행 조건:
 //   - 조사: 결정 키를 누르면 플레이어가 바라보는 쪽 바로 앞(또는 밟고 있는 통과 가능한) 객체
-//   - 플레이어 접촉 / 이벤트 접촉: 막는 객체에 부딪히거나 통과 가능한 객체 위로 들어설 때.
-//     계속 밀거나 서 있는 동안에는 다시 실행하지 않는다. (이벤트 접촉의 "객체가 움직여 닿을 때"는 객체 이동이 생기면 추가)
+//   - 플레이어 접촉: 플레이어가 막는 객체에 부딪히거나 통과 가능한 객체와 겹칠 때.
+//   - 이벤트 접촉: 위의 경우 + 객체가 움직여(moveObject) 플레이어에게 부딪히거나 겹칠 때.
+//     둘 다 계속 밀거나 겹쳐 있는 동안에는 다시 실행하지 않는다.
 //   - 자동 실행: 장면에 들어올 때 객체 순서대로 하나씩
 //   - 병렬 처리: 장면에 들어올 때 모두 함께, 다른 이벤트를 막지 않음
 // 조사·접촉·자동 실행 이벤트는 실행 중 플레이어 조작을 막으며 한 번에 하나씩 실행된다.
@@ -107,6 +108,16 @@ public:
     // 결정 키를 누른 것처럼 앞의 객체를 조사한다. 이벤트를 시작했으면 true.
     bool interact();
 
+    // ---- 장면 객체 (실행 중 상태. 장면에 다시 들어오면 편집 상태로 돌아간다)
+    const SceneObject* object(const std::string& id) const;
+    // 충돌을 따져 움직인다 (규칙은 플레이어와 같다: 통과 가능하지 않은 것끼리 막는다).
+    // 플레이어 객체면 movePlayer와 같다. 객체가 없으면 false.
+    bool moveObject(const std::string& id, double dx, double dy);
+    // 충돌 없이 옮긴다.
+    bool setObjectPosition(const std::string& id, double x, double y);
+    bool setObjectPassable(const std::string& id, bool passable);
+    bool setObjectColor(const std::string& id, const std::string& color);
+
     // DialogueHost
     void showMessage(const std::string& speaker, const std::string& text) override;
     bool messageClosed() const override { return !message_.has_value(); }
@@ -125,8 +136,9 @@ private:
 
     SceneObject* playerObject();
     void controlPlayer(bool actionPressed, double dt);
-    // 한 축으로 이동하고 막힌 객체를 tickContacts_에 넣는다.
-    void moveAxis(SceneObject& player, double dx, double dy);
+    // 가로 → 세로 순서로 이동하고 막은 객체 ID들을 돌려준다.
+    std::vector<std::string> moveAxes(SceneObject& mover, double dx, double dy);
+    void moveAxis(SceneObject& mover, double dx, double dy, std::vector<std::string>& blockers);
     // 이번 틱의 접촉을 정리하고, 새로 닿은 객체의 접촉 이벤트를 시작한다.
     void finishContacts();
     void queueBlocking(const SceneObject& object);
@@ -158,6 +170,9 @@ private:
     // 지난 틱에 플레이어와 닿아 있던 객체. 새로 닿은 객체만 접촉 이벤트를 실행한다.
     std::set<std::string> contacts_;
     std::set<std::string> tickContacts_;
+    // 움직여서 플레이어에 부딪힌 객체 (지난 틱 / 이번 틱). 이벤트 접촉 판정용.
+    std::set<std::string> objectBumps_;
+    std::set<std::string> tickObjectBumps_;
     bool playerMovedThisTick_ = false;
 
     double accumulator_ = 0.0;

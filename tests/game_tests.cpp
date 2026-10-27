@@ -431,4 +431,69 @@ TEST_CASE("custom input actions: held every tick, pressed only on the first tick
     CHECK(pressed == 1);
 }
 
+// ---------------------------------------------------------------- 다른 객체 움직이기
+
+TEST_CASE("objects move with the same collision rules as the player") {
+    SceneObject crate = box("crate", 200, 0, 32, 32);
+    SceneObject wall = box("wall", 300, 0, 20, 32);
+    SceneObject ghost = box("ghost", 200, 100, 32, 32);
+    ghost.passable = true; // 통과 가능한 객체는 막히지도, 막지도 않는다
+    GameWorld world(playerProject({crate, wall, ghost}), noScripts());
+    world.enterScene("scene_001");
+    CHECK(world.moveObject("crate", 500, 0));
+    CHECK(world.object("crate")->x == 300.0 - 32.0); // 벽에 막힘
+    CHECK(world.moveObject("ghost", 500, 0));
+    CHECK(world.object("ghost")->x == 400.0 - 32.0); // 벽은 지나가고 장면 가장자리에서 멈춤
+    CHECK(!world.moveObject("nope", 1, 0));
+    CHECK(world.moveObject("hero", 0, 10)); // 플레이어 ID면 플레이어 이동과 같다 (방향도 바뀜)
+    CHECK(world.player()->y == 10.0);
+    CHECK(world.facing() == Facing::Down);
+    CHECK(world.setObjectPosition("crate", 5, 200) && world.object("crate")->x == 5.0);
+}
+
+TEST_CASE("an object that moves into the player runs its event-touch event once") {
+    SceneObject slime = box("slime", 100, 0, 32, 32); // 이벤트 접촉
+    slime.event.trigger = EventTrigger::EventTouch;
+    slime.event.commands = {add("caught", 1)};
+    SceneObject sign = box("sign", 100, 100, 32, 32); // 플레이어 접촉: 객체가 와서 닿으면 실행하지 않는다
+    sign.event.trigger = EventTrigger::Touch;
+    sign.event.commands = {add("sign", 1)};
+    GameWorld world(playerProject({slime, sign}), noScripts());
+    world.enterScene("scene_001");
+    world.setPlayerPosition(0, 100);
+    for (int i = 0; i < 20; ++i) {
+        world.moveObject("sign", -8, 0); // 플레이어(0..32) 쪽으로 계속 민다
+        step(world);
+    }
+    CHECK(world.object("sign")->x == 32.0);
+    CHECK(intVar(world, "sign") == -1);
+
+    world.setPlayerPosition(0, 0);
+    for (int i = 0; i < 20; ++i) {
+        world.moveObject("slime", -8, 0);
+        step(world);
+    }
+    CHECK(world.object("slime")->x == 32.0);
+    CHECK(intVar(world, "caught") == 1); // 계속 밀어도 한 번
+    step(world);                          // 멈췄다가
+    world.moveObject("slime", -8, 0);     // 다시 밀면 한 번 더
+    step(world);
+    CHECK(intVar(world, "caught") == 2);
+}
+
+TEST_CASE("a passable event-touch object that moves onto the player runs once") {
+    SceneObject ghost = box("ghost", 200, 0, 32, 32);
+    ghost.passable = true;
+    ghost.event.trigger = EventTrigger::EventTouch;
+    ghost.event.commands = {add("boo", 1)};
+    GameWorld world(playerProject({ghost}), noScripts());
+    world.enterScene("scene_001");
+    for (int i = 0; i < 30; ++i) {
+        world.moveObject("ghost", -8, 0); // 플레이어를 지나쳐 간다
+        step(world);
+    }
+    CHECK(world.object("ghost")->x == 0.0);
+    CHECK(intVar(world, "boo") == 1);
+}
+
 TEST_MAIN()

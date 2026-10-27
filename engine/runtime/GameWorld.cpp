@@ -107,6 +107,8 @@ bool GameWorld::enterScene(const std::string& sceneId) {
     message_.reset();
     contacts_.clear();
     tickContacts_.clear();
+    objectBumps_.clear();
+    tickObjectBumps_.clear();
     playerMovedThisTick_ = false;
     facing_ = Facing::Down;
     scene_ = *source;
@@ -261,41 +263,100 @@ bool GameWorld::movePlayer(double dx, double dy) {
             facing_ = horizontal;
         }
     }
-    if (dx != 0) {
-        moveAxis(*player, dx, 0.0);
-    }
-    if (dy != 0) {
-        moveAxis(*player, 0.0, dy);
+    for (const std::string& id : moveAxes(*player, dx, dy)) {
+        tickContacts_.insert(id);
     }
     playerMovedThisTick_ = true;
     return true;
 }
 
 bool GameWorld::setPlayerPosition(double x, double y) {
-    SceneObject* player = playerObject();
-    if (!player) {
+    const SceneObject* player = playerObject();
+    return player && setObjectPosition(player->id, x, y);
+}
+
+const SceneObject* GameWorld::object(const std::string& id) const {
+    return scene_ ? scene_->findObject(id) : nullptr;
+}
+
+bool GameWorld::moveObject(const std::string& id, double dx, double dy) {
+    SceneObject* o = scene_ ? scene_->findObject(id) : nullptr;
+    if (!o) {
         return false;
     }
-    player->x = x;
-    player->y = y;
-    playerMovedThisTick_ = true;
+    if (o->id == scene_->playerObjectId) {
+        return movePlayer(dx, dy);
+    }
+    // 막는 객체가 움직이다 플레이어에 부딪히면 "이벤트 접촉" (틱 끝에 판정).
+    for (const std::string& blocker : moveAxes(*o, dx, dy)) {
+        if (blocker == scene_->playerObjectId) {
+            tickObjectBumps_.insert(o->id);
+        }
+    }
     return true;
 }
 
-void GameWorld::moveAxis(SceneObject& player, double dx, double dy) {
-    Rect before = rectOf(player);
+bool GameWorld::setObjectPosition(const std::string& id, double x, double y) {
+    SceneObject* o = scene_ ? scene_->findObject(id) : nullptr;
+    if (!o) {
+        return false;
+    }
+    o->x = x;
+    o->y = y;
+    if (o->id == scene_->playerObjectId) {
+        playerMovedThisTick_ = true;
+    }
+    return true;
+}
+
+bool GameWorld::setObjectPassable(const std::string& id, bool passable) {
+    SceneObject* o = scene_ ? scene_->findObject(id) : nullptr;
+    if (!o) {
+        return false;
+    }
+    o->passable = passable;
+    return true;
+}
+
+bool GameWorld::setObjectColor(const std::string& id, const std::string& color) {
+    SceneObject* o = scene_ ? scene_->findObject(id) : nullptr;
+    if (!o) {
+        return false;
+    }
+    o->color = color;
+    return true;
+}
+
+std::vector<std::string> GameWorld::moveAxes(SceneObject& mover, double dx, double dy) {
+    std::vector<std::string> blockers;
+    if (dx != 0) {
+        moveAxis(mover, dx, 0.0, blockers);
+    }
+    if (dy != 0) {
+        moveAxis(mover, 0.0, dy, blockers);
+    }
+    return blockers;
+}
+
+void GameWorld::moveAxis(SceneObject& mover, double dx, double dy, std::vector<std::string>& blockers) {
+    Rect before = rectOf(mover);
     Rect after{before.x + dx, before.y + dy, before.w, before.h};
     // 장면 가장자리
     after.x = std::clamp(after.x, 0.0, std::max(0.0, scene_->width - after.w));
     after.y = std::clamp(after.y, 0.0, std::max(0.0, scene_->height - after.h));
 
+    // 통과 가능한 객체는 아무것에도 막히지 않고, 아무것도 막지 않는다.
+    auto blocks = [&mover](const SceneObject& o) { return o.id != mover.id && !mover.passable && !o.passable; };
+    // 지나간 경로 전체(이전 위치 ~ 새 위치)로 검사한다. 한 번에 크게 움직여도 벽을 건너뛰지 않게.
+    Rect swept{std::min(before.x, after.x), std::min(before.y, after.y), before.w + std::abs(after.x - before.x),
+               before.h + std::abs(after.y - before.y)};
     for (const SceneObject& o : scene_->objects) {
-        if (o.id == player.id || o.passable) {
+        if (!blocks(o)) {
             continue;
         }
         Rect wall = rectOf(o);
         // 처음부터 겹쳐 있던 객체에는 막히지 않는다 (배치 실수로 갇히지 않게).
-        if (!overlaps(after, wall) || overlaps(before, wall)) {
+        if (!overlaps(swept, wall) || overlaps(before, wall)) {
             continue;
         }
         if (dx > 0) {
@@ -307,34 +368,48 @@ void GameWorld::moveAxis(SceneObject& player, double dx, double dy) {
         } else if (dy < 0) {
             after.y = std::max(after.y, wall.y + wall.h);
         }
-        tickContacts_.insert(o.id);
+        blockers.push_back(o.id);
     }
     // 이미 벽에 붙어 있는 상태에서 그쪽으로 밀면 움직이지 않지만 "부딪힘"으로 기록해야 한다.
     if (after.x == before.x && after.y == before.y) {
         Rect probe{before.x + (dx > 0 ? 1 : dx < 0 ? -1 : 0), before.y + (dy > 0 ? 1 : dy < 0 ? -1 : 0), before.w,
                    before.h};
         for (const SceneObject& o : scene_->objects) {
-            if (o.id != player.id && !o.passable && overlaps(probe, rectOf(o)) && !overlaps(before, rectOf(o))) {
-                tickContacts_.insert(o.id);
+            if (blocks(o) && overlaps(probe, rectOf(o)) && !overlaps(before, rectOf(o))) {
+                blockers.push_back(o.id);
             }
         }
     }
-    player.x = after.x;
-    player.y = after.y;
+    mover.x = after.x;
+    mover.y = after.y;
 }
 
 void GameWorld::finishContacts() {
     const SceneObject* player = playerObject();
+    // 객체가 움직여 플레이어에게 부딪힌 경우: 새로 부딪힌 "이벤트 접촉" 객체만 (계속 밀고 있으면 반복 안 함)
+    if (player && !busy()) {
+        for (const std::string& id : tickObjectBumps_) {
+            const SceneObject* o = scene_->findObject(id);
+            if (o && !objectBumps_.count(id) && o->event.trigger == EventTrigger::EventTouch &&
+                !o->event.commands.empty()) {
+                queueBlocking(*o);
+            }
+        }
+    }
+    objectBumps_ = std::move(tickObjectBumps_);
+    tickObjectBumps_.clear();
+
     // 이벤트·대사 중에 플레이어가 움직이지 않았다면 접촉 상태를 그대로 둔다 (끝난 뒤 다시 실행되지 않게).
     if (!player || (busy() && !playerMovedThisTick_)) {
         tickContacts_.clear();
         playerMovedThisTick_ = false;
         return;
     }
-    // 통과 가능한 객체는 위에 서 있는 동안 닿아 있는 것으로 본다.
+    // 겹쳐 있는 동안 닿아 있는 것으로 본다 (둘 중 하나가 통과 가능해서 겹칠 수 있을 때).
+    // 누가 움직였든 같다 — 통과 가능한 "이벤트 접촉" 객체가 플레이어 위로 와도 실행된다.
     Rect self = rectOf(*player);
     for (const SceneObject& o : scene_->objects) {
-        if (o.id != player->id && o.passable && overlaps(self, rectOf(o))) {
+        if (o.id != player->id && (o.passable || player->passable) && overlaps(self, rectOf(o))) {
             tickContacts_.insert(o.id);
         }
     }
@@ -349,7 +424,6 @@ void GameWorld::finishContacts() {
     tickContacts_.clear();
     playerMovedThisTick_ = false;
 }
-
 bool GameWorld::interact() {
     const SceneObject* player = playerObject();
     if (!player || busy()) {
@@ -387,6 +461,11 @@ bool GameWorld::interact() {
 }
 
 void GameWorld::queueBlocking(const SceneObject& object) {
+    // 같은 객체 이벤트가 이미 실행 중이거나 기다리고 있으면 또 넣지 않는다.
+    if ((blocking_ && blocking_->objectId == object.id) ||
+        std::find(blockingQueue_.begin(), blockingQueue_.end(), object.id) != blockingQueue_.end()) {
+        return;
+    }
     blockingQueue_.push_back(object.id);
 }
 

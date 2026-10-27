@@ -88,8 +88,34 @@ class Player:
     def interact(self):
         return _naru.player_interact()
 
+class SceneObject:
+    """장면의 객체 하나 (게임 실행 중). ctx.scene.object("obj_002") / find("상자") / objects()로 얻는다.
+    x, y, passable(통과 가능), color("#rrggbb")는 바꿀 수 있다. move(dx, dy): 충돌을 따져 이동."""
+    def __init__(self, object_id):
+        self._id = object_id
+    def __repr__(self):
+        return f"<SceneObject {self._id}>"
+    def __eq__(self, other):
+        return isinstance(other, SceneObject) and other._id == self._id
+    def __hash__(self):
+        return hash(self._id)
+    id = property(lambda self: self._id)
+    name = property(lambda self: _naru.object_get(self._id, "name"))
+    width = property(lambda self: _naru.object_get(self._id, "width"))
+    height = property(lambda self: _naru.object_get(self._id, "height"))
+    is_player = property(lambda self: _naru.object_get(self._id, "is_player"))
+    x = property(lambda self: _naru.object_get(self._id, "x"), lambda self, v: _naru.object_set(self._id, "x", v))
+    y = property(lambda self: _naru.object_get(self._id, "y"), lambda self, v: _naru.object_set(self._id, "y", v))
+    passable = property(lambda self: _naru.object_get(self._id, "passable"),
+                        lambda self, v: _naru.object_set(self._id, "passable", v))
+    color = property(lambda self: _naru.object_get(self._id, "color"),
+                     lambda self, v: _naru.object_set(self._id, "color", v))
+    def move(self, dx, dy):
+        return _naru.object_move(self._id, float(dx), float(dy))
+
 class Scene:
-    """현재 장면 (게임 실행 중). change("scene_002")로 장면 이동 (이번 틱이 끝난 뒤 바뀐다)."""
+    """현재 장면 (게임 실행 중). change("scene_002")로 장면 이동 (이번 틱이 끝난 뒤 바뀐다).
+    object(ID) / find(이름) → SceneObject 또는 None, objects() → 모든 객체"""
     id = _ro(_naru.scene_get, "id")
     name = _ro(_naru.scene_get, "name")
     width = _ro(_naru.scene_get, "width")
@@ -98,7 +124,13 @@ class Scene:
         _naru.scene_change(scene_id)
     def ids(self):
         return _naru.scene_ids()
-
+    def object(self, object_id):
+        return SceneObject(object_id) if _naru.object_exists(object_id) else None
+    def find(self, name):
+        found = _naru.scene_find(name)
+        return SceneObject(found) if found is not None else None
+    def objects(self):
+        return [SceneObject(i) for i in _naru.scene_object_ids()]
 class Context:
     def __init__(self):
         self.variables = Variables()
@@ -650,7 +682,140 @@ PyObject* naruSceneIds(PyObject*, PyObject*) {
     return stringList(ids);
 }
 
-PyMethodDef kMethods[] = {    {"log", naruLog, METH_VARARGS, "log(message, level)"},
+// ---- 장면 객체 (ctx.scene.object)
+
+const SceneObject* requireSceneObject(GameWorld* game, const char* id) {
+    const SceneObject* o = game ? game->object(id) : nullptr;
+    if (game && !o) {
+        std::string message = std::string("장면에 없는 객체입니다: ") + id + " (장면이 바뀌었거나 ID가 틀림)";
+        PyErr_SetString(PyExc_KeyError, message.c_str());
+    }
+    return o;
+}
+
+PyObject* naruObjectExists(PyObject*, PyObject* args) {
+    const char* id = nullptr;
+    GameWorld* game = nullptr;
+    if (!PyArg_ParseTuple(args, "s", &id) || !(game = requireGame())) {
+        return nullptr;
+    }
+    return PyBool_FromLong(game->object(id) ? 1 : 0);
+}
+
+PyObject* naruObjectGet(PyObject*, PyObject* args) {
+    const char* id = nullptr;
+    const char* name = nullptr;
+    GameWorld* game = nullptr;
+    if (!PyArg_ParseTuple(args, "ss", &id, &name) || !(game = requireGame())) {
+        return nullptr;
+    }
+    const SceneObject* o = requireSceneObject(game, id);
+    if (!o) {
+        return nullptr;
+    }
+    std::string key = name;
+    if (key == "name") return stringObject(o->name);
+    if (key == "x") return PyFloat_FromDouble(o->x);
+    if (key == "y") return PyFloat_FromDouble(o->y);
+    if (key == "width") return PyFloat_FromDouble(o->width);
+    if (key == "height") return PyFloat_FromDouble(o->height);
+    if (key == "passable") return PyBool_FromLong(o->passable ? 1 : 0);
+    if (key == "color") return stringObject(o->color);
+    if (key == "is_player") return PyBool_FromLong(game->player() == o ? 1 : 0);
+    PyErr_SetString(PyExc_AttributeError, name);
+    return nullptr;
+}
+
+PyObject* naruObjectSet(PyObject*, PyObject* args) {
+    const char* id = nullptr;
+    const char* name = nullptr;
+    PyObject* value = nullptr;
+    GameWorld* game = nullptr;
+    if (!PyArg_ParseTuple(args, "ssO", &id, &name, &value) || !(game = requireGame())) {
+        return nullptr;
+    }
+    const SceneObject* o = requireSceneObject(game, id);
+    if (!o) {
+        return nullptr;
+    }
+    std::string key = name;
+    if (key == "passable") {
+        game->setObjectPassable(id, PyObject_IsTrue(value) == 1);
+        Py_RETURN_NONE;
+    }
+    if (key == "color") {
+        std::string color = utf8(value);
+        bool ok = color.size() == 7 && color[0] == '#' &&
+                  color.find_first_not_of("0123456789abcdefABCDEF", 1) == std::string::npos;
+        if (!ok) {
+            PyErr_SetString(PyExc_ValueError, "color는 \"#rrggbb\" 형식이어야 합니다 (예: \"#ff8800\")");
+            return nullptr;
+        }
+        game->setObjectColor(id, color);
+        Py_RETURN_NONE;
+    }
+    double number = PyFloat_AsDouble(value);
+    if (number == -1.0 && PyErr_Occurred()) {
+        PyErr_Clear();
+        std::string message = "'" + key + "'에는 숫자를 넣어야 합니다";
+        PyErr_SetString(PyExc_TypeError, message.c_str());
+        return nullptr;
+    }
+    if (key == "x") {
+        game->setObjectPosition(id, number, o->y);
+    } else if (key == "y") {
+        game->setObjectPosition(id, o->x, number);
+    } else {
+        std::string message = "바꿀 수 없는 속성입니다: " + key;
+        PyErr_SetString(PyExc_AttributeError, message.c_str());
+        return nullptr;
+    }
+    Py_RETURN_NONE;
+}
+
+PyObject* naruObjectMove(PyObject*, PyObject* args) {
+    const char* id = nullptr;
+    double dx = 0;
+    double dy = 0;
+    GameWorld* game = nullptr;
+    if (!PyArg_ParseTuple(args, "sdd", &id, &dx, &dy) || !(game = requireGame()) || !requireSceneObject(game, id)) {
+        return nullptr;
+    }
+    return PyBool_FromLong(game->moveObject(id, dx, dy) ? 1 : 0);
+}
+
+PyObject* naruSceneFind(PyObject*, PyObject* args) {
+    const char* name = nullptr;
+    GameWorld* game = nullptr;
+    if (!PyArg_ParseTuple(args, "s", &name) || !(game = requireGame())) {
+        return nullptr;
+    }
+    if (const Scene* scene = game->scene()) {
+        for (const SceneObject& o : scene->objects) {
+            if (o.name == name) {
+                return stringObject(o.id);
+            }
+        }
+    }
+    Py_RETURN_NONE;
+}
+
+PyObject* naruSceneObjectIds(PyObject*, PyObject*) {
+    GameWorld* game = requireGame();
+    if (!game) {
+        return nullptr;
+    }
+    std::vector<std::string> ids;
+    if (const Scene* scene = game->scene()) {
+        for (const SceneObject& o : scene->objects) {
+            ids.push_back(o.id);
+        }
+    }
+    return stringList(ids);
+}
+
+PyMethodDef kMethods[] = {
+    {"log", naruLog, METH_VARARGS, "log(message, level)"},
     {"get_var", naruGetVar, METH_VARARGS, "get_var(name, default=None)"},
     {"set_var", naruSetVar, METH_VARARGS, "set_var(name, value)"},
     {"db_get", naruDbGet, METH_VARARGS, "db_get(type_key, record_id)"},
@@ -672,6 +837,12 @@ PyMethodDef kMethods[] = {    {"log", naruLog, METH_VARARGS, "log(message, level
     {"scene_get", naruSceneGet, METH_VARARGS, "scene_get(name)"},
     {"scene_change", naruSceneChange, METH_VARARGS, "scene_change(scene_id)"},
     {"scene_ids", naruSceneIds, METH_NOARGS, "scene_ids()"},
+    {"scene_find", naruSceneFind, METH_VARARGS, "scene_find(name)"},
+    {"scene_object_ids", naruSceneObjectIds, METH_NOARGS, "scene_object_ids()"},
+    {"object_exists", naruObjectExists, METH_VARARGS, "object_exists(id)"},
+    {"object_get", naruObjectGet, METH_VARARGS, "object_get(id, name)"},
+    {"object_set", naruObjectSet, METH_VARARGS, "object_set(id, name, value)"},
+    {"object_move", naruObjectMove, METH_VARARGS, "object_move(id, dx, dy)"},
     {nullptr, nullptr, 0, nullptr},
 };
 
