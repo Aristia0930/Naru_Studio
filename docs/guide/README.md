@@ -309,6 +309,8 @@ def on_update(ctx):
         slime.move(1 if ctx.player.x > slime.x else -1, 0)
 ```
 
+더 많은 예제(순찰·밀기·문 열기)는 [docs/examples](../examples/README.md)에 있습니다.
+
 **기본 조작을 끄고 직접 만들기**: `ctx.player.default_control = False`로 끄면 엔진이 방향키 이동·결정 키 조사를 하지 않습니다. 그 대신 `on_update`에서 `ctx.player.move(dx, dy)`(충돌·접촉 이벤트 포함), `ctx.player.interact()`(앞의 객체 조사)로 직접 처리합니다.
 
 **검사 규칙** (어기면 오류로 알림 — 게임 시작 시 로그, F7, 등록 창):

@@ -153,6 +153,7 @@ def on_update(ctx):
         slime.move(1 if ctx.player.x > slime.x else -1, 0)
 ```
 
+- 바로 쓸 수 있는 예제(따라오기·순찰·밀기·문 열기): [docs/examples](examples/README.md)
 - 장면이 바뀐 뒤 예전 장면의 객체를 쓰면 `KeyError: 장면에 없는 객체입니다`가 납니다. 객체는 쓸 때마다 `ctx.scene.object(...)`로 다시 얻는 것이 안전합니다.
 - 바뀐 값은 그 실행에서만 유지되고 프로젝트 파일에는 저장되지 않습니다.
 

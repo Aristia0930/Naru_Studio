@@ -364,6 +364,24 @@ TEST_CASE("스크립트로 다른 객체를 찾고 바꾸고 움직인다 (ctx.s
     CHECK(bad.error.type == "ValueError");
 }
 
+TEST_CASE("docs/examples의 예제는 문법 오류가 없고 함께 전역 등록해도 이름이 겹치지 않는다") {
+    std::vector<std::string> paths;
+    for (const char* name : {"chase.py", "patrol.py", "push.py", "door.py"}) {
+        std::string path = std::string(NARU_EXAMPLES_DIR) + "/" + name;
+        auto syntax = g_runtime->checkSyntax(path);
+        if (!syntax.ok) {
+            std::printf("  %s\n", syntax.summary().c_str());
+        }
+        CHECK(syntax.ok);
+        paths.push_back(path);
+    }
+    auto errors = g_runtime->checkGlobalScripts(paths);
+    for (const auto& e : errors) {
+        std::printf("  %s:%d %s\n", e.file.c_str(), e.line, e.message.c_str());
+    }
+    CHECK(errors.empty());
+}
+
 TEST_CASE("스크립트에 공개된 모든 이름과 훅이 docs/SCRIPT_API.md에 적혀 있다") {    // 새 ctx 값·함수나 훅을 추가하면 이 테스트가 문서 갱신을 요구한다.
     std::ifstream in(std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_SCRIPT_API_DOC)), std::ios::binary);
     std::string doc((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
