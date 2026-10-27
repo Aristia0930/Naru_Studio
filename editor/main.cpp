@@ -71,8 +71,11 @@ int main(int argc, char* argv[]) {
                                        QStringLiteral("--database와 함께: '속성 정의' 탭을 연다."));
     QCommandLineOption fieldDialogOption(QStringLiteral("field-dialog"),
                                          QStringLiteral("속성 정의 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
+    QCommandLineOption lastOption(QStringLiteral("last"),
+                                  QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
     parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, runEventOption,
-                       startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption});
+                       startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
+                       lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
 
@@ -148,6 +151,13 @@ int main(int argc, char* argv[]) {
         }
     } else if (!parser.positionalArguments().isEmpty()) {
         request.directory = parser.positionalArguments().first();
+    } else if (parser.isSet(lastOption)) {
+        for (const QString& dir : StartDialog::recentProjects()) {
+            if (QFileInfo(QDir(dir).filePath(QStringLiteral("project.json"))).isFile()) {
+                request.directory = dir;
+                break;
+            }
+        }
     }
     const bool automated = parser.isSet(smokeOption) || parser.isSet(selfTestOption);
 

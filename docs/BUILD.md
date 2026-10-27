@@ -28,7 +28,25 @@ py -3 -m venv $env:LOCALAPPDATA\naru-tools\aqt-venv
 
 ## 3. 빌드
 
-가장 간단한 방법 (VS 개발자 환경을 자동으로 불러온다):
+### 개발 중: 빌드하고 바로 실행 — `dev.cmd`
+
+저장소 폴더의 **`dev.cmd`를 더블클릭**하거나 터미널에서 실행한다. VS 개발자 환경·Qt·Python 경로를 자동으로 찾는다.
+
+| 명령 | 하는 일 |
+|---|---|
+| `dev` (더블클릭) | 빌드 → **마지막으로 연 프로젝트로 Naru Studio 실행** |
+| `dev check` | 빌드 → 전체 테스트 → 모두 통과하면 실행 (기능을 고친 뒤 점검할 때) |
+| `dev test` | 빌드 → 전체 테스트만 |
+| `dev build` | 빌드만 |
+| `dev clean` | 빌드 폴더를 지우고 처음부터 다시 빌드 → 실행 |
+
+빌드나 테스트가 실패하면 실행하지 않고 멈춘다(더블클릭한 경우 창이 열린 채로 기다린다). 처음 실행하면 CMake 설정부터 하므로 몇 분 걸린다.
+
+IDE(Visual Studio, VS Code CMake Tools)에서는 CMake 타깃 **`run`**을 실행해도 된다: `cmake --build --preset windows-msvc --target run`.
+
+### 직접 빌드
+
+PowerShell 도우미 (VS 개발자 환경을 자동으로 불러온다):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build.ps1
@@ -81,7 +99,7 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 
 **Python 표준 라이브러리 위치:** 개발 빌드는 빌드할 때 찾은 Python 설치 폴더를 사용한다. 실행 시 `NARU_PYTHON_HOME` 환경변수로 바꿀 수 있다. 다른 PC로 실행 파일만 옮기는 배포는 아직 지원하지 않는다(M5).
 
-명령행 옵션: `NaruStudio.exe [프로젝트폴더] [--new-project <dir>] [--event <objectId> [--run-event]] [--database <type>[/<record>] [--fields-tab]] [--smoke-test <ms>] [--screenshot <png>] [--self-test]`
+명령행 옵션: `NaruStudio.exe [프로젝트폴더] [--last] [--new-project <dir>] [--event <objectId> [--run-event]] [--database <type>[/<record>] [--fields-tab]] [--smoke-test <ms>] [--screenshot <png>] [--self-test]`
 설명서 촬영용: `--start-screen`, `--command-dialog <type>`, `--field-dialog` (모두 `--screenshot`과 함께). 자세한 사용법은 [사용 설명서](guide/README.md).
 (`--smoke-test`·`--self-test` 실행은 최근 프로젝트 목록에 기록하지 않는다.)
 

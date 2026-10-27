@@ -10,6 +10,7 @@
 | 영역 | 상태 | 내용 |
 |---|---|---|
 | 개발 환경 | ✅ | VS 2022 MSVC + CMake/Ninja + Qt 6.8.3 + Python 3.13+, CMakePresets, `docs/BUILD.md` |
+| 빌드 후 바로 실행 | ✅ | `dev.cmd` (더블클릭: 빌드→마지막 프로젝트로 실행, `dev check`: 빌드→테스트→실행), CMake `run` 타깃, `--last` 옵션 |
 | 엔진 기반 | ✅ | 로그, 변수, 이벤트 명령 실행기(running/waiting/completed/failed/cancelled, 점프, 무한 반복 방지), 고정 틱 Session |
 | Python 연결 | ✅ | `run(ctx)`, `ctx.variables`, `ctx.log`, `ctx.db`, print→로그, 오류 파일·행·traceback, 매 실행 파일 재로드 |
 | 프로젝트 | ✅ | 시작 화면(새로 만들기/열기/최근), 폴더 구조, JSON 저장·검증(한국어 오류), 프로젝트 닫기 |

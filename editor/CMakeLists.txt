@@ -42,6 +42,15 @@ target_compile_definitions(naru_editor PRIVATE NARU_STUDIO_VERSION="${PROJECT_VE
 
 naru_copy_python_runtime(naru_editor)
 
+# 빌드한 뒤 바로 실행: cmake --build --preset windows-msvc --target run
+# (마지막으로 연 프로젝트를 연다. IDE의 CMake 타깃 목록에서도 고를 수 있다)
+add_custom_target(run
+  COMMAND $<TARGET_FILE:naru_editor> --last
+  DEPENDS naru_editor
+  WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+  USES_TERMINAL
+  COMMENT "Naru Studio 실행")
+
 # 개발 중 바로 실행할 수 있도록 Qt DLL·플러그인을 실행 파일 옆에 배치한다.
 if(WIN32)
   get_target_property(_naru_qmake Qt6::qmake IMPORTED_LOCATION)

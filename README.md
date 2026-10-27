@@ -41,7 +41,7 @@ git clone https://github.com/Aristia0930/Naru_Studio.git
 cd Naru_Studio
 ```
 
-이후 [docs/BUILD.md](docs/BUILD.md)대로 VS 2022 Build Tools·CMake·Ninja·Qt 6.8.3·Python 3.13+를 준비하고 빌드합니다. 개발 도구와 SDK를 Git에 묶어 올리는 대신 설치 방법/버전을 기록합니다.
+이후 [docs/BUILD.md](docs/BUILD.md)대로 VS 2022 Build Tools·CMake·Ninja·Qt 6.8.3·Python 3.13+를 준비합니다. 그다음 **`dev.cmd`를 더블클릭하면 빌드 후 바로 실행**되고, `dev check`는 테스트까지 통과해야 실행합니다. 개발 도구와 SDK를 Git에 묶어 올리는 대신 설치 방법/버전을 기록합니다.
 
 Godot·Ghidra·REA는 이전 조사 도구이며 새 엔진의 필수 실행 환경이 아닙니다. 참고 자료를 조사할 때만 별도로 준비합니다. PC별 경로·캐시·자격증명을 공유하지 않습니다.
 
