@@ -75,6 +75,8 @@ QString describe(const EventCommand& c) {
         return QStringLiteral("스크립트 호출: %1 · %2()").arg(q(c.script), q(c.function));
     case EventCommandType::Comment:
         return QStringLiteral("주석: %1").arg(q(c.text));
+    case EventCommandType::GetData:
+        return QStringLiteral("데이터 → 변수: %1 = %2[%3].%4").arg(q(c.variable), q(c.dataType), q(c.record), q(c.field));
     }
     return {};
 }
@@ -113,8 +115,8 @@ std::vector<EventCommand>* listAt(std::vector<EventCommand>& root, const std::st
 std::optional<EventCommandType> chooseType(QWidget* parent) {
     QMenu menu(parent);
     for (auto type : {EventCommandType::Say, EventCommandType::Wait, EventCommandType::SetVariable,
-                      EventCommandType::IfVariable, EventCommandType::CallScript, EventCommandType::Log,
-                      EventCommandType::Comment}) {
+                      EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::CallScript,
+                      EventCommandType::Log, EventCommandType::Comment}) {
         menu.addAction(CommandDialog::typeLabel(type))->setData(static_cast<int>(type));
     }
     QAction* chosen = menu.exec(QCursor::pos());
@@ -130,7 +132,8 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
     : QWidget(parent), doc_(doc), python_(python) {
     title_ = new QLabel(this);
     trigger_ = new QComboBox(this);
-    trigger_->addItems({QStringLiteral("조사 (결정 키·클릭)"), QStringLiteral("접촉"), QStringLiteral("자동 실행 (장면 시작)")});
+    trigger_->addItems({QStringLiteral("조사 (결정 키·클릭)"), QStringLiteral("플레이어 접촉"), QStringLiteral("자동 실행 (장면 시작)"),
+                        QStringLiteral("이벤트 접촉 (이 객체가 플레이어에게 닿을 때)"), QStringLiteral("병렬 처리 (다른 행동과 동시에 반복)")});
     trigger_->setToolTip(QStringLiteral("이벤트가 시작되는 조건입니다. 저장되며, 게임 실행 화면이 만들어지면 적용됩니다.\n"
                                         "지금은 아래 '테스트 실행'으로 바로 실행해 볼 수 있습니다."));
 
@@ -447,7 +450,7 @@ void EventEditor::addCommandAt(const std::string& listPrefix, int index) {
     if (*type == EventCommandType::IfVariable || *type == EventCommandType::SetVariable) {
         command.value = std::int64_t{0};
     }
-    CommandDialog dialog(command, scriptNames(), this);
+    CommandDialog dialog(command, scriptNames(), &doc_->project().database, this);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
@@ -492,7 +495,7 @@ void EventEditor::editSelected() {
     if (!list || index >= static_cast<int>(list->size())) {
         return;
     }
-    CommandDialog dialog((*list)[static_cast<std::size_t>(index)], scriptNames(), this);
+    CommandDialog dialog((*list)[static_cast<std::size_t>(index)], scriptNames(), &doc_->project().database, this);
     if (dialog.exec() == QDialog::Accepted) {
         replaceCommand(listPrefix, index, dialog.command());
     }
@@ -547,7 +550,10 @@ void EventEditor::startTest() {
         return result.ok ? std::string() : "Python 스크립트 오류 (" + result.error.type + ")";
     };
 
+    // 실행 중 편집해도 테스트가 영향을 받지 않도록 데이터베이스 사본을 쓴다.
+    runDatabase_ = doc_->project().database;
     session_ = std::make_unique<naru::Session>(naru::Variables{}, 1.0 / 60.0, this);
+    session_->setDatabase(&runDatabase_);
     session_->logger().addSink([this](const naru::LogEntry& entry) {
         if (logSink_) {
             logSink_(entry);

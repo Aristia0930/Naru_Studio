@@ -6,6 +6,10 @@ add_executable(naru_event_tests event_tests.cpp)
 target_link_libraries(naru_event_tests PRIVATE naru_engine)
 add_test(NAME events COMMAND naru_event_tests)
 
+add_executable(naru_database_tests database_tests.cpp)
+target_link_libraries(naru_database_tests PRIVATE naru_engine)
+add_test(NAME database COMMAND naru_database_tests)
+
 add_executable(naru_project_tests project_tests.cpp)
 target_link_libraries(naru_project_tests PRIVATE naru_engine)
 add_test(NAME project COMMAND naru_project_tests)

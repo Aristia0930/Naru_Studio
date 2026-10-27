@@ -7,6 +7,7 @@
 #include <QString>
 #include <QStringList>
 
+class DatabaseEditor;
 class EventEditor;
 class Inspector;
 class ProjectDocument;
@@ -38,6 +39,8 @@ public:
     // 객체를 선택하고 이벤트 탭을 연다 (명령행 --event 옵션, 스크린샷 확인용).
     void showObjectEvent(const QString& objectId);
     void startEventTest();
+    // 데이터베이스 탭을 열고 종류/항목을 선택한다. fieldsTab이면 "속성 정의" 탭을 보여 준다.
+    void showDatabase(const QString& typeKey, const QString& recordId, bool fieldsTab);
 
 private:
     void createActions();
@@ -83,6 +86,7 @@ private:
     QTabWidget* tabs_ = nullptr;
     SceneView* sceneView_ = nullptr;
     EventEditor* eventEditor_ = nullptr;
+    DatabaseEditor* databaseEditor_ = nullptr;
     Inspector* inspector_ = nullptr;
     QTreeWidget* log_ = nullptr;
     QTableWidget* variablesTable_ = nullptr;

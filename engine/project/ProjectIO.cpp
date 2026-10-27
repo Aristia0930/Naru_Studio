@@ -220,6 +220,12 @@ json commandToJson(const EventCommand& c) {
         j["script"] = c.script;
         j["function"] = c.function;
         break;
+    case EventCommandType::GetData:
+        j["dataType"] = c.dataType;
+        j["record"] = c.record;
+        j["field"] = c.field;
+        j["variable"] = c.variable;
+        break;
     }
     return j;
 }
@@ -268,6 +274,9 @@ EventCommand commandFromJson(const json& j, int depth) {
     }
     c.script = getString(j, "script", std::string());
     c.function = getString(j, "function", std::string("run"));
+    c.dataType = getString(j, "dataType", std::string());
+    c.record = getString(j, "record", std::string());
+    c.field = getString(j, "field", std::string());
     if (c.type == EventCommandType::IfVariable) {
         c.thenCommands = commandsFromJson(getArray(j, "then"), depth + 1);
         c.elseCommands = commandsFromJson(getArray(j, "else"), depth + 1);
@@ -343,6 +352,109 @@ Scene sceneFromJson(const json& j) {
         s.objects.push_back(std::move(o));
     }
     return s;
+}
+
+// ---------------------------------------------------------------- 데이터베이스
+
+json fieldToJson(const FieldDef& f) {
+    json j = {{"key", f.key}, {"name", f.name}, {"type", toKey(f.type)}, {"default", valueToJson(f.defaultValue)}};
+    if (f.min) {
+        j["min"] = *f.min;
+    }
+    if (f.max) {
+        j["max"] = *f.max;
+    }
+    if (f.type == FieldType::Choice) {
+        j["choices"] = f.choices;
+    }
+    if (f.type == FieldType::Reference) {
+        j["refType"] = f.refType;
+    }
+    return j;
+}
+
+json dataTypeToJson(const DataType& t) {
+    json fields = json::array();
+    for (const auto& f : t.fields) {
+        fields.push_back(fieldToJson(f));
+    }
+    json records = json::array();
+    for (const auto& r : t.records) {
+        json values = json::object();
+        for (const auto& [key, value] : r.values) {
+            values[key] = valueToJson(value);
+        }
+        records.push_back({{"id", r.id}, {"name", r.name}, {"values", values}});
+    }
+    return {{"formatVersion", ProjectIO::kFormatVersion},
+            {"key", t.key},
+            {"name", t.name},
+            {"fields", fields},
+            {"records", records}};
+}
+
+// 구조 오류(형식이 틀린 필드, 중복 키, 정의되지 않은 속성 값)는 예외로 거부한다.
+// 값이 범위를 벗어나거나 참조가 끊긴 것은 Database::validate()가 경고로 보여 준다.
+DataType dataTypeFromJson(const json& j) {
+    DataType t;
+    t.key = requireString(j, "key");
+    t.name = getString(j, "name", t.key);
+    for (const auto& fj : getArray(j, "fields")) {
+        requireObject(fj, "속성 정의");
+        FieldDef f;
+        f.key = requireString(fj, "key");
+        if (!isValidFieldKey(f.key)) {
+            throw std::runtime_error("속성 키는 영문·숫자·_ 로 쓰고 id/name은 쓸 수 없습니다: " + f.key);
+        }
+        if (t.findField(f.key)) {
+            throw std::runtime_error("속성 키가 중복됩니다: " + f.key);
+        }
+        f.name = getString(fj, "name", f.key);
+        std::string typeKey = requireString(fj, "type");
+        auto type = fieldTypeFromKey(typeKey);
+        if (!type) {
+            throw std::runtime_error("알 수 없는 속성 형식: " + typeKey);
+        }
+        f.type = *type;
+        if (fj.contains("min")) {
+            f.min = getNumber(fj, "min", 0.0);
+        }
+        if (fj.contains("max")) {
+            f.max = getNumber(fj, "max", 0.0);
+        }
+        for (const auto& cj : getArray(fj, "choices")) {
+            if (!cj.is_string()) {
+                throw std::runtime_error("'choices'에는 문자열만 넣을 수 있습니다");
+            }
+            f.choices.push_back(cj.get<std::string>());
+        }
+        f.refType = getString(fj, "refType", std::string());
+        f.defaultValue = fj.contains("default") ? valueFromJson(fj.at("default")) : emptyValueFor(f);
+        t.fields.push_back(std::move(f));
+    }
+    for (const auto& rj : getArray(j, "records")) {
+        requireObject(rj, "데이터 항목");
+        DataRecord r;
+        r.id = requireString(rj, "id");
+        if (!isValidDataId(r.id)) {
+            throw std::runtime_error("항목 ID에 쓸 수 없는 문자가 있습니다: " + r.id);
+        }
+        if (t.findRecord(r.id)) {
+            throw std::runtime_error("항목 ID가 중복됩니다: " + r.id);
+        }
+        r.name = getString(rj, "name", r.id);
+        if (auto it = rj.find("values"); it != rj.end()) {
+            requireObject(*it, "'values'");
+            for (const auto& [key, value] : it->items()) {
+                if (!t.findField(key)) {
+                    throw std::runtime_error("항목 " + r.id + "에 정의되지 않은 속성 값이 있습니다: " + key);
+                }
+                r.values[key] = valueFromJson(value);
+            }
+        }
+        t.records.push_back(std::move(r));
+    }
+    return t;
 }
 
 bool checkVersion(const json& j, const std::string& file, std::vector<ProjectError>& errors) {
@@ -438,6 +550,19 @@ ProjectLoadResult ProjectIO::create(const fs::path& dir, const std::string& name
     branch.elseCommands = {first};
     project.scenes.front().objects.back().event.commands = {say, count, branch};
 
+    // 데이터베이스 예제: 템플릿에서 만든 아이템·몬스터 (속성은 자유롭게 바꿀 수 있다)
+    DataType items = makeTemplate(DataTemplate::Item, project.database);
+    items.records = {
+        {"potion", "포션", {{"category", std::string("소모품")}, {"price", std::int64_t{50}}, {"heal", std::int64_t{50}}}},
+        {"ether", "에테르", {{"category", std::string("소모품")}, {"price", std::int64_t{120}}, {"heal", std::int64_t{0}}}},
+    };
+    project.database.types.push_back(std::move(items));
+    DataType monsters = makeTemplate(DataTemplate::Monster, project.database);
+    monsters.records = {
+        {"slime", "슬라임", {{"hp", std::int64_t{30}}, {"element", std::string("물")}, {"drop", std::string("potion")}}},
+    };
+    project.database.types.push_back(std::move(monsters));
+
     result.errors = save(project, dir);
     if (!result.errors.empty()) {
         return result;
@@ -503,6 +628,40 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
                 result.errors.push_back({file, std::string("형식 오류: ") + e.what()});
             }
         }
+
+        for (const auto& keyJson : getArray(root, "dataTypes")) {
+            if (!keyJson.is_string()) {
+                throw std::runtime_error("'dataTypes'에는 데이터 종류 키 문자열만 넣을 수 있습니다");
+            }
+            std::string key = keyJson.get<std::string>();
+            std::string file = "data/" + key + ".json";
+            if (!isValidDataId(key)) {
+                result.errors.push_back({kProjectFile, "데이터 종류 키에 쓸 수 없는 문자가 있습니다: " + key});
+                continue;
+            }
+            if (project.database.findType(key)) {
+                result.errors.push_back({kProjectFile, "데이터 종류 키가 중복됩니다: " + key});
+                continue;
+            }
+            json dj;
+            if (!readJson(dir / fromUtf8(file), dj, error)) {
+                result.errors.push_back({file, error});
+                continue;
+            }
+            if (!checkVersion(dj, file, result.errors)) {
+                continue;
+            }
+            try {
+                DataType type = dataTypeFromJson(dj);
+                if (type.key != key) {
+                    result.errors.push_back({file, "파일 안의 key(" + type.key + ")가 project.json과 다릅니다"});
+                    continue;
+                }
+                project.database.types.push_back(std::move(type));
+            } catch (const std::exception& e) {
+                result.errors.push_back({file, std::string("형식 오류: ") + e.what()});
+            }
+        }
     } catch (const std::exception& e) {
         result.errors.push_back({kProjectFile, std::string("형식 오류: ") + e.what()});
     }
@@ -538,22 +697,45 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
         sceneIds.push_back(scene.id);
     }
 
+    fs::create_directories(dataDirectory(dir), ec);
+    json dataKeys = json::array();
+    std::set<fs::path> writtenData;
+    for (const auto& type : project.database.types) {
+        std::string file = "data/" + type.key + ".json";
+        if (!isValidDataId(type.key)) {
+            errors.push_back({file, "데이터 종류 키에 쓸 수 없는 문자가 있습니다"});
+            continue;
+        }
+        std::string error;
+        fs::path path = dir / fromUtf8(file);
+        if (!writeJson(path, dataTypeToJson(type), error)) {
+            errors.push_back({file, error});
+        }
+        writtenData.insert(path.filename());
+        dataKeys.push_back(type.key);
+    }
+
     json root = {{"formatVersion", kFormatVersion},
                  {"name", project.name},
                  {"startScene", project.startSceneId},
-                 {"scenes", sceneIds}};
+                 {"scenes", sceneIds},
+                 {"dataTypes", dataKeys}};
     std::string error;
     if (!writeJson(dir / kProjectFile, root, error)) {
         errors.push_back({kProjectFile, error});
     }
 
-    // 모든 저장이 성공했을 때만, 프로젝트에서 삭제한 장면의 파일을 정리한다.
+    // 모든 저장이 성공했을 때만, 프로젝트에서 삭제한 장면·데이터 종류의 파일을 정리한다.
     if (errors.empty()) {
-        for (const auto& entry : fs::directory_iterator(scenesDirectory(dir), ec)) {
-            if (entry.path().extension() == ".json" && !written.contains(entry.path().filename())) {
-                fs::remove(entry.path(), ec);
+        auto cleanup = [&ec](const fs::path& folder, const std::set<fs::path>& keep) {
+            for (const auto& entry : fs::directory_iterator(folder, ec)) {
+                if (entry.path().extension() == ".json" && !keep.contains(entry.path().filename())) {
+                    fs::remove(entry.path(), ec);
+                }
             }
-        }
+        };
+        cleanup(scenesDirectory(dir), written);
+        cleanup(dataDirectory(dir), writtenData);
     }
     return errors;
 }

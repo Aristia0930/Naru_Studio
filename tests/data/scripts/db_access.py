@@ -1,0 +1,10 @@
+def run(ctx):
+    slime = ctx.db.get("monster", "slime")
+    ctx.variables.set("slime_name", slime["name"])
+    ctx.variables.set("slime_hp", slime["hp"])
+    drop = ctx.db.get("item", slime["drop"])
+    ctx.variables.set("drop_price", drop["price"])
+    ctx.variables.set("missing_is_none", ctx.db.get("monster", "dragon") is None)
+    ctx.variables.set("item_count", len(ctx.db.ids("item")))
+    ctx.variables.set("types", ",".join(ctx.db.types()))
+    ctx.db.get("weapon", "sword")

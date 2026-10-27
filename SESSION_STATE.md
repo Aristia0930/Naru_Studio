@@ -2,6 +2,24 @@
 
 이 파일은 게임 기획/에셋 기록과 별개인 제작툴 전용 기록이다. 개발툴 재개 시 NARU_NEXT_STEPS.md와 이 파일을 먼저 읽고 실제 환경을 확인한다. 최신 사용자 지시가 우선한다.
 
+## 다음 시작점 — 2026-10-27 세션 종료
+
+- 사용자 요청으로 여기까지 커밋·푸시하고 종료. **다음 할 일과 기능 목록: [docs/ROADMAP.md](docs/ROADMAP.md)** (P1 게임 실행 화면부터).
+- 재개 시: ROADMAP → 이 파일 → `docs/guide/README.md` 순서로 읽고, 빌드 후 `ctest`로 상태 확인.
+
+## 커스텀 데이터베이스 — 2026-10-27
+
+- 커밋 `00a874e`(프로젝트·장면·이벤트·설명서)를 origin/main에 푸시한 뒤 진행.
+- 사용자 방향: 아이템/캐릭터/몬스터 고정 구조가 아니라 **속성을 직접 정의하는 데이터베이스**.
+- 엔진 `naru/data/Database.h`: DataType(키·이름·FieldDef 목록·DataRecord 목록), FieldType 6종(정수·실수·문자열·참거짓·선택지·데이터 참조), 기본값·최소/최대·선택지·참조 종류. 키 규칙(종류/항목 ID: 영문·숫자·_·-, 속성 키: 식별자, id/name 예약). checkValue/convertValue/emptyValueFor, validate()(끊긴 참조·범위·정의 안 된 값 → 경고), referencesTo, 템플릿(빈/캐릭터/아이템/몬스터 — 고칠 수 있는 정의). 저장 `data/<key>.json` + project.json `dataTypes`, 구조 오류는 열기 거부, 값 문제는 경고.
+- 이벤트: `get_data` 명령(데이터 → 변수), CommandContext.database, Session::setDatabase. 실행 조건에 이벤트 접촉·병렬 처리 추가(사용자가 붙여 준 RPG Maker 트리거 목록 반영, 저장만 됨).
+- Python: `ctx.db.get(type, id)`(dict: id·name·모든 속성, 없으면 None, 없는 종류는 KeyError), `ctx.db.ids(type)`, `ctx.db.types()`. 읽기 전용.
+- 에디터: "데이터베이스" 탭(F9) — 종류/항목/값 편집·속성 정의 3단, ValueEditor(형식별 입력 칸), FieldDialog, 템플릿 메뉴, 검색, 복제, 경고 표시줄, 모든 편집 SetDatabaseCommand로 Undo(같은 칸 연속 변경 병합). 형식 변경 시 값 변환·불가 개수 확인. 참조 중인 종류 삭제 차단. 새 프로젝트에 아이템 2·몬스터 1 예제.
+- **검증:** ctest 8/8 (engine 7, events 9, database 7, project 11, python 9, editor smoke, self-test 26단계). ASan 빌드에서 전 테스트·self-test·DB 탭 오류 없음. 설명서 5장 + 그림 4장 추가(08~11), 전체 그림 재촬영.
+- **미검증/한계:** 데이터베이스 편집 대화상자(종류/항목 추가, 속성 편집, 삭제 확인)는 모달이라 자동 검사는 편집 API 경로로만 했다. 목록/묶음/이미지 속성, 표 보기, 항목 ID 변경, 실행 중 DB 변경 없음. 이벤트 GetData가 참조하는 종류/속성을 지워도 경고하지 않는다.
+- 사용자 질문(답변 예정/완료): 트리거와 스크립트 연결, **전역 스크립트** — 현재 `scripts/`는 이미 프로젝트 공용. 없는 것은 공통 이벤트와 게임 수명주기 훅(on_start, 매 프레임 등). 런타임(게임 실행 화면) 단계에서 함께 설계.
+- 사용자 참고 링크: https://namu.wiki/w/RPG%20Maker%20XP#s-2 (RPG Maker XP 정보, 아직 읽지 않음).
+
 ## 이벤트 편집기 — 2026-10-27
 
 - 엔진: `EventData`(명령 7종: say/wait/set_variable/if_variable/log/call_script/comment, 실행 조건 action/touch/autorun), `EventCompiler`(조건 분기를 점프로 펼침, 명령 ID = 편집 위치 "1/t/0"), `DialogueHost`(대사는 넘길 때까지 대기), EventRunner 점프·즉시 명령 1만 개 한도. 없는 변수는 숫자 연산/비교에서 0. 스크립트 호출은 ScriptRunner 콜백으로 엔진이 Python에 직접 의존하지 않음.

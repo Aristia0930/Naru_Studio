@@ -25,6 +25,7 @@ struct ProjectLoadResult {
 // 프로젝트 폴더 구조:
 //   project.json        이름·형식 버전·시작 장면·장면 순서
 //   scenes/<id>.json    장면과 배치 객체
+//   data/<key>.json     데이터베이스: 데이터 종류 하나의 속성 정의와 항목
 //   scripts/            Python 게임 스크립트
 //   assets/             이미지·음원 (가져오기 기능은 이후 단계)
 class ProjectIO {
@@ -41,6 +42,7 @@ public:
     static std::vector<ProjectError> save(const Project& project, const std::filesystem::path& dir);
 
     static std::filesystem::path scenesDirectory(const std::filesystem::path& dir) { return dir / "scenes"; }
+    static std::filesystem::path dataDirectory(const std::filesystem::path& dir) { return dir / "data"; }
     static std::filesystem::path scriptsDirectory(const std::filesystem::path& dir) { return dir / "scripts"; }
     static std::filesystem::path assetsDirectory(const std::filesystem::path& dir) { return dir / "assets"; }
 };

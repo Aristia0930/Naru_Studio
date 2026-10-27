@@ -129,6 +129,11 @@ void ProjectDocument::removeObject(const std::string& sceneId, const std::string
     emit sceneChanged(QString::fromStdString(sceneId));
 }
 
+void ProjectDocument::setDatabase(const naru::Database& database) {
+    project_.database = database;
+    emit databaseChanged();
+}
+
 void ProjectDocument::setObject(const std::string& sceneId, const naru::SceneObject& object) {
     naru::Scene* scene = project_.findScene(sceneId);
     naru::SceneObject* target = scene ? scene->findObject(object.id) : nullptr;

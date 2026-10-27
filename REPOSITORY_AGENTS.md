@@ -4,7 +4,7 @@
 
 ## 최우선 시작 문서
 
-`NARU_NEXT_STEPS.md` → `SESSION_STATE.md` → `README.md`를 읽고 실제 파일 상태를 확인한다. 최신 사용자 지시가 문서보다 우선한다.
+`docs/ROADMAP.md` → `SESSION_STATE.md` → `README.md`를 읽고 실제 파일 상태를 확인한다. 초기 계획은 `NARU_NEXT_STEPS.md`. 최신 사용자 지시가 문서보다 우선한다.
 
 ## 사용자 확정 사항 — 2026-10-27
 

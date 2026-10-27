@@ -38,11 +38,13 @@ QString CommandDialog::typeLabel(EventCommandType type) {
     case EventCommandType::Log: return QStringLiteral("로그 남기기");
     case EventCommandType::CallScript: return QStringLiteral("스크립트 호출");
     case EventCommandType::Comment: return QStringLiteral("주석");
+    case EventCommandType::GetData: return QStringLiteral("데이터 → 변수");
     }
     return {};
 }
 
-CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringList& scripts, QWidget* parent)
+CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringList& scripts,
+                             const naru::Database* database, QWidget* parent)
     : QDialog(parent), command_(command) {
     setWindowTitle(typeLabel(command.type));
     auto* form = new QFormLayout;
@@ -128,6 +130,70 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         form->addRow(QStringLiteral("함수"), function_);
         form->addRow(new QLabel(QStringLiteral("함수는 def 함수이름(ctx): 형태여야 합니다."), this));
         break;
+    case EventCommandType::GetData: {
+        // 종류 → 항목 → 속성 순으로 고른다. 직접 입력도 된다 (나중에 만들 항목 등).
+        dataType_ = new QComboBox(this);
+        record_ = new QComboBox(this);
+        field_ = new QComboBox(this);
+        for (QComboBox* box : {dataType_, record_, field_}) {
+            box->setEditable(true);
+        }
+        // 연결된 람다가 나중에도 쓰므로 포인터를 값으로 잡는다 (프로젝트 데이터는 대화상자보다 오래 산다).
+        static const naru::Database empty;
+        const naru::Database* dbp = database ? database : &empty;
+        for (const auto& t : dbp->types) {
+            dataType_->addItem(QStringLiteral("%1  (%2)").arg(QString::fromStdString(t.name), QString::fromStdString(t.key)),
+                               QString::fromStdString(t.key));
+        }
+        auto keyOf = [](QComboBox* box) {
+            int i = box->findText(box->currentText());
+            return (i >= 0 && box->itemData(i).isValid() ? box->itemData(i).toString() : box->currentText()).trimmed();
+        };
+        auto fillDependent = [this, dbp, keyOf](const std::string& record, const std::string& field) {
+            const naru::DataType* t = dbp->findType(keyOf(dataType_).toStdString());
+            record_->clear();
+            field_->clear();
+            field_->addItem(QStringLiteral("이름  (name)"), QStringLiteral("name"));
+            field_->addItem(QStringLiteral("ID  (id)"), QStringLiteral("id"));
+            if (t) {
+                for (const auto& r : t->records) {
+                    record_->addItem(QStringLiteral("%1  (%2)").arg(QString::fromStdString(r.name), QString::fromStdString(r.id)),
+                                     QString::fromStdString(r.id));
+                }
+                for (const auto& f : t->fields) {
+                    field_->addItem(QStringLiteral("%1  (%2)").arg(QString::fromStdString(f.name), QString::fromStdString(f.key)),
+                                    QString::fromStdString(f.key));
+                }
+            }
+            auto pick = [](QComboBox* box, const std::string& key) {
+                if (key.empty()) {
+                    return;
+                }
+                int i = box->findData(QString::fromStdString(key));
+                if (i >= 0) {
+                    box->setCurrentIndex(i);
+                } else {
+                    box->setEditText(QString::fromStdString(key));
+                }
+            };
+            pick(record_, record);
+            pick(field_, field);
+        };
+        if (int i = dataType_->findData(QString::fromStdString(command.dataType)); i >= 0) {
+            dataType_->setCurrentIndex(i);
+        } else if (!command.dataType.empty()) {
+            dataType_->setEditText(QString::fromStdString(command.dataType));
+        }
+        fillDependent(command.record, command.field.empty() ? std::string("name") : command.field);
+        connect(dataType_, &QComboBox::currentIndexChanged, this, [fillDependent] { fillDependent({}, "name"); });
+        variable_ = new QLineEdit(QString::fromStdString(command.variable), this);
+        form->addRow(QStringLiteral("데이터 종류"), dataType_);
+        form->addRow(QStringLiteral("항목"), record_);
+        form->addRow(QStringLiteral("속성"), field_);
+        form->addRow(QStringLiteral("넣을 변수"), variable_);
+        form->addRow(new QLabel(QStringLiteral("예: 몬스터 slime의 hp를 변수 enemy_hp에 넣기"), this));
+        break;
+    }
     }
 
     auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
@@ -203,6 +269,21 @@ void CommandDialog::accept() {
         }
         c.script = script.toStdString();
         c.function = function_->text().trimmed().isEmpty() ? "run" : function_->text().trimmed().toStdString();
+        break;
+    }
+    case EventCommandType::GetData: {
+        auto keyOf = [](QComboBox* box) {
+            int i = box->findText(box->currentText());
+            return (i >= 0 && box->itemData(i).isValid() ? box->itemData(i).toString() : box->currentText()).trimmed();
+        };
+        c.dataType = keyOf(dataType_).toStdString();
+        c.record = keyOf(record_).toStdString();
+        c.field = keyOf(field_).toStdString();
+        c.variable = variable_->text().trimmed().toStdString();
+        if (c.dataType.empty() || c.record.empty() || c.field.empty() || c.variable.empty()) {
+            QMessageBox::warning(this, windowTitle(), QStringLiteral("데이터 종류·항목·속성·변수를 모두 정하세요."));
+            return;
+        }
         break;
     }
     }

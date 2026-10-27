@@ -2,6 +2,7 @@
 
 #include "naru/core/Log.h"
 #include "naru/core/Value.h"
+#include "naru/data/Database.h"
 #include "naru/events/BuiltinCommands.h"
 
 #include <utility>
@@ -118,6 +119,51 @@ private:
     std::size_t elseTarget_ = 0;
 };
 
+// 데이터베이스 항목의 속성 값을 변수에 넣는다.
+class GetDataCommand : public Command {
+public:
+    GetDataCommand(std::string id, const EventCommand& c)
+        : Command(std::move(id)), type_(c.dataType), record_(c.record), field_(c.field), variable_(c.variable) {}
+
+    CommandStatus start(CommandContext& ctx) override {
+        if (variable_.empty()) {
+            setError("결과를 넣을 변수 이름이 비어 있습니다");
+            return CommandStatus::Failed;
+        }
+        if (!ctx.database) {
+            setError("데이터베이스가 연결되지 않았습니다");
+            return CommandStatus::Failed;
+        }
+        const DataType* type = ctx.database->findType(type_);
+        if (!type) {
+            setError("데이터 종류가 없습니다: " + type_);
+            return CommandStatus::Failed;
+        }
+        const DataRecord* record = type->findRecord(record_);
+        if (!record) {
+            setError(type->name + "에 항목이 없습니다: " + record_);
+            return CommandStatus::Failed;
+        }
+        if (field_ == "id") {
+            ctx.variables.set(variable_, record->id);
+        } else if (field_ == "name") {
+            ctx.variables.set(variable_, record->name);
+        } else if (const FieldDef* f = type->findField(field_)) {
+            ctx.variables.set(variable_, type->valueOf(*record, *f));
+        } else {
+            setError(type->name + "에 속성이 없습니다: " + field_);
+            return CommandStatus::Failed;
+        }
+        return CommandStatus::Completed;
+    }
+
+private:
+    std::string type_;
+    std::string record_;
+    std::string field_;
+    std::string variable_;
+};
+
 // "그렇다면" 분기 끝에서 "아니라면" 분기를 건너뛴다.
 class JumpCommand : public Command {
 public:
@@ -183,6 +229,9 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
             }
             break;
         }
+        case EventCommandType::GetData:
+            out.push_back(std::make_unique<GetDataCommand>(id, c));
+            break;
         case EventCommandType::Comment:
             break; // 실행하지 않는다
         }

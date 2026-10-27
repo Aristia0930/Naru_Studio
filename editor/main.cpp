@@ -1,4 +1,5 @@
 #include "CommandDialog.h"
+#include "FieldDialog.h"
 #include "MainWindow.h"
 #include "ProjectDocument.h"
 #include "StartDialog.h"
@@ -63,8 +64,15 @@ int main(int argc, char* argv[]) {
     QCommandLineOption commandDialogOption(QStringLiteral("command-dialog"),
                                            QStringLiteral("<type> 명령 입력 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."),
                                            QStringLiteral("type"));
+    QCommandLineOption databaseOption(QStringLiteral("database"),
+                                      QStringLiteral("데이터베이스 탭을 열고 <type>[/<record>]를 선택한다."),
+                                      QStringLiteral("type/record"));
+    QCommandLineOption fieldsTabOption(QStringLiteral("fields-tab"),
+                                       QStringLiteral("--database와 함께: '속성 정의' 탭을 연다."));
+    QCommandLineOption fieldDialogOption(QStringLiteral("field-dialog"),
+                                         QStringLiteral("속성 정의 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, runEventOption,
-                       startScreenOption, commandDialogOption});
+                       startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
 
@@ -101,7 +109,25 @@ int main(int argc, char* argv[]) {
         sample.op = naru::VariableOp::Add;
         sample.seconds = 1.0;
         sample.script = "main.py";
-        CommandDialog dialog(sample, {QStringLiteral("main.py")});
+        naru::Database db;
+        db.types.push_back(naru::makeTemplate(naru::DataTemplate::Item, db));
+        naru::DataType monsters = naru::makeTemplate(naru::DataTemplate::Monster, db);
+        monsters.records = {{"slime", "슬라임", {}}};
+        db.types.push_back(monsters);
+        sample.dataType = "monster";
+        sample.record = "slime";
+        sample.field = "hp";
+        if (*type == naru::EventCommandType::GetData) {
+            sample.variable = "enemy_hp";
+        }
+        CommandDialog dialog(sample, {QStringLiteral("main.py")}, &db);
+        return captureDialog(dialog);
+    }
+    if (parser.isSet(fieldDialogOption)) {
+        naru::Database db;
+        db.types.push_back(naru::makeTemplate(naru::DataTemplate::Item, db));
+        naru::DataType monsters = naru::makeTemplate(naru::DataTemplate::Monster, db);
+        FieldDialog dialog(*monsters.findField("element"), monsters, db, false);
         return captureDialog(dialog);
     }
 
@@ -163,6 +189,10 @@ int main(int argc, char* argv[]) {
             if (parser.isSet(runEventOption)) {
                 window.startEventTest();
             }
+        }
+        if (parser.isSet(databaseOption)) {
+            QStringList parts = parser.value(databaseOption).split('/');
+            window.showDatabase(parts.value(0), parts.value(1), parser.isSet(fieldsTabOption));
         }
 
         if (parser.isSet(selfTestOption)) {

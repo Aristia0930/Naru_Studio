@@ -59,6 +59,7 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 | `NaruStudio.exe` | Qt 제작툴 (아래 사용법) |
 | `naru_engine_tests.exe` | 창 없는 엔진 테스트 |
 | `naru_project_tests.exe` | 프로젝트 생성·저장·불러오기·오류 검증 테스트 |
+| `naru_database_tests.exe` | 데이터베이스 템플릿·값 검사·형식 변환·검증·데이터 → 변수 명령 테스트 |
 | `naru_event_tests.exe` | 이벤트 명령 실행(대사 대기·변수·조건 분기·스크립트 호출·오류 위치) 테스트 |
 | `naru_python_tests.exe` | Python 임베딩·오류 위치·재로드 테스트 |
 
@@ -80,7 +81,8 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 
 **Python 표준 라이브러리 위치:** 개발 빌드는 빌드할 때 찾은 Python 설치 폴더를 사용한다. 실행 시 `NARU_PYTHON_HOME` 환경변수로 바꿀 수 있다. 다른 PC로 실행 파일만 옮기는 배포는 아직 지원하지 않는다(M5).
 
-명령행 옵션: `NaruStudio.exe [프로젝트폴더] [--new-project <dir>] [--event <objectId>] [--smoke-test <ms>] [--screenshot <png>] [--self-test]`
+명령행 옵션: `NaruStudio.exe [프로젝트폴더] [--new-project <dir>] [--event <objectId> [--run-event]] [--database <type>[/<record>] [--fields-tab]] [--smoke-test <ms>] [--screenshot <png>] [--self-test]`
+설명서 촬영용: `--start-screen`, `--command-dialog <type>`, `--field-dialog` (모두 `--screenshot`과 함께). 자세한 사용법은 [사용 설명서](guide/README.md).
 (`--smoke-test`·`--self-test` 실행은 최근 프로젝트 목록에 기록하지 않는다.)
 
 ## 5. 알려진 제한

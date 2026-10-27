@@ -9,6 +9,12 @@ qt_add_executable(naru_editor
   main.cpp
   CommandDialog.cpp
   CommandDialog.h
+  DatabaseEditor.cpp
+  DatabaseEditor.h
+  FieldDialog.cpp
+  FieldDialog.h
+  ValueEditor.cpp
+  ValueEditor.h
   EventEditor.cpp
   EventEditor.h
   Inspector.cpp

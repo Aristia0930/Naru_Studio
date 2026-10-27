@@ -9,6 +9,7 @@ namespace naru {
 
 class Logger;
 class Variables;
+struct Database;
 
 enum class CommandStatus { Pending, Running, Waiting, Completed, Failed, Cancelled };
 
@@ -30,6 +31,8 @@ struct CommandContext {
     DialogueHost* dialogue = nullptr;
     // 명령이 Completed와 함께 설정하면 다음 명령 대신 이 위치로 이동한다 (조건 분기).
     std::optional<std::size_t> jump{};
+    // 읽기 전용 데이터베이스 (실행 중에는 바꾸지 않는다). 없으면 데이터 명령이 실패한다.
+    const Database* database = nullptr;
 };
 
 // 이벤트 명령 하나. start()에서 즉시 끝나면 Completed를, 시간이 필요하면 Waiting을 반환하고

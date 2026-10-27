@@ -9,7 +9,7 @@
 namespace naru {
 
 // 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
-enum class EventCommandType { Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment };
+enum class EventCommandType { Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData };
 enum class VariableOp { Set, Add, Subtract };
 enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
 
@@ -19,7 +19,10 @@ struct EventCommand {
     std::string speaker;            // Say
     std::string text;               // Say 대사, Log 메시지, Comment 내용
     double seconds = 0.0;           // Wait
-    std::string variable;           // SetVariable, IfVariable
+    std::string variable;           // SetVariable, IfVariable, GetData(결과를 넣을 변수)
+    std::string dataType;           // GetData: 데이터 종류 키
+    std::string record;             // GetData: 항목 ID
+    std::string field;              // GetData: 속성 키 ("id", "name"도 가능)
     VariableOp op = VariableOp::Set; // SetVariable
     CompareOp compare = CompareOp::Equal; // IfVariable
     Value value;                    // SetVariable, IfVariable
@@ -32,7 +35,8 @@ struct EventCommand {
 };
 
 // 이벤트가 시작되는 조건. 게임 실행 화면이 생기면 런타임이 이 값을 사용한다.
-enum class EventTrigger { Action, Touch, Autorun };
+// (순서는 저장 키와 무관하지만 편집 화면 목록 순서와 같다)
+enum class EventTrigger { Action, Touch, Autorun, EventTouch, Parallel };
 
 struct ObjectEvent {
     EventTrigger trigger = EventTrigger::Action;

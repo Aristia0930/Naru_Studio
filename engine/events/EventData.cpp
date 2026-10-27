@@ -8,7 +8,8 @@ namespace naru {
 bool EventCommand::operator==(const EventCommand& o) const {
     return type == o.type && speaker == o.speaker && text == o.text && seconds == o.seconds &&
            variable == o.variable && op == o.op && compare == o.compare && value == o.value &&
-           script == o.script && function == o.function && thenCommands == o.thenCommands &&
+           script == o.script && function == o.function && dataType == o.dataType && record == o.record &&
+           field == o.field && thenCommands == o.thenCommands &&
            elseCommands == o.elseCommands;
 }
 
@@ -38,7 +39,8 @@ const char* nameOf(const std::array<std::pair<E, const char*>, N>& table, E valu
     return "";
 }
 
-constexpr std::array<std::pair<EventCommandType, const char*>, 7> kTypes{{
+constexpr std::array<std::pair<EventCommandType, const char*>, 8> kTypes{{
+    {EventCommandType::GetData, "get_data"},
     {EventCommandType::Say, "say"},
     {EventCommandType::Wait, "wait"},
     {EventCommandType::SetVariable, "set_variable"},
@@ -63,10 +65,12 @@ constexpr std::array<std::pair<CompareOp, const char*>, 6> kCompares{{
     {CompareOp::GreaterEqual, ">="},
 }};
 
-constexpr std::array<std::pair<EventTrigger, const char*>, 3> kTriggers{{
+constexpr std::array<std::pair<EventTrigger, const char*>, 5> kTriggers{{
     {EventTrigger::Action, "action"},
     {EventTrigger::Touch, "touch"},
     {EventTrigger::Autorun, "autorun"},
+    {EventTrigger::EventTouch, "event_touch"},
+    {EventTrigger::Parallel, "parallel"},
 }};
 
 } // namespace

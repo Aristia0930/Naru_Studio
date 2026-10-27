@@ -2,6 +2,7 @@
 
 #include "naru/core/Log.h"
 #include "naru/core/Value.h"
+#include "naru/data/Database.h"
 #include "naru/events/BuiltinCommands.h"
 #include "naru/python/PythonRuntime.h"
 #include "naru/runtime/Session.h"
@@ -133,6 +134,34 @@ TEST_CASE("이벤트 명령으로 스크립트를 호출하고 실패하면 이�
     CHECK(session.runner().failedCommandId() == "bad");
     CHECK(session.variables().get("visits") == Value{std::int64_t{1}});
     CHECK(!session.variables().contains("after"));
+}
+
+TEST_CASE("스크립트에서 데이터베이스를 읽는다 (ctx.db)") {
+    Database db;
+    DataType items = makeTemplate(DataTemplate::Item, db);
+    items.records = {{"potion", "포션", {{"price", std::int64_t{50}}}}, {"ether", "에테르", {}}};
+    db.types.push_back(items);
+    DataType monsters = makeTemplate(DataTemplate::Monster, db);
+    monsters.records = {{"slime", "슬라임", {{"drop", std::string("potion")}}}};
+    db.types.push_back(monsters);
+
+    Fixture f;
+    f.ctx.database = &db;
+    auto result = g_runtime->runFile(script("db_access.py"), f.ctx);
+    // 마지막 줄(10행)은 없는 종류를 읽어 KeyError가 나야 한다
+    if (result.error.line != 10) {
+        std::printf("  실제: %s\n", result.summary().c_str());
+    }
+    CHECK(!result.ok && result.error.type == "KeyError" && result.error.line == 10);
+    CHECK(f.variables.get("slime_name") == Value{std::string("슬라임")});
+    CHECK(f.variables.get("slime_hp") == Value{std::int64_t{30}}); // 템플릿 기본값
+    CHECK(f.variables.get("drop_price") == Value{std::int64_t{50}});
+    CHECK(f.variables.get("missing_is_none") == Value{true});
+    CHECK(f.variables.get("item_count") == Value{std::int64_t{2}});
+    CHECK(f.variables.get("types") == Value{std::string("item,monster")});
+
+    Fixture noDb;
+    CHECK(!g_runtime->runFile(script("db_access.py"), noDb.ctx).ok);
 }
 
 TEST_CASE("async 함수는 아직 지원하지 않는다고 명확히 보고한다") {

@@ -54,6 +54,53 @@ TEST_CASE("새 프로젝트는 폴더 구조·기본 장면·예제 스크립트
     CHECK(created.project->startSceneId == "scene_001");
     CHECK(created.project->scenes.size() == 1);
     CHECK(created.project->scenes[0].objects.size() == 2);
+    CHECK(fs::is_regular_file(dir.path / "data" / "item.json"));
+    CHECK(fs::is_regular_file(dir.path / "data" / "monster.json"));
+    CHECK(created.project->database.validate().empty());
+}
+
+TEST_CASE("데이터베이스를 저장하고 다시 열면 같은 내용이며, 지운 종류의 파일은 정리된다") {
+    TempDir dir;
+    Project project = *ProjectIO::create(dir.path, "x").project;
+    DataType chars = makeTemplate(DataTemplate::Character, project.database);
+    FieldDef speed;
+    speed.key = "speed";
+    speed.name = "속도";
+    speed.type = FieldType::Number;
+    speed.defaultValue = 1.5;
+    speed.min = 0.5;
+    chars.fields.push_back(speed);
+    chars.records = {{"ria", "리아", {{"job", std::string("마법사")}, {"speed", 2.25}, {"description", std::string("주인공\n두 줄")}}},
+                     {"kai", "카이", {}}};
+    project.database.types.push_back(chars);
+    CHECK(ProjectIO::save(project, dir.path).empty());
+    auto loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok() && loaded.project->database == project.database);
+
+    project.database.types.erase(project.database.types.begin()); // item 삭제
+    CHECK(ProjectIO::save(project, dir.path).empty());
+    CHECK(!fs::exists(dir.path / "data" / "item.json"));
+    CHECK(fs::exists(dir.path / "data" / "character.json"));
+    auto reloaded = ProjectIO::load(dir.path);
+    CHECK(reloaded.ok() && reloaded.project->database.types.size() == 2);
+    // 아이템 종류가 없어진 참조는 열기를 막지 않고 경고로 보여 준다
+    CHECK(!reloaded.project->database.validate().empty());
+}
+
+TEST_CASE("데이터 파일의 구조 오류는 파일 이름과 함께 거부한다") {
+    auto expectError = [](const std::string& body, const std::string& text) {
+        TempDir dir;
+        ProjectIO::create(dir.path, "x");
+        writeText(dir.path / "data" / "item.json", body);
+        return hasErrorContaining(ProjectIO::load(dir.path), "data/item.json", text);
+    };
+    CHECK(expectError(R"({"formatVersion": 1, "key": "item", "fields": [{"key": "id", "type": "integer"}]})", "id/name"));
+    CHECK(expectError(R"({"formatVersion": 1, "key": "item", "fields": [{"key": "a", "type": "integer"},
+                         {"key": "a", "type": "text"}]})", "중복"));
+    CHECK(expectError(R"({"formatVersion": 1, "key": "item", "fields": [{"key": "a", "type": "color"}]})", "color"));
+    CHECK(expectError(R"({"formatVersion": 1, "key": "item", "records": [{"id": "p", "values": {"zzz": 1}}]})", "zzz"));
+    CHECK(expectError(R"({"formatVersion": 1, "key": "item", "records": [{"id": "p"}, {"id": "p"}]})", "중복"));
+    CHECK(expectError(R"({"formatVersion": 1, "key": "other"})", "다릅니다"));
 }
 
 TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {

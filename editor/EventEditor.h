@@ -91,6 +91,7 @@ private:
     QLabel* dialogueText_;
     bool loading_ = false;
 
+    naru::Database runDatabase_; // 테스트 실행 중 세션이 읽는 사본 (session_보다 먼저 선언해야 나중에 파괴된다)
     std::unique_ptr<naru::Session> session_;
     QTimer timer_;
     QElapsedTimer clock_;

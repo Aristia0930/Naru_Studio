@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include "DatabaseEditor.h"
 #include "EventEditor.h"
 #include "Inspector.h"
 #include "ProjectDocument.h"
@@ -49,6 +50,9 @@ constexpr int kObjectRole = Qt::UserRole + 2;
 constexpr int kFileRole = Qt::UserRole + 3;
 constexpr int kLineRole = Qt::UserRole + 4;
 
+// 닫을 수 없는 기본 탭 수 (장면·이벤트·데이터베이스). 스크립트 탭은 이 뒤에 열린다.
+constexpr int kFixedTabs = 3;
+
 enum ItemKind { SceneItem = 1, ObjectItem = 2 };
 
 const char* kNewScriptTemplate =
@@ -79,8 +83,10 @@ MainWindow::MainWindow(ProjectDocument* doc, naru::python::PythonRuntime* python
     tabs_->addTab(sceneView_, QStringLiteral("장면"));
     eventEditor_ = new EventEditor(doc_, python_, this);
     tabs_->addTab(eventEditor_, QStringLiteral("이벤트"));
-    // 장면·이벤트 탭은 닫을 수 없다. 스크립트 탭은 그 뒤에 열린다.
-    for (int i = 0; i < 2; ++i) {
+    databaseEditor_ = new DatabaseEditor(doc_, this);
+    tabs_->addTab(databaseEditor_, QStringLiteral("데이터베이스"));
+    // 장면·이벤트·데이터베이스 탭은 닫을 수 없다. 스크립트 탭은 그 뒤에 열린다.
+    for (int i = 0; i < kFixedTabs; ++i) {
         tabs_->tabBar()->setTabButton(i, QTabBar::RightSide, nullptr);
         tabs_->tabBar()->setTabButton(i, QTabBar::LeftSide, nullptr);
     }
@@ -243,6 +249,11 @@ void MainWindow::createActions() {
     scene->addAction(startScene);
     scene->addAction(removeScene);
 
+    auto* dbAction = make(QStringLiteral("데이터베이스"), QKeySequence(Qt::Key_F9),
+                          [this] { tabs_->setCurrentWidget(databaseEditor_); });
+    scene->addSeparator();
+    scene->addAction(dbAction);
+
     auto* events = menuBar()->addMenu(QStringLiteral("이벤트(&V)"));
     events->addAction(eventOpen);
     events->addAction(eventTest);
@@ -267,6 +278,8 @@ void MainWindow::createActions() {
     toolbar->addAction(newScript);
     toolbar->addAction(check);
     toolbar->addAction(run);
+    toolbar->addSeparator();
+    toolbar->addAction(dbAction);
 }
 
 // ---------------------------------------------------------------- 장면 트리
@@ -350,7 +363,7 @@ void MainWindow::onTreeSelection() {
     setSelectionTarget(sceneId, objectId);
     addObjectAction_->setEnabled(!currentSceneId_.isEmpty());
     // 스크립트 탭을 보고 있었다면 장면으로 돌아간다. 이벤트 탭은 그대로 두어 다른 객체의 이벤트를 바로 본다.
-    if (tabs_->currentIndex() > 1) {
+    if (tabs_->currentIndex() >= kFixedTabs) {
         tabs_->setCurrentIndex(0);
     }
 }
@@ -404,6 +417,14 @@ void MainWindow::showObjectEvent(const QString& objectId) {
     sceneView_->selectObject(objectId);
     onCanvasSelection(objectId);
     openEventTab();
+}
+
+void MainWindow::showDatabase(const QString& typeKey, const QString& recordId, bool fieldsTab) {
+    tabs_->setCurrentWidget(databaseEditor_);
+    databaseEditor_->select(typeKey, recordId);
+    if (fieldsTab) {
+        databaseEditor_->showFieldsTab();
+    }
 }
 
 void MainWindow::startEventTest() {
@@ -518,7 +539,7 @@ void MainWindow::newScript() {
 
 ScriptEditor* MainWindow::openScript(const QString& path) {
     QString absolute = QFileInfo(path).absoluteFilePath();
-    for (int i = 2; i < tabs_->count(); ++i) {
+    for (int i = kFixedTabs; i < tabs_->count(); ++i) {
         auto* editor = qobject_cast<ScriptEditor*>(tabs_->widget(i));
         if (editor && editor->path() == absolute) {
             tabs_->setCurrentIndex(i);
@@ -578,7 +599,7 @@ bool MainWindow::saveAll() {
         QMessageBox::warning(this, QStringLiteral("저장 실패"), error);
         return false;
     }
-    for (int i = 2; i < tabs_->count(); ++i) {
+    for (int i = kFixedTabs; i < tabs_->count(); ++i) {
         auto* editor = qobject_cast<ScriptEditor*>(tabs_->widget(i));
         if (editor && editor->isModified() && !editor->save(&error)) {
             QMessageBox::warning(this, QStringLiteral("저장 실패"), editor->path() + QStringLiteral("\n") + error);
@@ -630,7 +651,9 @@ void MainWindow::runScript() {
     }
     const std::string pathUtf8 = path.toStdString();
 
+    naru::Database database = doc_->project().database; // 실행용 사본
     naru::Session session(naru::Variables{});
+    session.setDatabase(&database);
     session.logger().addSink([this](const naru::LogEntry& entry) { appendLog(entry); });
     session.logger().info("실행 시작: " + QFileInfo(path).fileName().toStdString());
 
@@ -718,7 +741,7 @@ bool MainWindow::hasUnsavedChanges() const {
     if (doc_->isModified()) {
         return true;
     }
-    for (int i = 2; i < tabs_->count(); ++i) {
+    for (int i = kFixedTabs; i < tabs_->count(); ++i) {
         auto* editor = qobject_cast<ScriptEditor*>(tabs_->widget(i));
         if (editor && editor->isModified()) {
             return true;
@@ -858,6 +881,71 @@ bool MainWindow::runSelfTest() {
             eventEditor_->removeCommand("", 0);
         }
         saveAll();
+    }
+
+    // 데이터베이스: 템플릿으로 종류 추가 → 항목 추가 → 값 변경·Undo → 속성 형식 변경(값 변환) → 이벤트에서 읽기 → 저장·재로드
+    {
+        tabs_->setCurrentWidget(databaseEditor_);
+        naru::DataType chars = naru::makeTemplate(naru::DataTemplate::Character, doc_->project().database);
+        QString typeKey = q(chars.key);
+        check(databaseEditor_->addType(chars) && doc_->project().database.findType(chars.key),
+              "데이터 종류 추가 (캐릭터 템플릿)");
+        check(databaseEditor_->addRecord(typeKey, naru::DataRecord{"ria", "리아", {}}), "데이터 항목 추가");
+        auto hpOf = [this, &chars]() -> naru::Value {
+            const naru::DataType* t = doc_->project().database.findType(chars.key);
+            return t->valueOf(*t->findRecord("ria"), *t->findField("hp"));
+        };
+        check(hpOf() == naru::Value{std::int64_t{100}}, "값이 없으면 템플릿 기본값");
+        databaseEditor_->setRecordValue(typeKey, QStringLiteral("ria"), QStringLiteral("hp"), std::int64_t{250});
+        check(hpOf() == naru::Value{std::int64_t{250}}, "데이터 값 변경");
+        doc_->undoStack()->undo();
+        check(hpOf() == naru::Value{std::int64_t{100}}, "데이터 값 변경 실행 취소");
+        doc_->undoStack()->redo();
+
+        const naru::DataType* t = doc_->project().database.findType(chars.key);
+        int hpIndex = t->indexOfField("hp");
+        naru::FieldDef asText = t->fields[static_cast<std::size_t>(hpIndex)];
+        asText.type = naru::FieldType::Text;
+        asText.min.reset();
+        asText.max.reset();
+        asText.defaultValue = std::string("100");
+        databaseEditor_->setField(typeKey, hpIndex, asText, false);
+        check(hpOf() == naru::Value{std::string("250")}, "속성 형식 변경 시 기존 값 변환");
+        doc_->undoStack()->undo();
+        check(hpOf() == naru::Value{std::int64_t{250}}, "속성 변경 실행 취소");
+
+        // 이벤트의 "데이터 → 변수"로 읽는다
+        const naru::Scene* scene = doc_->project().findScene(currentSceneId_.toStdString());
+        QString target = q(scene->objects.front().id);
+        showObjectEvent(target);
+        naru::EventCommand getData;
+        getData.type = naru::EventCommandType::GetData;
+        getData.dataType = chars.key;
+        getData.record = "ria";
+        getData.field = "hp";
+        getData.variable = "ria_hp";
+        bool inserted = eventEditor_->insertCommand("", 0, getData);
+        eventEditor_->startTest();
+        QElapsedTimer waited;
+        waited.start();
+        while (eventEditor_->isRunning() && waited.elapsed() < 3000) {
+            if (!eventEditor_->messageClosed()) {
+                eventEditor_->advanceDialogue();
+            }
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        }
+        bool found = false;
+        for (int row = 0; row < variablesTable_->rowCount(); ++row) {
+            found = found || (variablesTable_->item(row, 0)->text() == QStringLiteral("ria_hp") &&
+                              variablesTable_->item(row, 1)->text() == QStringLiteral("250"));
+        }
+        check(inserted && found, "이벤트에서 데이터 읽기 (데이터 → 변수)");
+        eventEditor_->removeCommand("", 0);
+
+        check(saveAll(), "데이터베이스 저장");
+        auto reloadedDb = ProjectDocument::open(doc_->directory(), &error);
+        check(reloadedDb && reloadedDb->project().database == doc_->project().database, "데이터베이스 재로드 동일");
+        tabs_->setCurrentIndex(0);
     }
 
     logMessages_.clear();

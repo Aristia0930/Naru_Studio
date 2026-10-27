@@ -1,5 +1,6 @@
 #pragma once
 
+#include "naru/data/Database.h"
 #include "naru/events/EventData.h"
 
 #include <string>
@@ -42,6 +43,7 @@ struct Project {
     std::string name;
     std::string startSceneId;
     std::vector<Scene> scenes;
+    Database database;
 
     Scene* findScene(const std::string& sceneId);
     const Scene* findScene(const std::string& sceneId) const;

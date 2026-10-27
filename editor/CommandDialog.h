@@ -1,5 +1,6 @@
 #pragma once
 
+#include "naru/data/Database.h"
 #include "naru/events/EventData.h"
 
 #include <QDialog>
@@ -16,7 +17,8 @@ class CommandDialog : public QDialog {
     Q_OBJECT
 
 public:
-    CommandDialog(const naru::EventCommand& command, const QStringList& scripts, QWidget* parent = nullptr);
+    CommandDialog(const naru::EventCommand& command, const QStringList& scripts,
+                  const naru::Database* database = nullptr, QWidget* parent = nullptr);
 
     naru::EventCommand command() const { return command_; }
 
@@ -39,4 +41,7 @@ private:
     QComboBox* valueBool_ = nullptr;
     QComboBox* script_ = nullptr;
     QLineEdit* function_ = nullptr;
+    QComboBox* dataType_ = nullptr;
+    QComboBox* record_ = nullptr;
+    QComboBox* field_ = nullptr;
 };

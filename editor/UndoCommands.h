@@ -84,6 +84,24 @@ private:
     int index_;
 };
 
+// 데이터베이스 변경. 데이터가 작으므로 전체를 전후로 저장한다.
+// mergeKey가 같은 연속 변경(같은 항목의 같은 속성 값을 연달아 조절)은 Undo 한 번으로 묶는다.
+class SetDatabaseCommand : public QUndoCommand {
+public:
+    SetDatabaseCommand(ProjectDocument* doc, naru::Database before, naru::Database after, const QString& text,
+                       QString mergeKey = {});
+    void redo() override;
+    void undo() override;
+    int id() const override { return mergeKey_.isEmpty() ? -1 : 3000; }
+    bool mergeWith(const QUndoCommand* other) override;
+
+private:
+    ProjectDocument* doc_;
+    naru::Database before_;
+    naru::Database after_;
+    QString mergeKey_;
+};
+
 // 객체 속성 변경. mergeKey가 같은 연속 변경(예: 숫자 칸을 연달아 조절)은 Undo 한 번으로 묶는다.
 // mergeKey < 0이면 묶지 않는다 (예: 캔버스 드래그는 놓을 때 한 번만 기록).
 class SetObjectCommand : public QUndoCommand {

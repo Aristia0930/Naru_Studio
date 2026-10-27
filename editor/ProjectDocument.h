@@ -33,8 +33,10 @@ public:
     void insertObject(const std::string& sceneId, int index, const naru::SceneObject& object);
     void removeObject(const std::string& sceneId, const std::string& objectId);
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
+    void setDatabase(const naru::Database& database);
 
 signals:
+    void databaseChanged();
     void scenesChanged();
     void sceneChanged(const QString& sceneId);
     void objectChanged(const QString& sceneId, const QString& objectId);

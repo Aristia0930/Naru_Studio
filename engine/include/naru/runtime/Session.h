@@ -24,6 +24,8 @@ public:
     Session(const Session&) = delete;
     Session& operator=(const Session&) = delete;
 
+    // 실행 중 읽을 데이터베이스. 세션보다 오래 살아 있어야 한다 (보통 실행용 프로젝트 복사본).
+    void setDatabase(const Database* database) { ctx_.database = database; }
     void start(std::vector<std::unique_ptr<Command>> commands, std::size_t startIndex = 0);
     // 실제 경과 시간을 받아 필요한 만큼 고정 틱을 실행한다. 실행한 틱 수를 반환한다.
     int advance(double realSeconds);

@@ -5,6 +5,7 @@
 
 #include "naru/core/Log.h"
 #include "naru/core/Value.h"
+#include "naru/data/Database.h"
 
 #include <cstdlib>
 #include <filesystem>
@@ -33,9 +34,20 @@ class Variables:
     def set(self, name, value):
         _naru.set_var(name, value)
 
+class Database:
+    """프로젝트 데이터베이스 (읽기 전용).
+    get("monster", "slime") -> {"id": "slime", "name": "슬라임", "hp": 30, ...} 또는 None"""
+    def get(self, type_key, record_id):
+        return _naru.db_get(type_key, record_id)
+    def ids(self, type_key):
+        return _naru.db_ids(type_key)
+    def types(self):
+        return _naru.db_types()
+
 class Context:
     def __init__(self):
         self.variables = Variables()
+        self.db = Database()
     def log(self, message):
         _naru.log(str(message), 0)
     def warning(self, message):
@@ -208,10 +220,116 @@ PyObject* naruSetVar(PyObject*, PyObject* args) {
     Py_RETURN_NONE;
 }
 
+const naru::Database* requireDatabase() {
+    if (!requireContext()) {
+        return nullptr;
+    }
+    if (g_ctx->database == nullptr) {
+        PyErr_SetString(PyExc_RuntimeError, "데이터베이스가 연결되지 않았습니다");
+        return nullptr;
+    }
+    return g_ctx->database;
+}
+
+PyObject* stringObject(const std::string& s) {
+    return PyUnicode_FromStringAndSize(s.data(), static_cast<Py_ssize_t>(s.size()));
+}
+
+// dict에 값을 넣는다 (참조는 dict가 가져간다). 실패하면 false.
+bool setItem(PyObject* dict, const std::string& key, PyObject* value) {
+    if (value == nullptr) {
+        return false;
+    }
+    int rc = PyDict_SetItemString(dict, key.c_str(), value);
+    Py_DECREF(value);
+    return rc == 0;
+}
+
+PyObject* naruDbGet(PyObject*, PyObject* args) {
+    const char* typeKey = nullptr;
+    const char* recordId = nullptr;
+    if (!PyArg_ParseTuple(args, "ss", &typeKey, &recordId)) {
+        return nullptr;
+    }
+    const naru::Database* db = requireDatabase();
+    if (!db) {
+        return nullptr;
+    }
+    const naru::DataType* type = db->findType(typeKey);
+    if (!type) {
+        std::string message = std::string("데이터 종류가 없습니다: ") + typeKey;
+        PyErr_SetString(PyExc_KeyError, message.c_str());
+        return nullptr;
+    }
+    const naru::DataRecord* record = type->findRecord(recordId);
+    if (!record) {
+        Py_RETURN_NONE;
+    }
+    PyObject* dict = PyDict_New();
+    bool ok = dict && setItem(dict, "id", stringObject(record->id)) && setItem(dict, "name", stringObject(record->name));
+    for (const auto& field : type->fields) {
+        ok = ok && setItem(dict, field.key, toPython(type->valueOf(*record, field)));
+    }
+    if (!ok) {
+        Py_XDECREF(dict);
+        return nullptr;
+    }
+    return dict;
+}
+
+PyObject* naruDbIds(PyObject*, PyObject* args) {
+    const char* typeKey = nullptr;
+    if (!PyArg_ParseTuple(args, "s", &typeKey)) {
+        return nullptr;
+    }
+    const naru::Database* db = requireDatabase();
+    if (!db) {
+        return nullptr;
+    }
+    const naru::DataType* type = db->findType(typeKey);
+    if (!type) {
+        std::string message = std::string("데이터 종류가 없습니다: ") + typeKey;
+        PyErr_SetString(PyExc_KeyError, message.c_str());
+        return nullptr;
+    }
+    PyObject* list = PyList_New(0);
+    for (const auto& record : type->records) {
+        PyObject* id = stringObject(record.id);
+        if (!list || !id || PyList_Append(list, id) != 0) {
+            Py_XDECREF(id);
+            Py_XDECREF(list);
+            return nullptr;
+        }
+        Py_DECREF(id);
+    }
+    return list;
+}
+
+PyObject* naruDbTypes(PyObject*, PyObject*) {
+    const naru::Database* db = requireDatabase();
+    if (!db) {
+        return nullptr;
+    }
+    PyObject* list = PyList_New(0);
+    for (const auto& type : db->types) {
+        PyObject* key = stringObject(type.key);
+        if (!list || !key || PyList_Append(list, key) != 0) {
+            Py_XDECREF(key);
+            Py_XDECREF(list);
+            return nullptr;
+        }
+        Py_DECREF(key);
+    }
+    return list;
+}
+
 PyMethodDef kMethods[] = {
     {"log", naruLog, METH_VARARGS, "log(message, level)"},
     {"get_var", naruGetVar, METH_VARARGS, "get_var(name, default=None)"},
     {"set_var", naruSetVar, METH_VARARGS, "set_var(name, value)"},
+    {"db_get", naruDbGet, METH_VARARGS, "db_get(type_key, record_id)"},
+    {"db_ids", naruDbIds, METH_VARARGS, "db_ids(type_key)"},
+    {"db_types", naruDbTypes, METH_NOARGS, "db_types()"},
     {nullptr, nullptr, 0, nullptr},
 };
 

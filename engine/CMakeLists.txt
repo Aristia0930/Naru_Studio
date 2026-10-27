@@ -1,6 +1,7 @@
 add_library(naru_engine STATIC
   core/Log.cpp
   core/Value.cpp
+  data/Database.cpp
   events/EventRunner.cpp
   events/BuiltinCommands.cpp
   events/EventCompiler.cpp

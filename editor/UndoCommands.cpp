@@ -84,6 +84,24 @@ RemoveObjectCommand::RemoveObjectCommand(ProjectDocument* doc, std::string scene
 void RemoveObjectCommand::redo() { doc_->removeObject(sceneId_, object_.id); }
 void RemoveObjectCommand::undo() { doc_->insertObject(sceneId_, index_, object_); }
 
+SetDatabaseCommand::SetDatabaseCommand(ProjectDocument* doc, naru::Database before, naru::Database after,
+                                       const QString& text, QString mergeKey)
+    : doc_(doc), before_(std::move(before)), after_(std::move(after)), mergeKey_(std::move(mergeKey)) {
+    setText(text);
+}
+
+void SetDatabaseCommand::redo() { doc_->setDatabase(after_); }
+void SetDatabaseCommand::undo() { doc_->setDatabase(before_); }
+
+bool SetDatabaseCommand::mergeWith(const QUndoCommand* other) {
+    auto* o = static_cast<const SetDatabaseCommand*>(other);
+    if (o->mergeKey_ != mergeKey_) {
+        return false;
+    }
+    after_ = o->after_;
+    return true;
+}
+
 SetObjectCommand::SetObjectCommand(ProjectDocument* doc, std::string sceneId, naru::SceneObject before,
                                    naru::SceneObject after, int mergeKey)
     : doc_(doc), sceneId_(std::move(sceneId)), before_(std::move(before)), after_(std::move(after)),
