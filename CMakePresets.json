@@ -5,12 +5,12 @@
     {
       "name": "windows-msvc",
       "displayName": "Windows x64 MSVC + Ninja (RelWithDebInfo)",
-      "description": "VS 2022 개발자 환경에서 실행한다. Qt/Python 경로는 NARU_QT_DIR/NARU_PYTHON_DIR 환경변수 또는 CMakeUserPresets.json으로 지정한다.",
+      "description": "VS 2022 개발자 환경에서 실행한다. Qt/Python/SDL3 경로는 NARU_QT_DIR/NARU_PYTHON_DIR/NARU_SDL3_DIR/NARU_SDL3_TTF_DIR 환경변수 또는 CMakeUserPresets.json으로 지정한다.",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "RelWithDebInfo",
-        "CMAKE_PREFIX_PATH": "$env{NARU_QT_DIR}",
+        "CMAKE_PREFIX_PATH": "$env{NARU_QT_DIR};$env{NARU_SDL3_DIR};$env{NARU_SDL3_TTF_DIR}",
         "Python3_ROOT_DIR": "$env{NARU_PYTHON_DIR}"
       },
       "condition": { "type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows" }
@@ -18,10 +18,11 @@
     {
       "name": "windows-msvc-engine-only",
       "inherits": "windows-msvc",
-      "displayName": "Windows x64 MSVC — 엔진만 (Qt·Python 없이)",
+      "displayName": "Windows x64 MSVC — 엔진만 (Qt·Python·SDL3 없이)",
       "cacheVariables": {
         "NARU_BUILD_PYTHON": "OFF",
-        "NARU_BUILD_EDITOR": "OFF"
+        "NARU_BUILD_EDITOR": "OFF",
+        "NARU_BUILD_PLAYER": "OFF"
       }
     }
   ],

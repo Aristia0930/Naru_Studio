@@ -42,6 +42,11 @@ target_compile_definitions(naru_editor PRIVATE NARU_STUDIO_VERSION="${PROJECT_VE
 
 naru_copy_python_runtime(naru_editor)
 
+# "게임 실행"은 같은 폴더의 NaruPlayer.exe를 띄우므로 함께 빌드한다.
+if(TARGET naru_player)
+  add_dependencies(naru_editor naru_player)
+endif()
+
 # 빌드한 뒤 바로 실행: cmake --build --preset windows-msvc --target run
 # (마지막으로 연 프로젝트를 연다. IDE의 CMake 타깃 목록에서도 고를 수 있다)
 add_custom_target(run

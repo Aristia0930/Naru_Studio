@@ -8,6 +8,7 @@ add_library(naru_engine STATIC
   events/EventData.cpp
   project/Project.cpp
   project/ProjectIO.cpp
+  runtime/GameWorld.cpp
   runtime/Session.cpp
 )
 

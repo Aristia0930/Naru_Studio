@@ -14,6 +14,7 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 option(NARU_BUILD_PYTHON "Python 게임 스크립트 연결을 빌드한다" ON)
 option(NARU_BUILD_EDITOR "Qt 제작툴을 빌드한다" ON)
+option(NARU_BUILD_PLAYER "SDL3 게임 실행 화면(NaruPlayer)을 빌드한다" ON)
 option(NARU_BUILD_TESTS "테스트를 빌드한다" ON)
 
 if(MSVC)
@@ -26,6 +27,10 @@ add_subdirectory(engine)
 
 if(NARU_BUILD_PYTHON)
   add_subdirectory(scripting/python)
+endif()
+
+if(NARU_BUILD_PLAYER)
+  add_subdirectory(player)
 endif()
 
 if(NARU_BUILD_EDITOR)

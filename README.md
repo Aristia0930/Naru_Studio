@@ -12,12 +12,13 @@ RPG Maker의 데이터베이스·맵·이벤트·전투 등 제작 기능을 출
 
 ## 현재 상태
 
-**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 테스트 6종(엔진·프로젝트 저장·Python·에디터 스모크·에디터 자동 편집 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). 이미지·음원, 선택지, 실제 게임 실행 화면, 배포는 아직 없습니다. **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
+**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 테스트 6종(엔진·프로젝트 저장·Python·에디터 스모크·에디터 자동 편집 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. 이미지·음원, 선택지, 배포는 아직 없습니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 | 위치 | 내용 |
 |---|---|
 | `engine/` | Qt 비의존 엔진: 로그, 변수, 이벤트 명령 실행기, 고정 틱 Session, **프로젝트 모델·JSON 저장/불러오기·검증** |
 | `scripting/python/` | CPython 임베딩: `run(ctx)` 호출, `ctx.variables`/`ctx.log`, print→로그, 오류 파일·행·traceback |
+| `player/` | SDL3 게임 실행 화면 `NaruPlayer.exe`: 장면 그리기, 대사 창, 입력 → 엔진 `GameWorld` |
 | `editor/` | Qt Widgets 제작툴: 시작 화면(새로 만들기/열기/최근), 장면 트리, 2D 캔버스(드래그 배치·휠 확대), 인스펙터, Undo/Redo, 스크립트 탭, 로그 |
 | `tests/` | 엔진·프로젝트·Python 테스트와 테스트용 스크립트 |
 | `third_party/` | nlohmann/json 3.11.3 (MIT) |
@@ -41,7 +42,7 @@ git clone https://github.com/Aristia0930/Naru_Studio.git
 cd Naru_Studio
 ```
 
-이후 [docs/BUILD.md](docs/BUILD.md)대로 VS 2022 Build Tools·CMake·Ninja·Qt 6.8.3·Python 3.13+를 준비합니다. 그다음 **`dev.cmd`를 더블클릭하면 빌드 후 바로 실행**되고, `dev check`는 테스트까지 통과해야 실행합니다. 개발 도구와 SDK를 Git에 묶어 올리는 대신 설치 방법/버전을 기록합니다.
+이후 [docs/BUILD.md](docs/BUILD.md)대로 VS 2022 Build Tools·CMake·Ninja·Qt 6.8.3·Python 3.13+·SDL3/SDL3_ttf를 준비합니다. 그다음 **`dev.cmd`를 더블클릭하면 빌드 후 바로 실행**되고, `dev check`는 테스트까지 통과해야 실행합니다. 개발 도구와 SDK를 Git에 묶어 올리는 대신 설치 방법/버전을 기록합니다.
 
 Godot·Ghidra·REA는 이전 조사 도구이며 새 엔진의 필수 실행 환경이 아닙니다. 참고 자료를 조사할 때만 별도로 준비합니다. PC별 경로·캐시·자격증명을 공유하지 않습니다.
 

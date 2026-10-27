@@ -17,6 +17,8 @@ struct SceneObject {
     double width = 64.0;
     double height = 64.0;
     std::string color = "#4a90d9";
+    // 게임 실행 중 다른 객체(플레이어)가 지나갈 수 있는가. false면 벽처럼 막는다.
+    bool passable = false;
     ObjectEvent event;
 
     bool operator==(const SceneObject&) const = default;
@@ -28,6 +30,8 @@ struct Scene {
     int width = 1280;
     int height = 720;
     std::string background = "#202830";
+    // 게임 실행 중 방향키로 조작하는 객체. 비어 있으면 플레이어가 없는 장면(컷신 등)이다.
+    std::string playerObjectId;
     std::vector<SceneObject> objects;
 
     SceneObject* findObject(const std::string& objectId);

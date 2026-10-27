@@ -76,13 +76,21 @@ RemoveObjectCommand::RemoveObjectCommand(ProjectDocument* doc, std::string scene
         index_ = scene->indexOfObject(objectId);
         if (index_ >= 0) {
             object_ = scene->objects[static_cast<std::size_t>(index_)];
+            wasPlayer_ = scene->playerObjectId == objectId;
         }
     }
     setText(label("객체 삭제: %1", object_.name));
 }
 
 void RemoveObjectCommand::redo() { doc_->removeObject(sceneId_, object_.id); }
-void RemoveObjectCommand::undo() { doc_->insertObject(sceneId_, index_, object_); }
+void RemoveObjectCommand::undo() {
+    doc_->insertObject(sceneId_, index_, object_);
+    if (const naru::Scene* scene = doc_->project().findScene(sceneId_); scene && wasPlayer_) {
+        naru::Scene info = *scene;
+        info.playerObjectId = object_.id;
+        doc_->setSceneInfo(info);
+    }
+}
 
 SetDatabaseCommand::SetDatabaseCommand(ProjectDocument* doc, naru::Database before, naru::Database after,
                                        const QString& text, QString mergeKey)

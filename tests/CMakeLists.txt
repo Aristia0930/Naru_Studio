@@ -10,6 +10,10 @@ add_executable(naru_database_tests database_tests.cpp)
 target_link_libraries(naru_database_tests PRIVATE naru_engine)
 add_test(NAME database COMMAND naru_database_tests)
 
+add_executable(naru_game_tests game_tests.cpp)
+target_link_libraries(naru_game_tests PRIVATE naru_engine)
+add_test(NAME game COMMAND naru_game_tests)
+
 add_executable(naru_project_tests project_tests.cpp)
 target_link_libraries(naru_project_tests PRIVATE naru_engine)
 add_test(NAME project COMMAND naru_project_tests)

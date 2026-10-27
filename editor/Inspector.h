@@ -4,6 +4,7 @@
 #include <QWidget>
 
 class ProjectDocument;
+class QCheckBox;
 class QDoubleSpinBox;
 class QLabel;
 class QLineEdit;
@@ -24,6 +25,7 @@ private:
     void refresh();
     void commitObject(int field);
     void commitScene(int field);
+    void setPlayer(bool on);
     void chooseObjectColor();
     void chooseSceneColor();
 
@@ -42,6 +44,8 @@ private:
     QDoubleSpinBox* objectW_;
     QDoubleSpinBox* objectH_;
     QPushButton* objectColor_;
+    QCheckBox* objectPlayer_;
+    QCheckBox* objectPassable_;
 
     QLabel* sceneIdLabel_;
     QLineEdit* sceneName_;

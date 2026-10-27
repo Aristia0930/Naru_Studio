@@ -15,21 +15,22 @@
 // 객체 하나의 표시. 위치는 객체의 왼쪽 위 좌표다.
 class SceneObjectItem : public QGraphicsRectItem {
 public:
-    explicit SceneObjectItem(const naru::SceneObject& object) {
+    SceneObjectItem(const naru::SceneObject& object, bool isPlayer) {
         setFlags(ItemIsMovable | ItemIsSelectable);
         label_ = new QGraphicsSimpleTextItem(this);
         label_->setBrush(Qt::white);
-        apply(object);
+        apply(object, isPlayer);
     }
 
-    void apply(const naru::SceneObject& object) {
+    // 플레이어는 이름 앞에 ★, 통과 가능한 객체는 점선 테두리로 표시한다.
+    void apply(const naru::SceneObject& object, bool isPlayer) {
         id_ = QString::fromStdString(object.id);
         setRect(0, 0, object.width, object.height);
         setPos(object.x, object.y);
         QColor color(QString::fromStdString(object.color));
         setBrush(color.isValid() ? color : QColor(Qt::gray));
-        setPen(QPen(QColor(255, 255, 255, 120), 0));
-        label_->setText(QString::fromStdString(object.name));
+        setPen(object.passable ? QPen(QColor(255, 255, 255, 200), 0, Qt::DashLine) : QPen(QColor(255, 255, 255, 120), 0));
+        label_->setText((isPlayer ? QStringLiteral("★ ") : QString()) + QString::fromStdString(object.name));
         label_->setPos(4, 2);
         committedPos_ = pos();
     }
@@ -123,7 +124,7 @@ void SceneView::rebuild() {
         frame_->setZValue(-1);
         canvas_->setSceneRect(QRectF(0, 0, scene->width, scene->height).adjusted(-2000, -2000, 2000, 2000));
         for (const auto& object : scene->objects) {
-            auto* item = new SceneObjectItem(object);
+            auto* item = new SceneObjectItem(object, object.id == scene->playerObjectId);
             canvas_->addItem(item);
             items_.insert(item->id(), item);
         }
@@ -144,7 +145,7 @@ void SceneView::updateObject(const QString& sceneId, const QString& objectId) {
     const naru::Scene* scene = doc_->project().findScene(sceneId.toStdString());
     const naru::SceneObject* object = scene ? scene->findObject(objectId.toStdString()) : nullptr;
     if (auto* item = items_.value(objectId); item && object) {
-        item->apply(*object);
+        item->apply(*object, object->id == scene->playerObjectId);
     }
 }
 

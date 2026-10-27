@@ -3,6 +3,7 @@
 #include "ProjectDocument.h"
 #include "UndoCommands.h"
 
+#include <QCheckBox>
 #include <QColorDialog>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
@@ -15,7 +16,7 @@
 
 namespace {
 
-enum Field { Name, X, Y, Width, Height, Color };
+enum Field { Name, X, Y, Width, Height, Color, Passable };
 
 QDoubleSpinBox* coordinateBox(QWidget* parent, double min) {
     auto* box = new QDoubleSpinBox(parent);
@@ -62,6 +63,12 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     objectForm->addRow(QStringLiteral("너비"), objectW_);
     objectForm->addRow(QStringLiteral("높이"), objectH_);
     objectForm->addRow(QStringLiteral("색"), objectColor_);
+    objectPlayer_ = new QCheckBox(QStringLiteral("방향키로 조작 (장면마다 하나)"), objectPage);
+    objectPlayer_->setToolTip(QStringLiteral("게임 실행 화면에서 이 객체를 방향키로 움직입니다. 결정 키로 앞의 객체를 조사합니다."));
+    objectPassable_ = new QCheckBox(QStringLiteral("지나갈 수 있음"), objectPage);
+    objectPassable_->setToolTip(QStringLiteral("끄면 벽처럼 플레이어를 막습니다. 켜면 위를 지나갈 수 있고, 밟으면 '플레이어 접촉' 이벤트가 실행됩니다."));
+    objectForm->addRow(QStringLiteral("플레이어"), objectPlayer_);
+    objectForm->addRow(QStringLiteral("통과"), objectPassable_);
     pages_->addWidget(objectPage);
 
     connect(objectName_, &QLineEdit::editingFinished, this, [this] { commitObject(Name); });
@@ -70,6 +77,8 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     connect(objectW_, &QDoubleSpinBox::valueChanged, this, [this] { commitObject(Width); });
     connect(objectH_, &QDoubleSpinBox::valueChanged, this, [this] { commitObject(Height); });
     connect(objectColor_, &QPushButton::clicked, this, &Inspector::chooseObjectColor);
+    connect(objectPlayer_, &QCheckBox::toggled, this, &Inspector::setPlayer);
+    connect(objectPassable_, &QCheckBox::toggled, this, [this] { commitObject(Passable); });
 
     // 장면 페이지
     auto* scenePage = new QWidget(this);
@@ -129,6 +138,8 @@ void Inspector::refresh() {
         objectW_->setValue(object->width);
         objectH_->setValue(object->height);
         showColor(objectColor_, object->color);
+        objectPlayer_->setChecked(scene->playerObjectId == object->id);
+        objectPassable_->setChecked(object->passable);
     } else if (scene) {
         pages_->setCurrentIndex(2);
         sceneIdLabel_->setText(QString::fromStdString(scene->id));
@@ -166,12 +177,15 @@ void Inspector::commitObject(int field) {
     case Y: after.y = objectY_->value(); break;
     case Width: after.width = objectW_->value(); break;
     case Height: after.height = objectH_->value(); break;
+    case Passable: after.passable = objectPassable_->isChecked(); break;
     default: break;
     }
     if (after == *current) {
         return;
     }
-    doc_->undoStack()->push(new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after, field));
+    // 체크 상자는 연속 변경으로 묶지 않는다.
+    doc_->undoStack()->push(
+        new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after, field == Passable ? -1 : field));
 }
 
 void Inspector::commitScene(int field) {
@@ -201,6 +215,21 @@ void Inspector::commitScene(int field) {
         return;
     }
     doc_->undoStack()->push(new SetSceneInfoCommand(doc_, *current, after, field));
+}
+
+void Inspector::setPlayer(bool on) {
+    if (loading_) {
+        return;
+    }
+    const naru::Scene* current = doc_->project().findScene(sceneId_.toStdString());
+    if (!current) {
+        return;
+    }
+    naru::Scene after = *current;
+    after.playerObjectId = on ? objectId_.toStdString() : std::string();
+    if (after.playerObjectId != current->playerObjectId) {
+        doc_->undoStack()->push(new SetSceneInfoCommand(doc_, *current, after, -1));
+    }
 }
 
 void Inspector::chooseObjectColor() {

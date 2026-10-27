@@ -4,6 +4,7 @@
 
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <random>
 #include <string>
 
@@ -54,6 +55,8 @@ TEST_CASE("새 프로젝트는 폴더 구조·기본 장면·예제 스크립트
     CHECK(created.project->startSceneId == "scene_001");
     CHECK(created.project->scenes.size() == 1);
     CHECK(created.project->scenes[0].objects.size() == 2);
+    // 예제의 "주인공"이 플레이어다
+    CHECK(created.project->scenes[0].playerObjectId == created.project->scenes[0].objects[0].id);
     CHECK(fs::is_regular_file(dir.path / "data" / "item.json"));
     CHECK(fs::is_regular_file(dir.path / "data" / "monster.json"));
     CHECK(created.project->database.validate().empty());
@@ -118,6 +121,7 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     o.x = 12.5;
     o.y = -3;
     o.color = "#ffffff";
+    o.passable = true;
     // 모든 명령 종류와 중첩 분기를 저장·불러오기 한다.
     o.event.trigger = EventTrigger::Touch;
     EventCommand sayCmd;
@@ -162,6 +166,7 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     noneSet.value = Value{};
     o.event.commands = {commentCmd, outer, logCmd, boolSet, noneSet};
     second.objects.push_back(o);
+    second.playerObjectId = o.id;
     project.scenes.push_back(second);
     project.startSceneId = second.id;
 
@@ -169,6 +174,25 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     auto loaded = ProjectIO::load(dir.path);
     CHECK(loaded.ok());
     CHECK(loaded.project.has_value() && *loaded.project == project);
+}
+
+TEST_CASE("장면에 없는 플레이어 객체나 형식이 틀린 통과 값은 거부한다") {
+    TempDir dir;
+    CHECK(ProjectIO::create(dir.path, "x").ok());
+    fs::path scene = dir.path / "scenes" / "scene_001.json";
+    std::ifstream in(scene, std::ios::binary);
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.close();
+
+    std::string missing = text;
+    missing.replace(missing.find("\"player\": \"obj_001\""), 19, "\"player\": \"obj_999\"");
+    writeText(scene, missing);
+    CHECK(hasErrorContaining(ProjectIO::load(dir.path), "scenes/scene_001.json", "obj_999"));
+
+    std::string badBool = text;
+    badBool.replace(badBool.find("\"color\""), 7, "\"passable\": 1, \"color\"");
+    writeText(scene, badBool);
+    CHECK(hasErrorContaining(ProjectIO::load(dir.path), "scenes/scene_001.json", "passable"));
 }
 
 TEST_CASE("비어 있지 않은 폴더에는 새 프로젝트를 만들지 않는다") {

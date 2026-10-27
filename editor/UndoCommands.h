@@ -82,6 +82,7 @@ private:
     std::string sceneId_;
     naru::SceneObject object_;
     int index_;
+    bool wasPlayer_ = false;
 };
 
 // 데이터베이스 변경. 데이터가 작으므로 전체를 전후로 저장한다.

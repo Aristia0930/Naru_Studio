@@ -84,6 +84,17 @@ int getInt(const json& j, const char* key, int fallback) {
     return it->get<int>();
 }
 
+bool getBool(const json& j, const char* key, bool fallback) {
+    auto it = j.find(key);
+    if (it == j.end()) {
+        return fallback;
+    }
+    if (!it->is_boolean()) {
+        fieldError(key, "true/false");
+    }
+    return it->get<bool>();
+}
+
 const json& getArray(const json& j, const char* key) {
     static const json empty = json::array();
     auto it = j.find(key);
@@ -301,6 +312,9 @@ std::vector<EventCommand> commandsFromJson(const json& list, int depth) {
 json objectToJson(const SceneObject& o) {
     json j = {{"id", o.id},     {"name", o.name},     {"x", o.x},         {"y", o.y},
               {"width", o.width}, {"height", o.height}, {"color", o.color}};
+    if (o.passable) {
+        j["passable"] = true;
+    }
     if (!(o.event == ObjectEvent{})) {
         j["event"] = {{"trigger", toKey(o.event.trigger)}, {"commands", commandsToJson(o.event.commands)}};
     }
@@ -312,13 +326,17 @@ json sceneToJson(const Scene& s) {
     for (const auto& o : s.objects) {
         objects.push_back(objectToJson(o));
     }
-    return {{"formatVersion", ProjectIO::kFormatVersion},
-            {"id", s.id},
-            {"name", s.name},
-            {"width", s.width},
-            {"height", s.height},
-            {"background", s.background},
-            {"objects", objects}};
+    json j = {{"formatVersion", ProjectIO::kFormatVersion},
+              {"id", s.id},
+              {"name", s.name},
+              {"width", s.width},
+              {"height", s.height},
+              {"background", s.background},
+              {"objects", objects}};
+    if (!s.playerObjectId.empty()) {
+        j["player"] = s.playerObjectId;
+    }
+    return j;
 }
 
 // 형식 오류는 runtime_error로 올라오며 호출한 쪽에서 파일 이름과 함께 기록한다.
@@ -339,6 +357,7 @@ Scene sceneFromJson(const json& j) {
         o.width = getNumber(oj, "width", o.width);
         o.height = getNumber(oj, "height", o.height);
         o.color = getString(oj, "color", o.color);
+        o.passable = getBool(oj, "passable", false);
         if (auto it = oj.find("event"); it != oj.end()) {
             const json& ej = requireObject(*it, "event");
             std::string triggerKey = getString(ej, "trigger", std::string("action"));
@@ -350,6 +369,10 @@ Scene sceneFromJson(const json& j) {
             o.event.commands = commandsFromJson(getArray(ej, "commands"), 0);
         }
         s.objects.push_back(std::move(o));
+    }
+    s.playerObjectId = getString(j, "player", std::string());
+    if (!s.playerObjectId.empty() && !s.findObject(s.playerObjectId)) {
+        throw std::runtime_error("플레이어로 지정한 객체가 장면에 없습니다: " + s.playerObjectId);
     }
     return s;
 }
@@ -523,6 +546,7 @@ ProjectLoadResult ProjectIO::create(const fs::path& dir, const std::string& name
         project.scenes.front().objects.push_back(o);
     };
     addObject("주인공", 320, 400, "#e0a040");
+    project.scenes.front().playerObjectId = project.scenes.front().objects.back().id;
     addObject("상자", 640, 400, "#8a6a40");
 
     // 이벤트 편집기 사용 예: 대사 → 변수 더하기 → 조건 분기

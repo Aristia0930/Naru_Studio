@@ -35,6 +35,9 @@
 #include <QElapsedTimer>
 #include <QFile>
 #include <QLineEdit>
+#include <QPointer>
+#include <QProcess>
+#include <QTimer>
 
 #include <algorithm>
 #include <cmath>
@@ -120,6 +123,15 @@ MainWindow::MainWindow(ProjectDocument* doc, naru::python::PythonRuntime* python
     resize(1400, 860);
 }
 
+MainWindow::~MainWindow() {
+    // 창이 사라지는 중에 player 종료 신호가 로그 패널에 닿지 않도록 먼저 끊고 게임을 닫는다.
+    if (game_) {
+        game_->disconnect(this);
+        game_->kill();
+        game_->waitForFinished(2000);
+    }
+}
+
 void MainWindow::createDocks() {
     tree_ = new QTreeWidget(this);
     tree_->setHeaderHidden(true);
@@ -195,7 +207,8 @@ void MainWindow::createActions() {
     auto* openFolder = make(QStringLiteral("프로젝트 폴더 열기"), {}, [this] {
         QDesktopServices::openUrl(QUrl::fromLocalFile(doc_->directory()));
     });
-    auto* quit = make(QStringLiteral("종료"), QKeySequence::Quit, &QWidget::close);
+    // QKeySequence::Quit은 Windows에서 비어 있으므로 Ctrl+Q를 직접 지정한다.
+    auto* quit = make(QStringLiteral("종료"), QKeySequence(Qt::CTRL | Qt::Key_Q), &QWidget::close);
 
     QAction* undo = doc_->undoStack()->createUndoAction(this, QStringLiteral("실행 취소"));
     undo->setShortcut(QKeySequence::Undo);
@@ -254,6 +267,14 @@ void MainWindow::createActions() {
     scene->addSeparator();
     scene->addAction(dbAction);
 
+    runGameAction_ = make(QStringLiteral("게임 실행"), QKeySequence(Qt::CTRL | Qt::Key_R), [this] { runGame(); });
+    runGameAction_->setToolTip(QStringLiteral("저장한 뒤 현재 장면부터 게임 실행 화면을 띄웁니다 (Ctrl+R)"));
+    stopGameAction_ = make(QStringLiteral("게임 중지"), {}, &MainWindow::stopGame);
+    updateGameActions();
+    auto* game = menuBar()->addMenu(QStringLiteral("게임(&G)"));
+    game->addAction(runGameAction_);
+    game->addAction(stopGameAction_);
+
     auto* events = menuBar()->addMenu(QStringLiteral("이벤트(&V)"));
     events->addAction(eventOpen);
     events->addAction(eventTest);
@@ -270,6 +291,8 @@ void MainWindow::createActions() {
     toolbar->addAction(saveAction);
     toolbar->addAction(undo);
     toolbar->addAction(redo);
+    toolbar->addSeparator();
+    toolbar->addAction(runGameAction_);
     toolbar->addSeparator();
     toolbar->addAction(addScene);
     toolbar->addAction(addObjectAction_);
@@ -307,7 +330,7 @@ void MainWindow::rebuildTree() {
         sceneItem->setData(0, kSceneRole, q(scene.id));
         for (const auto& object : scene.objects) {
             auto* objectItem = new QTreeWidgetItem(sceneItem);
-            objectItem->setText(0, q(object.name));
+            objectItem->setText(0, (object.id == scene.playerObjectId ? QStringLiteral("★ ") : QString()) + q(object.name));
             objectItem->setToolTip(0, q(object.id));
             objectItem->setData(0, kKindRole, ObjectItem);
             objectItem->setData(0, kSceneRole, q(scene.id));
@@ -681,6 +704,121 @@ void MainWindow::runScript() {
     }
 }
 
+// ---------------------------------------------------------------- 게임 실행
+
+bool MainWindow::runGame(const QStringList& extraArgs) {
+    if (game_) {
+        statusBar()->showMessage(QStringLiteral("게임이 이미 실행 중입니다"), 3000);
+        return false;
+    }
+    // player는 저장된 파일을 읽으므로 먼저 저장한다.
+    if (!saveAll()) {
+        return false;
+    }
+    QString exe = QDir(QCoreApplication::applicationDirPath()).filePath(QStringLiteral("NaruPlayer.exe"));
+    if (!QFileInfo::exists(exe)) {
+        QMessageBox::warning(this, QStringLiteral("게임 실행"),
+                             QStringLiteral("NaruPlayer.exe를 찾지 못했습니다:\n%1\n\nSDL3를 설치하고 다시 빌드하세요 "
+                                            "(docs/BUILD.md).")
+                                 .arg(QDir::toNativeSeparators(exe)));
+        return false;
+    }
+
+    QStringList args{doc_->directory()};
+    if (!currentSceneId_.isEmpty()) {
+        args << QStringLiteral("--scene") << currentSceneId_;
+    }
+    args << extraArgs;
+
+    game_ = new QProcess(this);
+    gameOutput_.clear();
+    lastGameExitCode_ = -1;
+    connect(game_, &QProcess::readyReadStandardOutput, this, &MainWindow::readGameOutput);
+    connect(game_, &QProcess::finished, this, [this](int code, QProcess::ExitStatus status) {
+        readGameOutput();
+        lastGameExitCode_ = status == QProcess::NormalExit ? code : -1;
+        if (status != QProcess::NormalExit) {
+            appendLog({naru::LogLevel::Error, "게임이 비정상 종료되었습니다", {}, ""});
+        } else if (code == 1) {
+            appendLog({naru::LogLevel::Error, "게임을 시작하지 못했습니다 (위 로그 참고)", {}, ""});
+        }
+        game_->deleteLater();
+        game_ = nullptr;
+        updateGameActions();
+    });
+    connect(game_, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
+        if (error == QProcess::FailedToStart && game_) {
+            appendLog({naru::LogLevel::Error, "NaruPlayer.exe를 실행하지 못했습니다: " + game_->errorString().toStdString(),
+                       {}, ""});
+            game_->deleteLater();
+            game_ = nullptr;
+            updateGameActions();
+        }
+    });
+    appendLog({naru::LogLevel::Info, "게임 실행", {}, ""});
+    game_->start(exe, args);
+    updateGameActions();
+    return true;
+}
+
+void MainWindow::stopGame() {
+    if (!game_) {
+        return;
+    }
+    // 창 닫기 요청을 보내고, 응답이 없으면 강제 종료한다.
+    game_->terminate();
+    QPointer<QProcess> process = game_;
+    QTimer::singleShot(2000, this, [process] {
+        if (process && process->state() != QProcess::NotRunning) {
+            process->kill();
+        }
+    });
+}
+
+void MainWindow::readGameOutput() {
+    if (!game_) {
+        return;
+    }
+    gameOutput_ += game_->readAllStandardOutput();
+    auto unescape = [](QString text) {
+        return text.replace(QStringLiteral("\\n"), QStringLiteral("\n")).replace(QStringLiteral("\\t"), QStringLiteral("\t"));
+    };
+    qsizetype end;
+    while ((end = gameOutput_.indexOf('\n')) >= 0) {
+        // trimmed()는 쓰지 않는다: 마지막 빈 필드(부가정보)의 탭까지 지워진다.
+        QString line = QString::fromUtf8(gameOutput_.left(end));
+        gameOutput_.remove(0, end + 1);
+        if (line.endsWith('\r')) {
+            line.chop(1);
+        }
+        if (line.isEmpty()) {
+            continue;
+        }
+        // player 로그 형식: NARU\t수준\t명령ID\t파일\t행\t메시지\t부가정보
+        QStringList f = line.split('\t');
+        naru::LogEntry entry;
+        if (f.size() >= 7 && f[0] == QStringLiteral("NARU")) {
+            entry.level = f[1] == QStringLiteral("error")     ? naru::LogLevel::Error
+                          : f[1] == QStringLiteral("warning") ? naru::LogLevel::Warning
+                                                              : naru::LogLevel::Info;
+            entry.source.commandId = unescape(f[2]).toStdString();
+            entry.source.file = unescape(f[3]).toStdString();
+            entry.source.line = f[4].toInt();
+            entry.message = unescape(f[5]).toStdString();
+            entry.detail = unescape(f[6]).toStdString();
+        } else {
+            entry.message = line.toStdString();
+        }
+        entry.message = "[게임] " + entry.message;
+        appendLog(entry);
+    }
+}
+
+void MainWindow::updateGameActions() {
+    runGameAction_->setEnabled(game_ == nullptr);
+    stopGameAction_->setEnabled(game_ != nullptr);
+}
+
 // ---------------------------------------------------------------- 로그·상태
 
 void MainWindow::appendLog(const naru::LogEntry& entry) {
@@ -946,6 +1084,53 @@ bool MainWindow::runSelfTest() {
         auto reloadedDb = ProjectDocument::open(doc_->directory(), &error);
         check(reloadedDb && reloadedDb->project().database == doc_->project().database, "데이터베이스 재로드 동일");
         tabs_->setCurrentIndex(0);
+    }
+
+    // 플레이어 지정: 새 프로젝트의 "주인공"이 플레이어. 해제·실행 취소, 플레이어 객체 삭제·실행 취소 시 복원
+    {
+        auto playerId = [this] {
+            return doc_->project().findScene(currentSceneId_.toStdString())->playerObjectId;
+        };
+        const std::string hero = playerId();
+        check(!hero.empty(), "새 프로젝트의 주인공이 플레이어로 지정됨");
+        naru::Scene info = *doc_->project().findScene(currentSceneId_.toStdString());
+        naru::Scene cleared = info;
+        cleared.playerObjectId.clear();
+        doc_->undoStack()->push(new SetSceneInfoCommand(doc_, info, cleared, -1));
+        bool clearedOk = playerId().empty();
+        doc_->undoStack()->undo();
+        check(clearedOk && playerId() == hero, "플레이어 지정 해제·실행 취소");
+        doc_->undoStack()->push(new RemoveObjectCommand(doc_, currentSceneId_.toStdString(), hero));
+        bool removedOk = playerId().empty();
+        doc_->undoStack()->undo();
+        check(removedOk && playerId() == hero, "플레이어 객체 삭제 시 지정 해제, 실행 취소 시 복원");
+    }
+
+    // 게임 실행: 저장 → NaruPlayer가 현재 장면을 연다 → 주인공을 오른쪽으로 움직여 상자 앞에서 결정 키
+    // → 상자의 조사 이벤트가 실행된다 → 120프레임 뒤 스스로 닫히고 로그가 제작툴에 들어온다
+    {
+        logMessages_.clear();
+        bool started = runGame({QStringLiteral("--frames"), QStringLiteral("120"), QStringLiteral("--hold"),
+                                QStringLiteral("right:0-80"), QStringLiteral("--hold"), QStringLiteral("confirm:85-85")});
+        QElapsedTimer waited;
+        waited.start();
+        while (game_ && waited.elapsed() < 15000) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 50);
+        }
+        bool sceneLogged = false;
+        bool chestOpened = false;
+        for (const QString& m : logMessages_) {
+            sceneLogged = sceneLogged || m.startsWith(QStringLiteral("[게임] 장면 시작"));
+            chestOpened = chestOpened || m.startsWith(QStringLiteral("[게임] 상자 ▸"));
+        }
+        check(started && !game_ && lastGameExitCode_ == 0 && sceneLogged, "게임 실행 (NaruPlayer, 로그 수신)");
+        check(chestOpened, "게임에서 플레이어 이동 → 상자 앞 결정 키 → 조사 이벤트 실행");
+        if (!sceneLogged || !chestOpened || lastGameExitCode_ != 0) {
+            std::printf("  started=%d running=%d exit=%d\n", started, game_ != nullptr, lastGameExitCode_);
+            for (const QString& m : logMessages_) {
+                std::printf("  log: %s\n", m.toUtf8().constData());
+            }
+        }
     }
 
     logMessages_.clear();

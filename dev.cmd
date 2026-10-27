@@ -58,19 +58,37 @@ if not defined NARU_PYTHON_DIR (
     echo [오류] Python을 찾지 못했습니다. NARU_PYTHON_DIR 환경변수를 지정하세요.
     goto :fail
 )
+if not defined NARU_SDL3_DIR (
+    for /d %%d in ("%LOCALAPPDATA%\naru-tools\SDL3-3.*") do if exist "%%d\cmake\SDL3Config.cmake" set "NARU_SDL3_DIR=%%d"
+)
+if not defined NARU_SDL3_TTF_DIR (
+    for /d %%d in ("%LOCALAPPDATA%\naru-tools\SDL3_ttf-3.*") do if exist "%%d\cmake\SDL3_ttfConfig.cmake" set "NARU_SDL3_TTF_DIR=%%d"
+)
+if not defined NARU_SDL3_DIR (
+    echo [오류] SDL3를 찾지 못했습니다. docs\BUILD.md의 SDL3 설치를 보거나 NARU_SDL3_DIR을 지정하세요.
+    goto :fail
+)
+if not defined NARU_SDL3_TTF_DIR (
+    echo [오류] SDL3_ttf를 찾지 못했습니다. docs\BUILD.md의 SDL3 설치를 보거나 NARU_SDL3_TTF_DIR을 지정하세요.
+    goto :fail
+)
 echo Qt     : %NARU_QT_DIR%
 echo Python : %NARU_PYTHON_DIR%
+echo SDL3   : %NARU_SDL3_DIR%
+echo SDL_ttf: %NARU_SDL3_TTF_DIR%
 
 rem ---- 빌드 -----------------------------------------------------------------
 if /i "%MODE%"=="clean" (
     echo 빌드 폴더를 지웁니다: build\%PRESET%
     if exist "build\%PRESET%" rmdir /s /q "build\%PRESET%"
 )
-if not exist "build\%PRESET%\build.ninja" (
-    echo.
-    echo === 설정: cmake --preset %PRESET% ===
+rem 경로가 바뀌거나 새 의존성이 추가되어도 반영되도록 매번 설정한다 (이미 설정된 경우 몇 초면 끝난다).
+echo.
+echo === 설정: cmake --preset %PRESET% ===
+cmake --preset %PRESET% >nul
+if errorlevel 1 (
     cmake --preset %PRESET%
-    if errorlevel 1 goto :fail
+    goto :fail
 )
 echo.
 echo === 빌드 ===

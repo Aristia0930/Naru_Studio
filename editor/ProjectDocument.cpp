@@ -100,6 +100,7 @@ void ProjectDocument::setSceneInfo(const naru::Scene& info) {
     scene->width = info.width;
     scene->height = info.height;
     scene->background = info.background;
+    scene->playerObjectId = info.playerObjectId;
     emit sceneChanged(QString::fromStdString(info.id));
     emit scenesChanged();
 }
@@ -126,6 +127,9 @@ void ProjectDocument::removeObject(const std::string& sceneId, const std::string
         return;
     }
     scene->objects.erase(scene->objects.begin() + index);
+    if (scene->playerObjectId == objectId) {
+        scene->playerObjectId.clear(); // 실행 취소하면 RemoveObjectCommand가 되돌린다
+    }
     emit sceneChanged(QString::fromStdString(sceneId));
 }
 
