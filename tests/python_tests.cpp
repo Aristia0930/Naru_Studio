@@ -357,6 +357,8 @@ TEST_CASE("스크립트로 다른 객체를 찾고 바꾸고 움직인다 (ctx.s
     CHECK(var(world, "missing") == Value{true});
     CHECK(world.object("box")->color == "#ff8800");
     CHECK(world.object("box")->passable);
+    CHECK(!world.object("box")->visible);
+    CHECK(var(world, "box_visible") == Value{false});
 
     python::ScriptResult bad;
     CHECK(g_runtime->callModuleFunction(*globals.loadedPath("objects.py"), "bad_color", f_ctxOf(world), &bad) ==

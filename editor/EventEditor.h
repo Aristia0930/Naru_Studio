@@ -73,6 +73,7 @@ private:
     QTreeWidgetItem* findCommandItem(const std::string& id) const;
     bool selectedPosition(std::string& listPrefix, int& index) const;
     bool editEvent(const std::function<bool(naru::ObjectEvent&)>& change);
+    const naru::Scene* scene() const;
     const naru::SceneObject* target() const;
     QStringList scriptNames() const;
 

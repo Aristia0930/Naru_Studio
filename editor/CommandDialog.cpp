@@ -1,5 +1,6 @@
 #include "CommandDialog.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
@@ -10,6 +11,8 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QVBoxLayout>
+
+#include <algorithm>
 
 using naru::CompareOp;
 using naru::EventCommandType;
@@ -39,12 +42,33 @@ QString CommandDialog::typeLabel(EventCommandType type) {
     case EventCommandType::CallScript: return QStringLiteral("스크립트 호출");
     case EventCommandType::Comment: return QStringLiteral("주석");
     case EventCommandType::GetData: return QStringLiteral("데이터 → 변수");
+    case EventCommandType::MoveObject: return QStringLiteral("객체 이동");
+    case EventCommandType::SetVisible: return QStringLiteral("보이기/숨기기");
     }
     return {};
 }
 
+QString CommandDialog::targetLabel(const std::string& target, const naru::Scene* scene) {
+    if (target == naru::kTargetSelf) {
+        return QStringLiteral("이 객체");
+    }
+    if (target == naru::kTargetPlayer) {
+        return QStringLiteral("플레이어");
+    }
+    const naru::SceneObject* o = scene ? scene->findObject(target) : nullptr;
+    return o ? QString::fromStdString(o->name) : QStringLiteral("%1 (장면에 없음)").arg(QString::fromStdString(target));
+}
+
+QString CommandDialog::directionLabel(const std::string& direction) {
+    if (direction == "up") return QStringLiteral("위");
+    if (direction == "down") return QStringLiteral("아래");
+    if (direction == "left") return QStringLiteral("왼쪽");
+    if (direction == "right") return QStringLiteral("오른쪽");
+    return QString::fromStdString(direction);
+}
+
 CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringList& scripts,
-                             const naru::Database* database, QWidget* parent)
+                             const naru::Database* database, const naru::Scene* scene, QWidget* parent)
     : QDialog(parent), command_(command) {
     setWindowTitle(typeLabel(command.type));
     auto* form = new QFormLayout;
@@ -76,6 +100,26 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         };
         connect(valueType_, &QComboBox::currentIndexChanged, this, sync);
         sync();
+    };
+
+    auto addTargetRow = [this, form, scene] {
+        target_ = new QComboBox(this);
+        target_->addItem(QStringLiteral("이 이벤트의 객체"), QString::fromLatin1(naru::kTargetSelf));
+        target_->addItem(QStringLiteral("플레이어"), QString::fromLatin1(naru::kTargetPlayer));
+        if (scene) {
+            for (const auto& o : scene->objects) {
+                target_->addItem(QStringLiteral("%1  (%2)").arg(QString::fromStdString(o.name), QString::fromStdString(o.id)),
+                                 QString::fromStdString(o.id));
+            }
+        }
+        QString current = QString::fromStdString(command_.target);
+        int i = target_->findData(current);
+        if (i < 0) { // 지워진 객체: 바꾸지 않고 알아볼 수 있게 남긴다
+            target_->addItem(QStringLiteral("%1  (장면에 없음)").arg(current), current);
+            i = target_->count() - 1;
+        }
+        target_->setCurrentIndex(i);
+        form->addRow(QStringLiteral("대상"), target_);
     };
 
     switch (command.type) {
@@ -134,6 +178,47 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         form->addRow(new QLabel(QStringLiteral("함수는 def 함수이름(ctx): 형태여야 합니다.\n"
                                                "return 값(None·bool·int·float·str)을 변수에 넣어 조건 분기에서 쓸 수 있습니다.\n"
                                                "전역 스크립트로 등록한 파일이면 게임 중 실행 중인 그 모듈의 함수가 불립니다."),
+                                this));
+        break;
+    case EventCommandType::MoveObject: {
+        addTargetRow();
+        direction_ = new QComboBox(this);
+        for (const char* key : {"up", "down", "left", "right"}) {
+            direction_->addItem(directionLabel(key), QString::fromLatin1(key));
+        }
+        direction_->setCurrentIndex(std::max(0, direction_->findData(QString::fromStdString(command.direction))));
+        distance_ = new QDoubleSpinBox(this);
+        distance_->setRange(0.0, 100000.0);
+        distance_->setDecimals(0);
+        distance_->setSuffix(QStringLiteral(" px"));
+        distance_->setValue(command.distance);
+        speed_ = new QDoubleSpinBox(this);
+        speed_->setRange(0.0, 100000.0);
+        speed_->setDecimals(0);
+        speed_->setSingleStep(10.0);
+        speed_->setSuffix(QStringLiteral(" px/초"));
+        speed_->setSpecialValueText(QStringLiteral("순간 이동"));
+        speed_->setValue(command.speed);
+        waitForEnd_ = new QCheckBox(QStringLiteral("이동이 끝날 때까지 다음 명령을 기다림"), this);
+        waitForEnd_->setChecked(command.waitForEnd);
+        form->addRow(QStringLiteral("방향"), direction_);
+        form->addRow(QStringLiteral("거리"), distance_);
+        form->addRow(QStringLiteral("속도"), speed_);
+        form->addRow(QString(), waitForEnd_);
+        form->addRow(new QLabel(QStringLiteral("플레이어와 같은 충돌 규칙으로 움직이며, 막히면 그 자리에서 멈춥니다.\n"
+                                               "기본 속도 240은 플레이어 이동 속도와 같습니다. 0이면 순간 이동합니다.\n"
+                                               "F6 테스트 실행에서는 움직이지 않고 로그만 남깁니다 (게임 실행 Ctrl+R에서 확인)."),
+                                this));
+        break;
+    }
+    case EventCommandType::SetVisible:
+        addTargetRow();
+        show_ = new QComboBox(this);
+        show_->addItems({QStringLiteral("보이기"), QStringLiteral("숨기기")});
+        show_->setCurrentIndex(command.show ? 0 : 1);
+        form->addRow(QStringLiteral("동작"), show_);
+        form->addRow(new QLabel(QStringLiteral("숨긴 객체는 그리지 않고, 막지 않으며, 조사·접촉 이벤트도 실행되지 않습니다.\n"
+                                               "자동 실행·병렬 처리 이벤트는 숨겨도 계속 실행됩니다."),
                                 this));
         break;
     case EventCommandType::GetData: {
@@ -293,6 +378,17 @@ void CommandDialog::accept() {
         }
         break;
     }
+    case EventCommandType::MoveObject:
+        c.target = target_->currentData().toString().toStdString();
+        c.direction = direction_->currentData().toString().toStdString();
+        c.distance = distance_->value();
+        c.speed = speed_->value();
+        c.waitForEnd = waitForEnd_->isChecked();
+        break;
+    case EventCommandType::SetVisible:
+        c.target = target_->currentData().toString().toStdString();
+        c.show = show_->currentIndex() == 0;
+        break;
     }
     command_ = c;
     QDialog::accept();

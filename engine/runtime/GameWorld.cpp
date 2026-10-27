@@ -30,7 +30,7 @@ double overlapArea(const Rect& a, const Rect& b) {
 }
 
 bool runsOnContact(const SceneObject& o) {
-    return !o.event.commands.empty() &&
+    return o.visible && !o.event.commands.empty() &&
            (o.event.trigger == EventTrigger::Touch || o.event.trigger == EventTrigger::EventTouch);
 }
 } // namespace
@@ -66,6 +66,7 @@ struct GameWorld::RunningEvent {
         : objectId(object.id), objectName(object.name),
           ctx{world.variables_, logger, &world, std::nullopt, &world.project_.database, &world},
           runner(compileEvent(object.event.commands, world.scripts_)) {
+        ctx.selfObjectId = object.id;
         logger.addSink([&world, name = object.name](const LogEntry& entry) {
             LogEntry copy = entry;
             copy.message = name + " ▸ " + copy.message;
@@ -157,6 +158,7 @@ void GameWorld::update(double realSeconds, const InputState& input) {
         if (!busy() && defaultControl_) {
             controlPlayer(actionPressed, fixedStep_);
         }
+        advanceRoutes(fixedStep_);
         finishContacts();
         // 조사·접촉으로 시작된 이벤트는 같은 틱에 첫 명령까지 실행한다 (대사가 바로 뜨도록).
         runBlocking(fixedStep_);
@@ -318,6 +320,71 @@ bool GameWorld::setObjectPassable(const std::string& id, bool passable) {
     return true;
 }
 
+bool GameWorld::setObjectVisible(const std::string& id, bool visible) {
+    SceneObject* o = scene_ ? scene_->findObject(id) : nullptr;
+    if (!o) {
+        return false;
+    }
+    o->visible = visible;
+    return true;
+}
+
+std::string GameWorld::resolveTarget(const std::string& target, const std::string& selfId) const {
+    if (!scene_) {
+        return {};
+    }
+    std::string id = target == kTargetSelf ? selfId : target == kTargetPlayer ? scene_->playerObjectId : target;
+    return !id.empty() && scene_->findObject(id) ? id : std::string();
+}
+
+bool GameWorld::startObjectMove(const std::string& id, double dx, double dy, double speed) {
+    if (!object(id)) {
+        return false;
+    }
+    stopObjectMove(id);
+    double length = std::hypot(dx, dy);
+    if (length == 0.0) {
+        return true;
+    }
+    if (speed <= 0.0) {
+        return moveObject(id, dx, dy);
+    }
+    routes_.push_back({id, dx / length, dy / length, length, speed});
+    return true;
+}
+
+bool GameWorld::objectMoving(const std::string& id) const {
+    return std::any_of(routes_.begin(), routes_.end(), [&id](const Route& r) { return r.objectId == id; });
+}
+
+void GameWorld::stopObjectMove(const std::string& id) {
+    std::erase_if(routes_, [&id](const Route& r) { return r.objectId == id; });
+}
+
+void GameWorld::advanceRoutes(double dt) {
+    // moveObject가 접촉 이벤트를 예약할 수는 있어도 routes_를 바꾸지는 않는다.
+    for (std::size_t i = 0; i < routes_.size();) {
+        Route& route = routes_[i];
+        const SceneObject* o = object(route.objectId);
+        bool done = o == nullptr;
+        if (o) {
+            double step = std::min(route.speed * dt, route.remaining);
+            double x = o->x;
+            double y = o->y;
+            moveObject(route.objectId, route.dirX * step, route.dirY * step);
+            double moved = std::hypot(o->x - x, o->y - y);
+            route.remaining -= step;
+            // 막혀서 덜 움직였으면 그 자리에서 끝낸다.
+            done = route.remaining <= 1e-9 || moved + 1e-9 < step;
+        }
+        if (done) {
+            routes_.erase(routes_.begin() + static_cast<std::ptrdiff_t>(i));
+        } else {
+            ++i;
+        }
+    }
+}
+
 bool GameWorld::setObjectColor(const std::string& id, const std::string& color) {
     SceneObject* o = scene_ ? scene_->findObject(id) : nullptr;
     if (!o) {
@@ -346,7 +413,10 @@ void GameWorld::moveAxis(SceneObject& mover, double dx, double dy, std::vector<s
     after.y = std::clamp(after.y, 0.0, std::max(0.0, scene_->height - after.h));
 
     // 통과 가능한 객체는 아무것에도 막히지 않고, 아무것도 막지 않는다.
-    auto blocks = [&mover](const SceneObject& o) { return o.id != mover.id && !mover.passable && !o.passable; };
+    // 숨긴 객체도 마찬가지다.
+    auto blocks = [&mover](const SceneObject& o) {
+        return o.id != mover.id && !mover.passable && !o.passable && mover.visible && o.visible;
+    };
     // 지나간 경로 전체(이전 위치 ~ 새 위치)로 검사한다. 한 번에 크게 움직여도 벽을 건너뛰지 않게.
     Rect swept{std::min(before.x, after.x), std::min(before.y, after.y), before.w + std::abs(after.x - before.x),
                before.h + std::abs(after.y - before.y)};
@@ -390,7 +460,7 @@ void GameWorld::finishContacts() {
     if (player && !busy()) {
         for (const std::string& id : tickObjectBumps_) {
             const SceneObject* o = scene_->findObject(id);
-            if (o && !objectBumps_.count(id) && o->event.trigger == EventTrigger::EventTouch &&
+            if (o && o->visible && !objectBumps_.count(id) && o->event.trigger == EventTrigger::EventTouch &&
                 !o->event.commands.empty()) {
                 queueBlocking(*o);
             }
@@ -400,7 +470,7 @@ void GameWorld::finishContacts() {
     tickObjectBumps_.clear();
 
     // 이벤트·대사 중에 플레이어가 움직이지 않았다면 접촉 상태를 그대로 둔다 (끝난 뒤 다시 실행되지 않게).
-    if (!player || (busy() && !playerMovedThisTick_)) {
+    if (!player || !player->visible || (busy() && !playerMovedThisTick_)) {
         tickContacts_.clear();
         playerMovedThisTick_ = false;
         return;
@@ -409,7 +479,7 @@ void GameWorld::finishContacts() {
     // 누가 움직였든 같다 — 통과 가능한 "이벤트 접촉" 객체가 플레이어 위로 와도 실행된다.
     Rect self = rectOf(*player);
     for (const SceneObject& o : scene_->objects) {
-        if (o.id != player->id && (o.passable || player->passable) && overlaps(self, rectOf(o))) {
+        if (o.id != player->id && o.visible && (o.passable || player->passable) && overlaps(self, rectOf(o))) {
             tickContacts_.insert(o.id);
         }
     }
@@ -426,7 +496,7 @@ void GameWorld::finishContacts() {
 }
 bool GameWorld::interact() {
     const SceneObject* player = playerObject();
-    if (!player || busy()) {
+    if (!player || !player->visible || busy()) {
         return false;
     }
     Rect self = rectOf(*player);
@@ -441,7 +511,7 @@ bool GameWorld::interact() {
     const SceneObject* best = nullptr;
     double bestArea = 0.0;
     for (const SceneObject& o : scene_->objects) {
-        if (o.id == player->id || o.event.trigger != EventTrigger::Action || o.event.commands.empty()) {
+        if (o.id == player->id || !o.visible || o.event.trigger != EventTrigger::Action || o.event.commands.empty()) {
             continue;
         }
         double area = overlapArea(probe, rectOf(o));
@@ -523,6 +593,7 @@ void GameWorld::stopAll() {
     }
     parallel_.clear();
     blockingQueue_.clear();
+    routes_.clear();
 }
 
 } // namespace naru

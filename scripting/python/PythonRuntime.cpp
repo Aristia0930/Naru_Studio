@@ -90,7 +90,7 @@ class Player:
 
 class SceneObject:
     """장면의 객체 하나 (게임 실행 중). ctx.scene.object("obj_002") / find("상자") / objects()로 얻는다.
-    x, y, passable(통과 가능), color("#rrggbb")는 바꿀 수 있다. move(dx, dy): 충돌을 따져 이동."""
+    x, y, passable(통과 가능), visible(보이기), color("#rrggbb")는 바꿀 수 있다. move(dx, dy): 충돌을 따져 이동."""
     def __init__(self, object_id):
         self._id = object_id
     def __repr__(self):
@@ -108,6 +108,8 @@ class SceneObject:
     y = property(lambda self: _naru.object_get(self._id, "y"), lambda self, v: _naru.object_set(self._id, "y", v))
     passable = property(lambda self: _naru.object_get(self._id, "passable"),
                         lambda self, v: _naru.object_set(self._id, "passable", v))
+    visible = property(lambda self: _naru.object_get(self._id, "visible"),
+                       lambda self, v: _naru.object_set(self._id, "visible", v))
     color = property(lambda self: _naru.object_get(self._id, "color"),
                      lambda self, v: _naru.object_set(self._id, "color", v))
     def move(self, dx, dy):
@@ -720,6 +722,7 @@ PyObject* naruObjectGet(PyObject*, PyObject* args) {
     if (key == "width") return PyFloat_FromDouble(o->width);
     if (key == "height") return PyFloat_FromDouble(o->height);
     if (key == "passable") return PyBool_FromLong(o->passable ? 1 : 0);
+    if (key == "visible") return PyBool_FromLong(o->visible ? 1 : 0);
     if (key == "color") return stringObject(o->color);
     if (key == "is_player") return PyBool_FromLong(game->player() == o ? 1 : 0);
     PyErr_SetString(PyExc_AttributeError, name);
@@ -741,6 +744,10 @@ PyObject* naruObjectSet(PyObject*, PyObject* args) {
     std::string key = name;
     if (key == "passable") {
         game->setObjectPassable(id, PyObject_IsTrue(value) == 1);
+        Py_RETURN_NONE;
+    }
+    if (key == "visible") {
+        game->setObjectVisible(id, PyObject_IsTrue(value) == 1);
         Py_RETURN_NONE;
     }
     if (key == "color") {

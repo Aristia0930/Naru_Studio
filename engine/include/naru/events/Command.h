@@ -36,6 +36,8 @@ struct CommandContext {
     const Database* database = nullptr;
     // 게임 실행 중이면 실행 상태(플레이어·입력·장면). 에디터 테스트 실행이나 단독 스크립트 실행에서는 nullptr.
     GameWorld* game = nullptr;
+    // 이 이벤트가 붙은 객체 ID ("@self" 대상). 객체 이벤트가 아니면 비어 있다.
+    std::string selfObjectId{};
 };
 
 // 이벤트 명령 하나. start()에서 즉시 끝나면 Completed를, 시간이 필요하면 Waiting을 반환하고

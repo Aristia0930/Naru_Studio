@@ -226,13 +226,16 @@ void drawScene(SDL_Renderer* r, const Scene& scene, const SceneObject* player, F
     setColor(r, parseColor(scene.background, SDL_Color{32, 40, 48, 255}));
     SDL_RenderClear(r);
     for (const SceneObject& o : scene.objects) {
+        if (!o.visible) {
+            continue;
+        }
         SDL_FRect rect{static_cast<float>(o.x), static_cast<float>(o.y), static_cast<float>(o.width),
                        static_cast<float>(o.height)};
         setColor(r, parseColor(o.color, SDL_Color{74, 144, 217, 255}));
         SDL_RenderFillRect(r, &rect);
     }
     // 플레이어가 바라보는 쪽 가장자리에 작은 표시 (이미지가 생기기 전 임시 표현)
-    if (player) {
+    if (player && player->visible) {
         const float s = 8.0f;
         float x = static_cast<float>(player->x);
         float y = static_cast<float>(player->y);

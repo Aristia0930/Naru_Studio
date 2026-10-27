@@ -46,6 +46,7 @@ private:
     QPushButton* objectColor_;
     QCheckBox* objectPlayer_;
     QCheckBox* objectPassable_;
+    QCheckBox* objectVisible_;
 
     QLabel* sceneIdLabel_;
     QLineEdit* sceneName_;

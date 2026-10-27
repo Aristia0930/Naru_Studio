@@ -497,3 +497,132 @@ TEST_CASE("a passable event-touch object that moves onto the player runs once") 
 }
 
 TEST_MAIN()
+// ---------------------------------------------------------------- 이벤트 명령: 객체 이동·보이기/숨기기
+
+namespace {
+
+EventCommand moveCmd(std::string target, std::string direction, double distance, double speed, bool wait = true) {
+    EventCommand c;
+    c.type = EventCommandType::MoveObject;
+    c.target = std::move(target);
+    c.direction = std::move(direction);
+    c.distance = distance;
+    c.speed = speed;
+    c.waitForEnd = wait;
+    return c;
+}
+
+EventCommand showCmd(std::string target, bool show) {
+    EventCommand c;
+    c.type = EventCommandType::SetVisible;
+    c.target = std::move(target);
+    c.show = show;
+    return c;
+}
+
+} // namespace
+
+TEST_CASE("move command walks at its speed and the event waits until it arrives") {
+    SceneObject npc = box("npc", 100, 100, 32, 32);
+    npc.event.trigger = EventTrigger::Autorun;
+    npc.event.commands = {moveCmd("@self", "right", 60, 120), add("arrived", 1)};
+    GameWorld world(playerProject({npc}), noScripts());
+    world.enterScene("scene_001");
+    for (int i = 0; i < 15; ++i) {
+        step(world);
+    }
+    CHECK(std::abs(world.object("npc")->x - 130.0) < 0.01); // 0.25초 × 120
+    CHECK(intVar(world, "arrived") == -1);
+    CHECK(world.blockingEventActive());
+    for (int i = 0; i < 16; ++i) {
+        step(world);
+    }
+    CHECK(std::abs(world.object("npc")->x - 160.0) < 0.01);
+    CHECK(intVar(world, "arrived") == 1);
+    CHECK(!world.objectMoving("npc"));
+}
+
+TEST_CASE("a move without waiting lets the event go on, and a blocked move stops where it is") {
+    SceneObject wall = box("wall", 200, 100, 20, 32);
+    SceneObject npc = box("npc", 100, 100, 32, 32);
+    npc.event.trigger = EventTrigger::Autorun;
+    npc.event.commands = {moveCmd("@self", "right", 500, 600, false), add("next", 1)};
+    SceneObject cart = box("cart", 100, 200, 32, 32);
+    cart.event.trigger = EventTrigger::Parallel;
+    cart.event.commands = {moveCmd("@self", "right", 1000, 6000), add("cart_done", 1)}; // 장면 가장자리에서 멈춤
+    GameWorld world(playerProject({wall, npc, cart}), noScripts());
+    world.enterScene("scene_001");
+    step(world);
+    CHECK(intVar(world, "next") == 1); // 기다리지 않음
+    CHECK(world.objectMoving("npc"));
+    for (int i = 0; i < 30; ++i) {
+        step(world);
+    }
+    CHECK(world.object("npc")->x == 200.0 - 32.0);
+    CHECK(!world.objectMoving("npc"));
+    CHECK(world.object("cart")->x == 400.0 - 32.0);
+    CHECK(intVar(world, "cart_done") == 1);
+}
+
+TEST_CASE("move command can move the player or a named object; a missing target fails the event") {
+    SceneObject npc = box("npc", 100, 100, 32, 32);
+    SceneObject director = box("director", 300, 250, 10, 10);
+    director.event.trigger = EventTrigger::Autorun;
+    director.event.commands = {moveCmd("@player", "down", 40, 0), moveCmd("npc", "up", 30, 0)};
+    SceneObject broken = box("broken", 300, 200, 10, 10);
+    broken.event.trigger = EventTrigger::Autorun;
+    broken.event.commands = {moveCmd("ghost", "up", 30, 0)};
+    GameWorld world(playerProject({npc, director, broken}), noScripts());
+    world.enterScene("scene_001");
+    step(world);
+    CHECK(world.player()->y == 40.0);
+    CHECK(world.facing() == Facing::Down);
+    CHECK(world.object("npc")->y == 70.0);
+    CHECK(world.failedEventCount() == 1);
+}
+
+TEST_CASE("hidden objects are not solid, not interactable, and do not trigger contact") {
+    SceneObject wall = box("wall", 100, 0, 20, 32);
+    wall.visible = false;
+    SceneObject chest = box("chest", 40, 100, 32, 32);
+    chest.visible = false;
+    chest.event.commands = {add("opened", 1)};
+    SceneObject trap = box("trap", 0, 200, 32, 20);
+    trap.passable = true;
+    trap.visible = false;
+    trap.event.trigger = EventTrigger::Touch;
+    trap.event.commands = {add("trap", 1)};
+    SceneObject hiddenTimer = box("timer", 300, 250, 10, 10);
+    hiddenTimer.visible = false;
+    hiddenTimer.event.trigger = EventTrigger::Parallel; // 숨겨도 병렬 처리는 실행된다
+    hiddenTimer.event.commands = {add("tick", 1)};
+    GameWorld world(playerProject({wall, chest, trap, hiddenTimer}), noScripts());
+    world.enterScene("scene_001");
+    hold(world, InputAction::Right, 60);
+    CHECK(world.player()->x > 120.0); // 숨긴 벽은 지나간다
+    CHECK(intVar(world, "tick") == 1);
+
+    world.setPlayerPosition(0, 100);
+    hold(world, InputAction::Right, 1); // 숨긴 상자를 바라본다
+    step(world, confirm());
+    CHECK(intVar(world, "opened") == -1);
+
+    world.setPlayerPosition(0, 160);
+    hold(world, InputAction::Down, 30); // 숨긴 함정 위를 지난다
+    CHECK(intVar(world, "trap") == -1);
+}
+
+TEST_CASE("show/hide command changes visibility during the game") {
+    SceneObject wall = box("wall", 100, 0, 20, 32);
+    wall.visible = false;
+    SceneObject lever = box("lever", 0, 40, 32, 32);
+    lever.event.commands = {showCmd("wall", true), showCmd("@self", false)};
+    GameWorld world(playerProject({wall, lever}), noScripts());
+    world.enterScene("scene_001");
+    step(world, confirm()); // 아래(레버)를 보고 조사
+    step(world);
+    CHECK(world.object("wall")->visible);
+    CHECK(!world.object("lever")->visible);
+    hold(world, InputAction::Right, 60);
+    CHECK(world.player()->x == 100.0 - 32.0); // 다시 보이는 벽에 막힌다
+}

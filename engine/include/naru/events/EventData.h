@@ -9,7 +9,9 @@
 namespace naru {
 
 // 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
-enum class EventCommandType { Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData };
+enum class EventCommandType {
+    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible
+};
 enum class VariableOp { Set, Add, Subtract };
 enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
 
@@ -28,11 +30,22 @@ struct EventCommand {
     Value value;                    // SetVariable, IfVariable
     std::string script;             // CallScript: scripts/ 안의 파일 이름
     std::string function = "run";   // CallScript
+    // MoveObject, SetVisible: 대상 객체 ID 또는 kTargetSelf·kTargetPlayer
+    std::string target = "@self";
+    std::string direction = "right"; // MoveObject: "up" "down" "left" "right"
+    double distance = 48.0;          // MoveObject: 픽셀
+    double speed = 240.0;            // MoveObject: 픽셀/초, 0이면 순간 이동
+    bool waitForEnd = true;          // MoveObject: 이동이 끝날 때까지 다음 명령으로 넘어가지 않음
+    bool show = true;                // SetVisible: true 보이기, false 숨기기
     std::vector<EventCommand> thenCommands; // IfVariable
     std::vector<EventCommand> elseCommands; // IfVariable
 
     bool operator==(const EventCommand& other) const;
 };
+
+// 명령 대상 객체의 특별한 이름: 이 이벤트가 붙은 객체, 장면의 플레이어 객체.
+inline constexpr const char* kTargetSelf = "@self";
+inline constexpr const char* kTargetPlayer = "@player";
 
 // 이벤트가 시작되는 조건. 게임 실행 화면이 생기면 런타임이 이 값을 사용한다.
 // (순서는 저장 키와 무관하지만 편집 화면 목록 순서와 같다)

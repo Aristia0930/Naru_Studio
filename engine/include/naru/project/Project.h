@@ -19,6 +19,9 @@ struct SceneObject {
     std::string color = "#4a90d9";
     // 게임 실행 중 다른 객체(플레이어)가 지나갈 수 있는가. false면 벽처럼 막는다.
     bool passable = false;
+    // false면 게임 실행 중 그리지 않고, 막지도 막히지도 않으며 조사·접촉 이벤트도 실행되지 않는다.
+    // (자동 실행·병렬 처리 이벤트는 그대로 실행된다 — 보이지 않는 진행 담당 객체로 쓸 수 있게)
+    bool visible = true;
     ObjectEvent event;
 
     bool operator==(const SceneObject&) const = default;

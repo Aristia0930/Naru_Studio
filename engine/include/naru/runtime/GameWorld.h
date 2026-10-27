@@ -43,7 +43,11 @@ std::optional<Facing> facingFromKey(const std::string& key);
 // 조사·접촉·자동 실행 이벤트는 실행 중 플레이어 조작을 막으며 한 번에 하나씩 실행된다.
 // 반복 조건(스위치·페이지)은 아직 없어 자동 실행·병렬 처리는 장면 진입 시 한 번 실행된다.
 //
-// 한 틱의 순서: on_update 훅 → 막는 이벤트 → 기본 조작 → 접촉 판정 → 병렬 이벤트 → 예약된 장면 이동.
+// 숨긴 객체(visible=false)는 막지도 막히지도 않고 조사·접촉 이벤트도 실행하지 않는다.
+// 숨긴 플레이어는 아무것과도 닿지 않는다. 자동 실행·병렬 처리는 숨겨도 실행된다.
+//
+// 한 틱의 순서: on_update 훅 → 막는 이벤트 → 기본 조작 → 객체 이동 경로 → 접촉 판정 → 막는 이벤트
+//   → 병렬 이벤트 → 예약된 장면 이동.
 class GameWorld : public DialogueHost {
 public:
     struct Message {
@@ -117,6 +121,16 @@ public:
     bool setObjectPosition(const std::string& id, double x, double y);
     bool setObjectPassable(const std::string& id, bool passable);
     bool setObjectColor(const std::string& id, const std::string& color);
+    bool setObjectVisible(const std::string& id, bool visible);
+    // "@self"(selfId)·"@player"·객체 ID를 실제 객체 ID로 바꾼다. 장면에 없으면 빈 문자열.
+    std::string resolveTarget(const std::string& target, const std::string& selfId) const;
+
+    // ---- 이동 경로 (이벤트 "객체 이동" 명령). 매 틱 speed(픽셀/초)로 moveObject와 같은 규칙으로 움직이며,
+    // 막히거나 장면 가장자리에 닿으면 그 자리에서 끝난다. speed <= 0이면 바로 옮긴다.
+    // 같은 객체에 새로 시작하면 앞의 이동을 대신한다. 장면에 다시 들어오면 모두 멈춘다. 객체가 없으면 false.
+    bool startObjectMove(const std::string& id, double dx, double dy, double speed);
+    bool objectMoving(const std::string& id) const;
+    void stopObjectMove(const std::string& id);
 
     // DialogueHost
     void showMessage(const std::string& speaker, const std::string& text) override;
@@ -142,6 +156,7 @@ private:
     // 이번 틱의 접촉을 정리하고, 새로 닿은 객체의 접촉 이벤트를 시작한다.
     void finishContacts();
     void queueBlocking(const SceneObject& object);
+    void advanceRoutes(double dt);
 
     Project project_;
     ScriptRunner scripts_;
@@ -161,6 +176,14 @@ private:
     std::unique_ptr<RunningEvent> blocking_;
     std::deque<std::string> blockingQueue_;
     std::vector<std::unique_ptr<RunningEvent>> parallel_;
+
+    struct Route {
+        std::string objectId;
+        double dirX, dirY; // 단위 방향
+        double remaining;  // 남은 거리 (픽셀)
+        double speed;
+    };
+    std::vector<Route> routes_;
 
     InputMap inputMap_ = InputMap::defaults();
     InputState tickInput_;

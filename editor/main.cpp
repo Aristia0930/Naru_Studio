@@ -130,7 +130,25 @@ int main(int argc, char* argv[]) {
             sample.function = "add_combo";
             sample.variable = "combo";
         }
-        CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &db);
+        // 대상 객체 목록용 예시 장면
+        naru::Scene scene;
+        for (auto [id, name] : {std::pair{"obj_001", "주인공"}, std::pair{"obj_002", "문지기"},
+                                std::pair{"obj_003", "비밀 문"}}) {
+            naru::SceneObject o;
+            o.id = id;
+            o.name = name;
+            scene.objects.push_back(o);
+        }
+        if (*type == naru::EventCommandType::MoveObject) {
+            sample.target = "obj_002";
+            sample.direction = "right";
+            sample.distance = 96;
+            sample.speed = 120;
+        } else if (*type == naru::EventCommandType::SetVisible) {
+            sample.target = "obj_003";
+            sample.show = false;
+        }
+        CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &db, &scene);
         return captureDialog(dialog);
     }
     if (parser.isSet(fieldDialogOption)) {

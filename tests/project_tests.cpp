@@ -124,6 +124,7 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     o.y = -3;
     o.color = "#ffffff";
     o.passable = true;
+    o.visible = false;
     // 모든 명령 종류와 중첩 분기를 저장·불러오기 한다.
     o.event.trigger = EventTrigger::Touch;
     EventCommand sayCmd;
@@ -166,7 +167,18 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     boolSet.value = true;
     EventCommand noneSet = boolSet;
     noneSet.value = Value{};
-    o.event.commands = {commentCmd, outer, logCmd, boolSet, noneSet};
+    EventCommand moveCmd;
+    moveCmd.type = EventCommandType::MoveObject;
+    moveCmd.target = "@player";
+    moveCmd.direction = "up";
+    moveCmd.distance = 96;
+    moveCmd.speed = 0;
+    moveCmd.waitForEnd = false;
+    EventCommand hideCmd;
+    hideCmd.type = EventCommandType::SetVisible;
+    hideCmd.target = o.id;
+    hideCmd.show = false;
+    o.event.commands = {commentCmd, outer, logCmd, boolSet, noneSet, moveCmd, hideCmd};
     second.objects.push_back(o);
     second.playerObjectId = o.id;
     project.scenes.push_back(second);

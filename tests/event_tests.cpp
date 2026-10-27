@@ -223,3 +223,28 @@ TEST_CASE("값 비교와 연산 규칙") {
 }
 
 TEST_MAIN()
+
+TEST_CASE("객체 이동·보이기/숨기기는 게임 밖(테스트 실행)에서 로그만 남긴다") {
+    EventCommand move;
+    move.type = EventCommandType::MoveObject;
+    move.target = "@player";
+    move.direction = "left";
+    move.distance = 48;
+    EventCommand hide;
+    hide.type = EventCommandType::SetVisible;
+    hide.target = "obj_002";
+    hide.show = false;
+    EventCommand badDirection = move;
+    badDirection.direction = "north";
+    Session session(Variables{});
+    run(session, {move, hide});
+    CHECK(session.state() == SessionState::Completed);
+    std::vector<std::string> lines = logs(session);
+    CHECK(lines.size() >= 2);
+    CHECK(lines[lines.size() - 2].find("플레이어 → 왼쪽 48px") != std::string::npos);
+    CHECK(lines.back().find("숨기기") != std::string::npos && lines.back().find("obj_002") != std::string::npos);
+
+    Session bad(Variables{});
+    run(bad, {badDirection});
+    CHECK(bad.state() == SessionState::Failed);
+}

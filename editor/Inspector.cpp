@@ -16,7 +16,7 @@
 
 namespace {
 
-enum Field { Name, X, Y, Width, Height, Color, Passable };
+enum Field { Name, X, Y, Width, Height, Color, Passable, Visible };
 
 QDoubleSpinBox* coordinateBox(QWidget* parent, double min) {
     auto* box = new QDoubleSpinBox(parent);
@@ -69,6 +69,10 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     objectPassable_->setToolTip(QStringLiteral("끄면 벽처럼 플레이어를 막습니다. 켜면 위를 지나갈 수 있고, 밟으면 '플레이어 접촉' 이벤트가 실행됩니다."));
     objectForm->addRow(QStringLiteral("플레이어"), objectPlayer_);
     objectForm->addRow(QStringLiteral("통과"), objectPassable_);
+    objectVisible_ = new QCheckBox(QStringLiteral("게임에서 보임"), objectPage);
+    objectVisible_->setToolTip(QStringLiteral("끄면 게임 시작 때 숨겨져 있습니다: 그리지 않고, 막지 않으며, 조사·접촉 이벤트도 실행되지 않습니다.\n"
+                                              "이벤트 명령 '보이기/숨기기'로 나중에 나타나게 할 수 있습니다. 자동 실행·병렬 처리 이벤트는 숨겨도 실행됩니다."));
+    objectForm->addRow(QStringLiteral("보이기"), objectVisible_);
     pages_->addWidget(objectPage);
 
     connect(objectName_, &QLineEdit::editingFinished, this, [this] { commitObject(Name); });
@@ -79,6 +83,7 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     connect(objectColor_, &QPushButton::clicked, this, &Inspector::chooseObjectColor);
     connect(objectPlayer_, &QCheckBox::toggled, this, &Inspector::setPlayer);
     connect(objectPassable_, &QCheckBox::toggled, this, [this] { commitObject(Passable); });
+    connect(objectVisible_, &QCheckBox::toggled, this, [this] { commitObject(Visible); });
 
     // 장면 페이지
     auto* scenePage = new QWidget(this);
@@ -140,6 +145,7 @@ void Inspector::refresh() {
         showColor(objectColor_, object->color);
         objectPlayer_->setChecked(scene->playerObjectId == object->id);
         objectPassable_->setChecked(object->passable);
+        objectVisible_->setChecked(object->visible);
     } else if (scene) {
         pages_->setCurrentIndex(2);
         sceneIdLabel_->setText(QString::fromStdString(scene->id));
@@ -178,6 +184,7 @@ void Inspector::commitObject(int field) {
     case Width: after.width = objectW_->value(); break;
     case Height: after.height = objectH_->value(); break;
     case Passable: after.passable = objectPassable_->isChecked(); break;
+    case Visible: after.visible = objectVisible_->isChecked(); break;
     default: break;
     }
     if (after == *current) {
@@ -185,7 +192,7 @@ void Inspector::commitObject(int field) {
     }
     // 체크 상자는 연속 변경으로 묶지 않는다.
     doc_->undoStack()->push(
-        new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after, field == Passable ? -1 : field));
+        new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after, field == Passable || field == Visible ? -1 : field));
 }
 
 void Inspector::commitScene(int field) {

@@ -9,7 +9,8 @@ bool EventCommand::operator==(const EventCommand& o) const {
     return type == o.type && speaker == o.speaker && text == o.text && seconds == o.seconds &&
            variable == o.variable && op == o.op && compare == o.compare && value == o.value &&
            script == o.script && function == o.function && dataType == o.dataType && record == o.record &&
-           field == o.field && thenCommands == o.thenCommands &&
+           field == o.field && target == o.target && direction == o.direction && distance == o.distance &&
+           speed == o.speed && waitForEnd == o.waitForEnd && show == o.show && thenCommands == o.thenCommands &&
            elseCommands == o.elseCommands;
 }
 
@@ -39,7 +40,9 @@ const char* nameOf(const std::array<std::pair<E, const char*>, N>& table, E valu
     return "";
 }
 
-constexpr std::array<std::pair<EventCommandType, const char*>, 8> kTypes{{
+constexpr std::array<std::pair<EventCommandType, const char*>, 10> kTypes{{
+    {EventCommandType::MoveObject, "move_object"},
+    {EventCommandType::SetVisible, "set_visible"},
     {EventCommandType::GetData, "get_data"},
     {EventCommandType::Say, "say"},
     {EventCommandType::Wait, "wait"},

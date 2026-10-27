@@ -54,7 +54,7 @@ QString firstLine(const std::string& text) {
     return nl < 0 ? t : t.left(nl) + QStringLiteral(" …");
 }
 
-QString describe(const EventCommand& c) {
+QString describe(const EventCommand& c, const naru::Scene* scene) {
     switch (c.type) {
     case EventCommandType::Say:
         return QStringLiteral("대사: %1%2")
@@ -78,6 +78,15 @@ QString describe(const EventCommand& c) {
         return QStringLiteral("주석: %1").arg(q(c.text));
     case EventCommandType::GetData:
         return QStringLiteral("데이터 → 변수: %1 = %2[%3].%4").arg(q(c.variable), q(c.dataType), q(c.record), q(c.field));
+    case EventCommandType::MoveObject:
+        return QStringLiteral("객체 이동: %1 → %2 %3px (%4%5)")
+            .arg(CommandDialog::targetLabel(c.target, scene), CommandDialog::directionLabel(c.direction))
+            .arg(c.distance)
+            .arg(c.speed > 0 ? QStringLiteral("속도 %1").arg(c.speed) : QStringLiteral("순간 이동"),
+                 c.waitForEnd ? QStringLiteral(", 끝날 때까지 기다림") : QString());
+    case EventCommandType::SetVisible:
+        return QStringLiteral("%1: %2").arg(c.show ? QStringLiteral("보이기") : QStringLiteral("숨기기"),
+                                            CommandDialog::targetLabel(c.target, scene));
     }
     return {};
 }
@@ -116,8 +125,9 @@ std::vector<EventCommand>* listAt(std::vector<EventCommand>& root, const std::st
 std::optional<EventCommandType> chooseType(QWidget* parent) {
     QMenu menu(parent);
     for (auto type : {EventCommandType::Say, EventCommandType::Wait, EventCommandType::SetVariable,
-                      EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::CallScript,
-                      EventCommandType::Log, EventCommandType::Comment}) {
+                      EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::MoveObject,
+                      EventCommandType::SetVisible, EventCommandType::CallScript, EventCommandType::Log,
+                      EventCommandType::Comment}) {
         menu.addAction(CommandDialog::typeLabel(type))->setData(static_cast<int>(type));
     }
     QAction* chosen = menu.exec(QCursor::pos());
@@ -243,9 +253,13 @@ void EventEditor::setTarget(const QString& sceneId, const QString& objectId) {
     rebuild();
 }
 
+const naru::Scene* EventEditor::scene() const {
+    return doc_->project().findScene(sceneId_.toStdString());
+}
+
 const naru::SceneObject* EventEditor::target() const {
-    const naru::Scene* scene = doc_->project().findScene(sceneId_.toStdString());
-    return scene ? scene->findObject(objectId_.toStdString()) : nullptr;
+    const naru::Scene* s = scene();
+    return s ? s->findObject(objectId_.toStdString()) : nullptr;
 }
 
 QStringList EventEditor::scriptNames() const {
@@ -295,7 +309,7 @@ void EventEditor::rebuild() {
                 const EventCommand& c = list[i];
                 std::string id = naru::commandId(prefix, i);
                 QTreeWidgetItem* item = makeItem();
-                item->setText(0, QStringLiteral("◆ ") + describe(c));
+                item->setText(0, QStringLiteral("◆ ") + describe(c, scene()));
                 item->setData(0, kKindRole, CommandItem);
                 item->setData(0, kListRole, q(prefix));
                 item->setData(0, kIndexRole, static_cast<int>(i));
@@ -451,7 +465,7 @@ void EventEditor::addCommandAt(const std::string& listPrefix, int index) {
     if (*type == EventCommandType::IfVariable || *type == EventCommandType::SetVariable) {
         command.value = std::int64_t{0};
     }
-    CommandDialog dialog(command, scriptNames(), &doc_->project().database, this);
+    CommandDialog dialog(command, scriptNames(), &doc_->project().database, scene(), this);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
@@ -496,7 +510,8 @@ void EventEditor::editSelected() {
     if (!list || index >= static_cast<int>(list->size())) {
         return;
     }
-    CommandDialog dialog((*list)[static_cast<std::size_t>(index)], scriptNames(), &doc_->project().database, this);
+    CommandDialog dialog((*list)[static_cast<std::size_t>(index)], scriptNames(), &doc_->project().database, scene(),
+                         this);
     if (dialog.exec() == QDialog::Accepted) {
         replaceCommand(listPrefix, index, dialog.command());
     }

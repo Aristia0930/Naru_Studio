@@ -206,6 +206,10 @@ bool writeJson(const fs::path& file, const json& value, std::string& error) {
 // 악의적이거나 손상된 파일이 끝없이 중첩되어 스택을 넘치지 않게 한다.
 constexpr int kMaxEventDepth = 32;
 
+bool facingKeyValid(const std::string& key) {
+    return key == "up" || key == "down" || key == "left" || key == "right";
+}
+
 json valueToJson(const Value& v) {
     struct Visitor {
         json operator()(std::monostate) const { return nullptr; }
@@ -277,6 +281,17 @@ json commandToJson(const EventCommand& c) {
         j["field"] = c.field;
         j["variable"] = c.variable;
         break;
+    case EventCommandType::MoveObject:
+        j["target"] = c.target;
+        j["direction"] = c.direction;
+        j["distance"] = c.distance;
+        j["speed"] = c.speed;
+        j["wait"] = c.waitForEnd;
+        break;
+    case EventCommandType::SetVisible:
+        j["target"] = c.target;
+        j["visible"] = c.show;
+        break;
     }
     return j;
 }
@@ -328,6 +343,15 @@ EventCommand commandFromJson(const json& j, int depth) {
     c.dataType = getString(j, "dataType", std::string());
     c.record = getString(j, "record", std::string());
     c.field = getString(j, "field", std::string());
+    c.target = getString(j, "target", c.target);
+    c.direction = getString(j, "direction", c.direction);
+    if (c.type == EventCommandType::MoveObject && !facingKeyValid(c.direction)) {
+        throw std::runtime_error("알 수 없는 이동 방향: " + c.direction);
+    }
+    c.distance = getNumber(j, "distance", c.distance);
+    c.speed = getNumber(j, "speed", c.speed);
+    c.waitForEnd = getBool(j, "wait", c.waitForEnd);
+    c.show = getBool(j, "visible", c.show);
     if (c.type == EventCommandType::IfVariable) {
         c.thenCommands = commandsFromJson(getArray(j, "then"), depth + 1);
         c.elseCommands = commandsFromJson(getArray(j, "else"), depth + 1);
@@ -354,6 +378,9 @@ json objectToJson(const SceneObject& o) {
               {"width", o.width}, {"height", o.height}, {"color", o.color}};
     if (o.passable) {
         j["passable"] = true;
+    }
+    if (!o.visible) {
+        j["visible"] = false;
     }
     if (!(o.event == ObjectEvent{})) {
         j["event"] = {{"trigger", toKey(o.event.trigger)}, {"commands", commandsToJson(o.event.commands)}};
@@ -398,6 +425,7 @@ Scene sceneFromJson(const json& j) {
         o.height = getNumber(oj, "height", o.height);
         o.color = getString(oj, "color", o.color);
         o.passable = getBool(oj, "passable", false);
+        o.visible = getBool(oj, "visible", true);
         if (auto it = oj.find("event"); it != oj.end()) {
             const json& ej = requireObject(*it, "event");
             std::string triggerKey = getString(ej, "trigger", std::string("action"));

@@ -4,7 +4,9 @@
 #include "naru/core/Value.h"
 #include "naru/data/Database.h"
 #include "naru/events/BuiltinCommands.h"
+#include "naru/runtime/GameWorld.h"
 
+#include <cstdio>
 #include <utility>
 
 namespace naru {
@@ -164,6 +166,114 @@ private:
     std::string variable_;
 };
 
+std::string number(double v) {
+    char buffer[32];
+    std::snprintf(buffer, sizeof buffer, "%g", v);
+    return buffer;
+}
+
+// 로그에 쓰는 대상 이름.
+std::string targetLabel(const std::string& target) {
+    if (target == kTargetSelf) return "이 객체";
+    if (target == kTargetPlayer) return "플레이어";
+    return target;
+}
+
+// 객체를 정한 방향·거리만큼 움직인다 (GameWorld의 이동 경로). 게임 밖(에디터 테스트 실행)에서는 로그만 남긴다.
+class MoveObjectCommand : public Command {
+public:
+    MoveObjectCommand(std::string id, const EventCommand& c)
+        : Command(std::move(id)), target_(c.target), direction_(c.direction), distance_(c.distance),
+          speed_(c.speed), wait_(c.waitForEnd) {}
+
+    CommandStatus start(CommandContext& ctx) override {
+        movingId_.clear();
+        auto facing = facingFromKey(direction_);
+        if (!facing) {
+            setError("알 수 없는 이동 방향: " + direction_);
+            return CommandStatus::Failed;
+        }
+        if (distance_ < 0.0) {
+            setError("이동 거리는 0 이상이어야 합니다");
+            return CommandStatus::Failed;
+        }
+        if (!ctx.game) {
+            ctx.logger.info("객체 이동 (게임 실행 중에만 움직입니다): " + targetLabel(target_) + " → " +
+                                directionLabel(*facing) + " " + number(distance_) + "px",
+                            {"", 0, id()});
+            return CommandStatus::Completed;
+        }
+        std::string objectId = ctx.game->resolveTarget(target_, ctx.selfObjectId);
+        if (objectId.empty()) {
+            setError("이동할 객체가 장면에 없습니다: " + targetLabel(target_));
+            return CommandStatus::Failed;
+        }
+        double dx = *facing == Facing::Left ? -1.0 : *facing == Facing::Right ? 1.0 : 0.0;
+        double dy = *facing == Facing::Up ? -1.0 : *facing == Facing::Down ? 1.0 : 0.0;
+        ctx.game->startObjectMove(objectId, dx * distance_, dy * distance_, speed_);
+        if (!wait_ || !ctx.game->objectMoving(objectId)) {
+            return CommandStatus::Completed;
+        }
+        movingId_ = objectId;
+        return CommandStatus::Waiting;
+    }
+
+    CommandStatus update(CommandContext& ctx, double) override {
+        return ctx.game && ctx.game->objectMoving(movingId_) ? CommandStatus::Waiting : CommandStatus::Completed;
+    }
+
+    // 이벤트가 중지되면 기다리던 이동도 멈춘다 (기다리지 않는 이동은 이벤트와 상관없이 계속된다).
+    void cancel(CommandContext& ctx) override {
+        if (ctx.game && !movingId_.empty()) {
+            ctx.game->stopObjectMove(movingId_);
+        }
+    }
+
+    static std::string directionLabel(Facing f) {
+        switch (f) {
+        case Facing::Up: return "위";
+        case Facing::Down: return "아래";
+        case Facing::Left: return "왼쪽";
+        case Facing::Right: return "오른쪽";
+        }
+        return "";
+    }
+
+private:
+    std::string target_;
+    std::string direction_;
+    double distance_;
+    double speed_;
+    bool wait_;
+    std::string movingId_;
+};
+
+class SetVisibleCommand : public Command {
+public:
+    SetVisibleCommand(std::string id, std::string target, bool show)
+        : Command(std::move(id)), target_(std::move(target)), show_(show) {}
+
+    CommandStatus start(CommandContext& ctx) override {
+        if (!ctx.game) {
+            ctx.logger.info(std::string(show_ ? "보이기" : "숨기기") + " (게임 실행 중에만 바뀝니다): " +
+                                targetLabel(target_),
+                            {"", 0, id()});
+            return CommandStatus::Completed;
+        }
+        std::string objectId = ctx.game->resolveTarget(target_, ctx.selfObjectId);
+        if (objectId.empty()) {
+            setError(std::string(show_ ? "보일" : "숨길") + " 객체가 장면에 없습니다: " + targetLabel(target_));
+            return CommandStatus::Failed;
+        }
+        ctx.game->setObjectVisible(objectId, show_);
+        return CommandStatus::Completed;
+    }
+
+private:
+    std::string target_;
+    bool show_;
+};
+
 // "그렇다면" 분기 끝에서 "아니라면" 분기를 건너뛴다.
 class JumpCommand : public Command {
 public:
@@ -239,6 +349,12 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
         }
         case EventCommandType::GetData:
             out.push_back(std::make_unique<GetDataCommand>(id, c));
+            break;
+        case EventCommandType::MoveObject:
+            out.push_back(std::make_unique<MoveObjectCommand>(id, c));
+            break;
+        case EventCommandType::SetVisible:
+            out.push_back(std::make_unique<SetVisibleCommand>(id, c.target, c.show));
             break;
         case EventCommandType::Comment:
             break; // 실행하지 않는다

@@ -2,10 +2,12 @@
 
 #include "naru/data/Database.h"
 #include "naru/events/EventData.h"
+#include "naru/project/Project.h"
 
 #include <QDialog>
 #include <QStringList>
 
+class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLineEdit;
@@ -17,12 +19,17 @@ class CommandDialog : public QDialog {
     Q_OBJECT
 
 public:
+    // scene: 대상 객체 목록 ("객체 이동" 등). 없으면 이 객체·플레이어만 고를 수 있다.
     CommandDialog(const naru::EventCommand& command, const QStringList& scripts,
-                  const naru::Database* database = nullptr, QWidget* parent = nullptr);
+                  const naru::Database* database = nullptr, const naru::Scene* scene = nullptr,
+                  QWidget* parent = nullptr);
 
     naru::EventCommand command() const { return command_; }
 
     static QString typeLabel(naru::EventCommandType type);
+    // 대상 표시 이름: "이 객체", "플레이어", 객체 이름 (장면에 없는 객체면 ID).
+    static QString targetLabel(const std::string& target, const naru::Scene* scene);
+    static QString directionLabel(const std::string& direction);
 
 private:
     void accept() override;
@@ -44,4 +51,10 @@ private:
     QComboBox* dataType_ = nullptr;
     QComboBox* record_ = nullptr;
     QComboBox* field_ = nullptr;
+    QComboBox* target_ = nullptr;
+    QComboBox* direction_ = nullptr;
+    QDoubleSpinBox* distance_ = nullptr;
+    QDoubleSpinBox* speed_ = nullptr;
+    QCheckBox* waitForEnd_ = nullptr;
+    QComboBox* show_ = nullptr;
 };

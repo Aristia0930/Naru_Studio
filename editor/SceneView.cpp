@@ -22,7 +22,7 @@ public:
         apply(object, isPlayer);
     }
 
-    // 플레이어는 이름 앞에 ★, 통과 가능한 객체는 점선 테두리로 표시한다.
+    // 플레이어는 이름 앞에 ★, 통과 가능한 객체는 점선 테두리, 숨긴 객체는 흐리게 표시한다.
     void apply(const naru::SceneObject& object, bool isPlayer) {
         id_ = QString::fromStdString(object.id);
         setRect(0, 0, object.width, object.height);
@@ -30,7 +30,9 @@ public:
         QColor color(QString::fromStdString(object.color));
         setBrush(color.isValid() ? color : QColor(Qt::gray));
         setPen(object.passable ? QPen(QColor(255, 255, 255, 200), 0, Qt::DashLine) : QPen(QColor(255, 255, 255, 120), 0));
-        label_->setText((isPlayer ? QStringLiteral("★ ") : QString()) + QString::fromStdString(object.name));
+        setOpacity(object.visible ? 1.0 : 0.35);
+        label_->setText((isPlayer ? QStringLiteral("★ ") : QString()) + QString::fromStdString(object.name) +
+                        (object.visible ? QString() : QStringLiteral(" (숨김)")));
         label_->setPos(4, 2);
         committedPos_ = pos();
     }

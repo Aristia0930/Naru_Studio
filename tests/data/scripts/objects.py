@@ -13,6 +13,8 @@ def inspect(ctx):
     ctx.variables.set("missing", ctx.scene.object("nope") is None and ctx.scene.find("없음") is None)
     box.color = "#ff8800"
     box.passable = True
+    box.visible = False
+    ctx.variables.set("box_visible", box.visible)
     box.x = 10
     return box.x
 
