@@ -13,6 +13,8 @@ qt_add_executable(naru_editor
   DatabaseEditor.h
   FieldDialog.cpp
   FieldDialog.h
+  GlobalScriptsDialog.cpp
+  GlobalScriptsDialog.h
   ValueEditor.cpp
   ValueEditor.h
   EventEditor.cpp

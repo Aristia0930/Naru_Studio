@@ -23,6 +23,7 @@ if(NARU_BUILD_PYTHON)
   target_link_libraries(naru_python_tests PRIVATE naru_python)
   target_compile_definitions(naru_python_tests PRIVATE
     NARU_TEST_SCRIPTS_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data/scripts"
+    NARU_SCRIPT_API_DOC="${PROJECT_SOURCE_DIR}/docs/SCRIPT_API.md"
   )
   naru_copy_python_runtime(naru_python_tests)
   add_test(NAME python COMMAND naru_python_tests)

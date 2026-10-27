@@ -128,3 +128,11 @@ bool SetObjectCommand::mergeWith(const QUndoCommand* other) {
     after_ = o->after_;
     return true;
 }
+
+SetGlobalScriptsCommand::SetGlobalScriptsCommand(ProjectDocument* doc, std::vector<std::string> after)
+    : doc_(doc), before_(doc->project().globalScripts), after_(std::move(after)) {
+    setText(QStringLiteral("전역 스크립트 변경"));
+}
+
+void SetGlobalScriptsCommand::redo() { doc_->setGlobalScripts(after_); }
+void SetGlobalScriptsCommand::undo() { doc_->setGlobalScripts(before_); }

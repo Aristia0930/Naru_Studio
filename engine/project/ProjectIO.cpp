@@ -2,6 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <fstream>
 #include <iterator>
 #include <set>
@@ -21,6 +22,42 @@ constexpr const char* kSampleScript =
     "    count = ctx.variables.get(\"visits\", 0) + 1\n"
     "    ctx.variables.set(\"visits\", count)\n"
     "    ctx.log(f\"방문 횟수: {count}\")\n";
+
+// 새 프로젝트의 전역 스크립트 예제 (프로젝트 설정 → 전역 스크립트에 등록된 상태로 만든다).
+constexpr const char* kSampleGlobalScript =
+    "# 전역 스크립트: 게임 전체에서 실행된다 (프로젝트 설정 → 전역 스크립트에서 등록·순서 변경).\n"
+    "# 아래 이름의 함수가 있으면 게임이 부른다. 필요 없는 함수는 지워도 된다.\n"
+    "#   on_game_start(ctx)  게임 시작   on_scene_enter(ctx) / on_scene_exit(ctx)  장면 들어옴/나감\n"
+    "#   on_update(ctx)      매 프레임 (1/60초)\n"
+    "# 이벤트의 \"스크립트 호출\"로 이 파일의 함수를 부르면 실행 중인 이 모듈에서 실행되어 아래 전역 변수를 함께 쓴다.\n"
+    "# 다른 스크립트에서는 import game 으로 쓸 수 있다.\n"
+    "\n"
+    "WALK_SPEED = 240\n"
+    "DASH_SPEED = 420\n"
+    "combo = 0  # 게임 실행 중 유지되는 파이썬 전역 변수\n"
+    "\n"
+    "\n"
+    "def on_game_start(ctx):\n"
+    "    # 새 동작 \"dash\"를 Shift 키에 연결한다 (키 배치도 이렇게 바꿀 수 있다)\n"
+    "    ctx.input.bind(\"dash\", [\"Shift\"])\n"
+    "    ctx.log(\"게임 시작 (전역 스크립트)\")\n"
+    "\n"
+    "\n"
+    "def on_scene_enter(ctx):\n"
+    "    ctx.log(f\"장면 진입: {ctx.scene.name}\")\n"
+    "\n"
+    "\n"
+    "def on_update(ctx):\n"
+    "    # 기본 조작(방향키 이동·조사)은 엔진이 하고, Shift를 누르는 동안만 빨라지게 덧붙인다\n"
+    "    if ctx.player:\n"
+    "        ctx.player.speed = DASH_SPEED if ctx.input.held(\"dash\") else WALK_SPEED\n"
+    "\n"
+    "\n"
+    "def add_combo(ctx):\n"
+    "    # 이벤트의 \"스크립트 호출: game.py · add_combo()\"로 부른다. 반환값 → 변수로 받으면 조건 분기에 쓸 수 있다\n"
+    "    global combo\n"
+    "    combo += 1\n"
+    "    return combo\n";
 
 std::string toUtf8(const fs::path& path) {
     auto u8 = path.generic_u8string();
@@ -230,6 +267,9 @@ json commandToJson(const EventCommand& c) {
     case EventCommandType::CallScript:
         j["script"] = c.script;
         j["function"] = c.function;
+        if (!c.variable.empty()) {
+            j["variable"] = c.variable; // 반환값을 넣을 변수
+        }
         break;
     case EventCommandType::GetData:
         j["dataType"] = c.dataType;
@@ -547,6 +587,7 @@ ProjectLoadResult ProjectIO::create(const fs::path& dir, const std::string& name
     };
     addObject("주인공", 320, 400, "#e0a040");
     project.scenes.front().playerObjectId = project.scenes.front().objects.back().id;
+    project.globalScripts = {"game.py"};
     addObject("상자", 640, 400, "#8a6a40");
 
     // 이벤트 편집기 사용 예: 대사 → 변수 더하기 → 조건 분기
@@ -593,8 +634,15 @@ ProjectLoadResult ProjectIO::create(const fs::path& dir, const std::string& name
     }
     std::ofstream script(scriptsDirectory(dir) / "main.py", std::ios::binary);
     script << kSampleScript;
+    std::ofstream globalScript(scriptsDirectory(dir) / "game.py", std::ios::binary);
+    globalScript << kSampleGlobalScript;
     result.project = std::move(project);
     return result;
+}
+
+bool ProjectIO::isValidScriptName(const std::string& name) {
+    return name.size() > 3 && name.size() <= 128 && name.ends_with(".py") && name.find_first_of("/\\:") == std::string::npos &&
+           name.find("..") == std::string::npos;
 }
 
 ProjectLoadResult ProjectIO::load(const fs::path& dir) {
@@ -613,6 +661,20 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
     try {
         project.name = getString(root, "name", "이름 없는 프로젝트");
         project.startSceneId = getString(root, "startScene", std::string());
+        for (const auto& scriptJson : getArray(root, "globalScripts")) {
+            if (!scriptJson.is_string()) {
+                throw std::runtime_error("'globalScripts'에는 스크립트 파일 이름 문자열만 넣을 수 있습니다");
+            }
+            std::string script = scriptJson.get<std::string>();
+            if (!ProjectIO::isValidScriptName(script)) {
+                result.errors.push_back({kProjectFile, "전역 스크립트 이름이 올바르지 않습니다 (scripts/ 안의 .py 파일 이름): " + script});
+            } else if (std::find(project.globalScripts.begin(), project.globalScripts.end(), script) !=
+                       project.globalScripts.end()) {
+                result.errors.push_back({kProjectFile, "전역 스크립트가 중복 등록되었습니다: " + script});
+            } else {
+                project.globalScripts.push_back(script);
+            }
+        }
         std::set<std::string> objectIds;
         for (const auto& idJson : getArray(root, "scenes")) {
             if (!idJson.is_string()) {
@@ -743,7 +805,8 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
                  {"name", project.name},
                  {"startScene", project.startSceneId},
                  {"scenes", sceneIds},
-                 {"dataTypes", dataKeys}};
+                 {"dataTypes", dataKeys},
+                 {"globalScripts", project.globalScripts}};
     std::string error;
     if (!writeJson(dir / kProjectFile, root, error)) {
         errors.push_back({kProjectFile, error});

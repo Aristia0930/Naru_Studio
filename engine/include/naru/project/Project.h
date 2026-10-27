@@ -48,6 +48,8 @@ struct Project {
     std::string startSceneId;
     std::vector<Scene> scenes;
     Database database;
+    // 게임 전체에서 실행되는 전역 스크립트 (scripts/ 안의 파일 이름, 등록 순서대로 훅을 부른다).
+    std::vector<std::string> globalScripts;
 
     Scene* findScene(const std::string& sceneId);
     const Scene* findScene(const std::string& sceneId) const;

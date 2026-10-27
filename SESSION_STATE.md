@@ -2,11 +2,24 @@
 
 이 파일은 게임 기획/에셋 기록과 별개인 제작툴 전용 기록이다. 개발툴 재개 시 NARU_NEXT_STEPS.md와 이 파일을 먼저 읽고 실제 환경을 확인한다. 최신 사용자 지시가 우선한다.
 
-## 다음 시작점 — 2026-10-27 (P1 플레이어 조작 후)
+## 다음 시작점 — 2026-10-27 (전역 스크립트 후)
 
-- **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md).** P1 남은 항목(반복 조건·키 설정·클릭 조사) 또는 P2 전역 스크립트 훅(`on_update`, `ctx.input`, `ctx.player` — 사용자가 고른 "엔진 기본 + 스크립트로 끄기/덧붙이기"의 스크립트 쪽). 어느 것부터 할지 사용자와 정한다.
+- **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)의 "2-0. 작업 순서" 표를 위에서부터 하나씩** (사용자: "순서대로 해보자"). 0 커밋·푸시 → 1 스크립트로 다른 객체 조작(`ctx.scene.object`/`find`, 이벤트 접촉 완성) → 2 객체 이동·숨기기 명령 → 3 장면 이동 명령 → 4 공용 변수·스위치 → 5 실행 조건 보강·반복 → 6 선택지 → 7 공통 이벤트 → 8 키 설정 화면 → 9 실행 중 확인 도구 → 10 이미지·음원.
+- 사용자는 Python 문법에 익숙하지 않다 — 예제를 보여 줄 때 `ctx`·점(.)·대입 등을 풀어서 설명한다. `docs/SCRIPT_API.md`는 스크립트 공개 이름이 바뀔 때마다 갱신(테스트가 누락을 잡음).
 - 재개 시: ROADMAP → 이 파일 → `docs/guide/README.md` 순서로 읽고, `dev test`로 상태 확인. 단축키는 `docs/SHORTCUTS.md`.
 
+## 전역 스크립트 — 2026-10-27
+
+- 커밋 `b75d2ec`(SDL3 player·플레이어 조작)를 푸시한 뒤 진행.
+- 사용자 요구: 전역 스크립트를 **지정할 방법**이 있어야 함 / 이벤트의 스크립트 호출로 결과를 받거나 **전역 스크립트의 전역 변수를 수정**할 수 있어야 함 / **전역 스크립트끼리 변수 이름이 같으면 오류**.
+- 데이터: `Project::globalScripts`(project.json `globalScripts`, 순서 보존, 잘못된 이름·중복 거부). 새 프로젝트에 `scripts/game.py`(Shift=dash, `combo`/`add_combo` 예제) 등록.
+- 엔진: `InputState`를 동작 이름(문자열) 기반으로, `InputMap`(동작→키 이름, 별칭 Enter/Esc/Shift/Ctrl/Alt). `GameScripts` 인터페이스(load→오류 수, call→Ok/Missing/Failed), `GameWorld::startGame`·훅 순서(on_game_start → enterScene: on_scene_exit/on_scene_enter, 틱마다 on_update → 막는 이벤트 → 기본 조작 → 접촉 → 병렬 → 예약 장면 이동). 스크립트용 API: `setDefaultControl`, `movePlayer`(충돌·접촉), `setPlayerPosition`, `interact`, `requestScene`, `input()`(새로 누름은 프레임 첫 틱만, 대사를 넘긴 결정 키는 consume). 접촉 판정을 틱 끝 한 번으로 모음(기본 조작·스크립트 이동 합산). `CommandContext::game`.
+- 스크립트 호출: `ScriptRunner`가 `ScriptCallResult{error, returned}` 반환, 명령의 `variable`(반환값 → 변수, JSON `variable`). 편집 창에 칸 추가, 목록 표시 `스크립트 호출: v = file · fn()`.
+- Python: `loadModule`(sys.modules에 파일 이름으로 등록 → `import game`), `callModuleFunction`, `unloadModules`, `runFile(..., returned)`(반환값 변환, 컴파일 오류도 로그). `checkGlobalScripts`(ast로 최상위 대입 이름 수집 — import·함수·_ 제외, 겹치면 두 위치, 표준 모듈 이름, 문법 오류). `ctx.input`/`ctx.player`/`ctx.scene`/`ctx.busy`(게임 밖은 None/False). `PythonGameScripts`(스크립트·훅별 실패 시 그 쌍만 중지).
+- player: 키 이름 집합 → 매 프레임 InputMap으로 동작 계산(스크립트가 바꾼 배치 즉시 반영), `--hold`에 임의 동작 이름, 전역 스크립트 로드, 이벤트 호출이 전역 모듈이면 그 모듈 함수 실행.
+- 에디터: 스크립트 → 전역 스크립트… 창(체크·순서·실시간 검사), 목록 오른쪽 클릭 토글, `[전역 N]` 굵게, `SetGlobalScriptsCommand` Undo, F7에서 전역 검사, `--global-scripts-dialog` 촬영 옵션.
+- **검증:** ctest 9/9 — game 15건(훅 순서·없는 훅 재호출 안 함·실패 집계·훅이 변수 공유·기본 조작 끄고 스크립트 이동/접촉·사용자 동작 held/pressed), python 15건(반환값·게임 밖 None·훅+모듈 전역 변수 유지+이벤트에서 모듈 함수 호출+import·dash 키 배치·이름 겹침 두 위치/표준 모듈 이름·오류 훅 1회 보고와 다른 스크립트 계속), project 13건(globalScripts 왕복·잘못된 이름/중복 거부). 에디터 자기 검사 36단계(전역 등록·해제 Undo, 겹침 오류, NaruPlayer에서 on_game_start·on_scene_enter 로그 수신). 새 프로젝트 예제를 player로 실제 실행: 30프레임 오른쪽 이동 x=440(걷기) vs x=530(dash 유지) 확인. 설명서 6장 재작성, 그림 13장(13-global-scripts 추가, 07 반환값 칸 반영).
+- **미검증/한계:** 사람이 Shift를 실제로 눌러 본 확인은 없음(키 이름 매칭은 단위 테스트, 동작은 --hold로). 전역 스크립트 창·오른쪽 클릭 메뉴는 모달이라 클릭 자체는 자동 검사하지 않고 같은 함수 경로로 검사. 함수 안에서 `global`로 새로 만드는 이름은 겹침 검사 대상이 아님(최상위 대입만). 스크립트에서 다른 객체 조작·async 대기 없음. ASan 빌드는 다시 돌리지 않음.
 ## 플레이어 조작 — 2026-10-27
 
 - 사용자 결정: 입력은 **A안 — 엔진이 기본 처리(코딩 없이 이동·조사), 필요하면 스크립트로 끄거나 덧붙임** (RPG Maker 방식). 스크립트 쪽은 P2 전역 훅과 함께.

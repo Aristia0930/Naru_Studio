@@ -10,10 +10,15 @@
 
 namespace naru {
 
+// "스크립트 호출" 명령의 결과. error가 비어 있으면 성공이고 returned는 함수의 반환값이다.
+struct ScriptCallResult {
+    std::string error;
+    Value returned;
+};
+
 // "스크립트 호출" 명령을 실제로 실행하는 함수. 엔진이 Python에 직접 의존하지 않도록 밖에서 넣어 준다.
-// 빈 문자열을 반환하면 성공, 아니면 오류 내용이다.
 using ScriptRunner =
-    std::function<std::string(const std::string& script, const std::string& function, CommandContext& ctx)>;
+    std::function<ScriptCallResult(const std::string& script, const std::string& function, CommandContext& ctx)>;
 
 // 이벤트 명령 데이터를 실행 가능한 Command 목록으로 바꾼다.
 // 조건 분기는 점프 명령으로 펼치며, 각 Command의 id()는 편집 화면의 명령 위치 ID(commandId)와 같다.

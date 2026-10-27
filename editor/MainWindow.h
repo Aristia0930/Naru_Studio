@@ -68,6 +68,9 @@ private:
     void deleteSelection();
 
     void newScript();
+    void editGlobalScripts();
+    void toggleGlobalScript(const QString& fileName);
+    bool checkGlobalScripts();
     ScriptEditor* openScript(const QString& path);
     ScriptEditor* currentScript() const;
     void closeTab(int index);

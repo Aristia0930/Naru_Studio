@@ -2,6 +2,7 @@
 
 #include "DatabaseEditor.h"
 #include "EventEditor.h"
+#include "GlobalScriptsDialog.h"
 #include "Inspector.h"
 #include "ProjectDocument.h"
 #include "SceneView.h"
@@ -21,6 +22,7 @@
 #include <QHeaderView>
 #include <QInputDialog>
 #include <QListWidget>
+#include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QStatusBar>
@@ -149,6 +151,27 @@ void MainWindow::createDocks() {
     scripts_ = new QListWidget(this);
     connect(scripts_, &QListWidget::itemActivated, this,
             [this](QListWidgetItem* item) { openScript(item->data(kFileRole).toString()); });
+    // 오른쪽 클릭: 전역 스크립트로 사용 켜기/끄기
+    scripts_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(scripts_, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        QListWidgetItem* item = scripts_->itemAt(pos);
+        if (!item) {
+            return;
+        }
+        QString fileName = QFileInfo(item->data(kFileRole).toString()).fileName();
+        QMenu menu(this);
+        QAction* open = menu.addAction(QStringLiteral("열기"));
+        QAction* global = menu.addAction(QStringLiteral("전역 스크립트로 사용"));
+        global->setCheckable(true);
+        global->setChecked(doc_->isGlobalScript(fileName));
+        QAction* chosen = menu.exec(scripts_->viewport()->mapToGlobal(pos));
+        if (chosen == open) {
+            openScript(item->data(kFileRole).toString());
+        } else if (chosen == global) {
+            toggleGlobalScript(fileName);
+        }
+    });
+    connect(doc_, &ProjectDocument::globalScriptsChanged, this, &MainWindow::rebuildScriptList);
     auto* scriptDock = new QDockWidget(QStringLiteral("스크립트 (더블클릭하여 열기)"), this);
     scriptDock->setObjectName(QStringLiteral("scriptDock"));
     scriptDock->setWidget(scripts_);
@@ -226,6 +249,8 @@ void MainWindow::createActions() {
     auto* removeScene = make(QStringLiteral("장면 삭제"), {}, &MainWindow::removeCurrentScene);
 
     auto* newScript = make(QStringLiteral("새 스크립트..."), {}, &MainWindow::newScript);
+    auto* globalScripts = make(QStringLiteral("전역 스크립트..."), {}, &MainWindow::editGlobalScripts);
+    globalScripts->setToolTip(QStringLiteral("게임 전체에서 실행할 스크립트를 등록하고 순서를 정합니다"));
     auto* check = make(QStringLiteral("문법 검사"), QKeySequence(Qt::Key_F7), &MainWindow::checkSyntax);
     auto* run = make(QStringLiteral("스크립트 실행"), QKeySequence(Qt::Key_F5), &MainWindow::runScript);
     run->setToolTip(QStringLiteral("열린 스크립트 탭을, 장면 탭에서는 scripts/main.py를 실행합니다 (F5)"));
@@ -282,6 +307,7 @@ void MainWindow::createActions() {
 
     auto* script = menuBar()->addMenu(QStringLiteral("스크립트(&P)"));
     script->addAction(newScript);
+    script->addAction(globalScripts);
     script->addAction(check);
     script->addAction(run);
 
@@ -522,10 +548,55 @@ void MainWindow::deleteSelection() {
 void MainWindow::rebuildScriptList() {
     scripts_->clear();
     QDir dir(doc_->scriptsDirectory());
+    const auto& globals = doc_->project().globalScripts;
     for (const QFileInfo& info : dir.entryInfoList({QStringLiteral("*.py")}, QDir::Files, QDir::Name)) {
         auto* item = new QListWidgetItem(info.fileName(), scripts_);
         item->setData(kFileRole, info.absoluteFilePath());
+        auto it = std::find(globals.begin(), globals.end(), info.fileName().toStdString());
+        if (it != globals.end()) {
+            // 전역 스크립트: [전역 순서] 표시
+            item->setText(QStringLiteral("%1   [전역 %2]").arg(info.fileName()).arg(it - globals.begin() + 1));
+            QFont bold = item->font();
+            bold.setBold(true);
+            item->setFont(bold);
+            item->setToolTip(QStringLiteral("전역 스크립트 — 게임 전체에서 실행됩니다 (스크립트 → 전역 스크립트...)"));
+        }
     }
+}
+
+void MainWindow::editGlobalScripts() {
+    GlobalScriptsDialog dialog(doc_->scriptFiles(), doc_->project().globalScripts, doc_->scriptsDirectory(), python_, this);
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+    std::vector<std::string> after = dialog.selected();
+    if (after != doc_->project().globalScripts) {
+        doc_->undoStack()->push(new SetGlobalScriptsCommand(doc_, std::move(after)));
+    }
+}
+
+void MainWindow::toggleGlobalScript(const QString& fileName) {
+    std::vector<std::string> after = doc_->project().globalScripts;
+    auto it = std::find(after.begin(), after.end(), fileName.toStdString());
+    if (it != after.end()) {
+        after.erase(it);
+    } else {
+        after.push_back(fileName.toStdString());
+    }
+    doc_->undoStack()->push(new SetGlobalScriptsCommand(doc_, std::move(after)));
+}
+
+// 등록된 전역 스크립트를 검사해 로그에 남긴다 (변수 이름 겹침 등). 문제가 없으면 true.
+bool MainWindow::checkGlobalScripts() {
+    std::vector<std::string> paths;
+    for (const std::string& name : doc_->project().globalScripts) {
+        paths.push_back(QFileInfo(QDir(doc_->scriptsDirectory()).filePath(q(name))).absoluteFilePath().toStdString());
+    }
+    auto errors = python_->checkGlobalScripts(paths);
+    for (const auto& e : errors) {
+        appendLog({naru::LogLevel::Error, e.type + ": " + e.message, {e.file, e.line, ""}, e.traceback});
+    }
+    return errors.empty();
 }
 
 void MainWindow::newScript() {
@@ -648,6 +719,10 @@ void MainWindow::checkSyntax() {
     auto result = python_->checkSyntax(editor->path().toStdString());
     if (result.ok) {
         appendLog({naru::LogLevel::Info, "문법 검사 통과", {editor->path().toStdString(), 0, ""}, ""});
+        // 전역 스크립트면 다른 전역 스크립트와 변수 이름이 겹치지 않는지도 본다.
+        if (doc_->isGlobalScript(QFileInfo(editor->path()).fileName()) && checkGlobalScripts()) {
+            appendLog({naru::LogLevel::Info, "전역 스크립트 검사 통과 (변수 이름 겹침 없음)", {}, ""});
+        }
     } else {
         appendLog({naru::LogLevel::Error, result.error.type + ": " + result.error.message,
                    {result.error.file, result.error.line, ""}, result.error.traceback});
@@ -1106,8 +1181,34 @@ bool MainWindow::runSelfTest() {
         check(removedOk && playerId() == hero, "플레이어 객체 삭제 시 지정 해제, 실행 취소 시 복원");
     }
 
-    // 게임 실행: 저장 → NaruPlayer가 현재 장면을 연다 → 주인공을 오른쪽으로 움직여 상자 앞에서 결정 키
-    // → 상자의 조사 이벤트가 실행된다 → 120프레임 뒤 스스로 닫히고 로그가 제작툴에 들어온다
+    // 전역 스크립트: 새 프로젝트의 game.py가 등록됨, 해제·실행 취소, 다른 전역 스크립트와 변수 이름이 겹치면 오류
+    {
+        const std::vector<std::string> registered = doc_->project().globalScripts;
+        check(registered == std::vector<std::string>{"game.py"}, "새 프로젝트의 game.py가 전역 스크립트로 등록됨");
+        toggleGlobalScript(QStringLiteral("game.py"));
+        bool removed = doc_->project().globalScripts.empty();
+        doc_->undoStack()->undo();
+        check(removed && doc_->project().globalScripts == registered, "전역 스크립트 등록 해제·실행 취소");
+
+        QString conflictPath = QDir(doc_->scriptsDirectory()).filePath(QStringLiteral("selftest_conflict.py"));
+        QFile conflict(conflictPath);
+        conflict.open(QIODevice::WriteOnly);
+        conflict.write("WALK_SPEED = 1\n_private = 2\n");
+        conflict.close();
+        toggleGlobalScript(QStringLiteral("selftest_conflict.py"));
+        logMessages_.clear();
+        bool conflictFound = !checkGlobalScripts();
+        bool mentioned = false;
+        for (const QString& m : logMessages_) {
+            mentioned = mentioned || (m.contains(QStringLiteral("WALK_SPEED")) && !m.contains(QStringLiteral("_private")));
+        }
+        doc_->undoStack()->undo();
+        QFile::remove(conflictPath);
+        check(conflictFound && mentioned, "전역 스크립트 변수 이름 겹침을 오류로 알림 (_로 시작하는 이름은 제외)");
+        check(checkGlobalScripts(), "겹침이 없으면 전역 스크립트 검사 통과");
+    }
+
+    // 게임 실행: 저장 → NaruPlayer가 현재 장면을 연다 → 주인공을 오른쪽으로 움직여 상자 앞에서 결정 키    // → 상자의 조사 이벤트가 실행된다 → 120프레임 뒤 스스로 닫히고 로그가 제작툴에 들어온다
     {
         logMessages_.clear();
         bool started = runGame({QStringLiteral("--frames"), QStringLiteral("120"), QStringLiteral("--hold"),
@@ -1119,13 +1220,18 @@ bool MainWindow::runSelfTest() {
         }
         bool sceneLogged = false;
         bool chestOpened = false;
+        bool globalStarted = false;
+        bool globalSceneHook = false;
         for (const QString& m : logMessages_) {
             sceneLogged = sceneLogged || m.startsWith(QStringLiteral("[게임] 장면 시작"));
             chestOpened = chestOpened || m.startsWith(QStringLiteral("[게임] 상자 ▸"));
+            globalStarted = globalStarted || m == QStringLiteral("[게임] 게임 시작 (전역 스크립트)");
+            globalSceneHook = globalSceneHook || m.startsWith(QStringLiteral("[게임] 장면 진입: "));
         }
         check(started && !game_ && lastGameExitCode_ == 0 && sceneLogged, "게임 실행 (NaruPlayer, 로그 수신)");
         check(chestOpened, "게임에서 플레이어 이동 → 상자 앞 결정 키 → 조사 이벤트 실행");
-        if (!sceneLogged || !chestOpened || lastGameExitCode_ != 0) {
+        check(globalStarted && globalSceneHook, "전역 스크립트 on_game_start · on_scene_enter 실행");
+        if (!sceneLogged || !chestOpened || !globalStarted || lastGameExitCode_ != 0) {
             std::printf("  started=%d running=%d exit=%d\n", started, game_ != nullptr, lastGameExitCode_);
             for (const QString& m : logMessages_) {
                 std::printf("  log: %s\n", m.toUtf8().constData());

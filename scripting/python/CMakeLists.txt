@@ -1,6 +1,7 @@
 find_package(Python3 3.13 REQUIRED COMPONENTS Interpreter Development.Embed)
 
 add_library(naru_python STATIC
+  PythonGameScripts.cpp
   PythonRuntime.cpp
 )
 

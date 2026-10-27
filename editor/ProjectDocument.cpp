@@ -147,3 +147,17 @@ void ProjectDocument::setObject(const std::string& sceneId, const naru::SceneObj
     *target = object;
     emit objectChanged(QString::fromStdString(sceneId), QString::fromStdString(object.id));
 }
+
+void ProjectDocument::setGlobalScripts(const std::vector<std::string>& scripts) {
+    project_.globalScripts = scripts;
+    emit globalScriptsChanged();
+}
+
+QStringList ProjectDocument::scriptFiles() const {
+    return QDir(scriptsDirectory()).entryList({QStringLiteral("*.py")}, QDir::Files, QDir::Name);
+}
+
+bool ProjectDocument::isGlobalScript(const QString& fileName) const {
+    const auto& list = project_.globalScripts;
+    return std::find(list.begin(), list.end(), fileName.toStdString()) != list.end();
+}

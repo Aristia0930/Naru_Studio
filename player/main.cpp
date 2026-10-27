@@ -3,7 +3,8 @@
 //
 //   NaruPlayer <프로젝트 폴더> [--scene <id>] [--font <ttf>]
 //   자동 검사·설명서 촬영: [--frames <n>] [--auto-confirm] [--screenshot <png>]
-//                          [--hold <동작>:<시작 프레임>-<끝 프레임>]... (동작: up down left right confirm cancel)
+//                          [--hold <동작>:<시작 프레임>-<끝 프레임>]... (동작 이름: up down left right confirm cancel,
+//                          또는 전역 스크립트가 만든 동작)
 //
 // 로그는 표준 출력에 한 줄씩 "NARU\t수준\t명령ID\t파일\t행\t메시지\t부가정보" 형식으로 쓴다 (제작툴이 읽는다).
 // 종료 코드: 0 정상, 1 시작 실패, 3 이벤트 오류가 있었음.
@@ -12,6 +13,7 @@
 #include "naru/runtime/GameWorld.h"
 
 #if NARU_PLAYER_HAS_PYTHON
+#include "naru/python/PythonGameScripts.h"
 #include "naru/python/PythonRuntime.h"
 #endif
 
@@ -24,6 +26,7 @@
 #include <filesystem>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -34,7 +37,7 @@ namespace {
 
 // 자동 검사용 입력: from~to 프레임 동안 동작을 누르고 있는다.
 struct ScriptedInput {
-    InputAction action;
+    std::string action;
     int from;
     int to;
 };
@@ -88,28 +91,19 @@ void writeStartupError(const std::string& message) {
 }
 
 std::optional<ScriptedInput> parseHold(const std::string& text) {
-    static const std::pair<const char*, InputAction> names[] = {
-        {"up", InputAction::Up},           {"down", InputAction::Down},     {"left", InputAction::Left},
-        {"right", InputAction::Right},     {"confirm", InputAction::Confirm}, {"cancel", InputAction::Cancel}};
     std::size_t colon = text.find(':');
     std::size_t dash = text.find('-', colon == std::string::npos ? 0 : colon);
     if (colon == std::string::npos || dash == std::string::npos) {
         return std::nullopt;
     }
     std::string name = text.substr(0, colon);
-    for (const auto& [key, action] : names) {
-        if (name == key) {
-            int from = std::atoi(text.substr(colon + 1, dash - colon - 1).c_str());
-            int to = std::atoi(text.substr(dash + 1).c_str());
-            if (from < 0 || to < from) {
-                return std::nullopt;
-            }
-            return ScriptedInput{action, from, to};
-        }
+    int from = std::atoi(text.substr(colon + 1, dash - colon - 1).c_str());
+    int to = std::atoi(text.substr(dash + 1).c_str());
+    if (!InputMap::isValidActionName(name) || from < 0 || to < from) {
+        return std::nullopt;
     }
-    return std::nullopt;
+    return ScriptedInput{name, from, to};
 }
-
 std::optional<Options> parseArgs(int argc, char** argv) {
     Options o;
     for (int i = 1; i < argc; ++i) {
@@ -177,27 +171,6 @@ SDL_Color parseColor(const std::string& text, SDL_Color fallback) {
 
 void setColor(SDL_Renderer* r, SDL_Color c) {
     SDL_SetRenderDrawColor(r, c.r, c.g, c.b, c.a);
-}
-
-// 임시 기본 키 배치. 프로젝트 설정·스크립트로 바꾸는 방식은 미결정이다.
-std::optional<InputAction> mapKey(SDL_Scancode code) {
-    switch (code) {
-    case SDL_SCANCODE_UP:
-    case SDL_SCANCODE_W: return InputAction::Up;
-    case SDL_SCANCODE_DOWN:
-    case SDL_SCANCODE_S: return InputAction::Down;
-    case SDL_SCANCODE_LEFT:
-    case SDL_SCANCODE_A: return InputAction::Left;
-    case SDL_SCANCODE_RIGHT:
-    case SDL_SCANCODE_D: return InputAction::Right;
-    case SDL_SCANCODE_Z:
-    case SDL_SCANCODE_SPACE:
-    case SDL_SCANCODE_RETURN:
-    case SDL_SCANCODE_KP_ENTER: return InputAction::Confirm;
-    case SDL_SCANCODE_X:
-    case SDL_SCANCODE_ESCAPE: return InputAction::Cancel;
-    default: return std::nullopt;
-    }
 }
 
 // 글자를 텍스처로 만들어 두고, 내용이 바뀔 때만 다시 만든다.
@@ -307,38 +280,43 @@ void drawMessage(SDL_Renderer* r, TTF_Font* font, const GameWorld::Message& mess
     }
 }
 
-ScriptRunner makeScriptRunner(const fs::path& scriptsDir) {
 #if NARU_PLAYER_HAS_PYTHON
-    std::shared_ptr<python::PythonRuntime> python;
-    std::string initError;
-    try {
-        python = std::make_shared<python::PythonRuntime>();
-    } catch (const std::exception& ex) {
-        initError = ex.what();
-    }
-    return [python, initError, scriptsDir](const std::string& script, const std::string& function,
-                                           CommandContext& ctx) -> std::string {
+// 이벤트의 "스크립트 호출". 전역 스크립트로 읽어 둔 파일이면 실행 중인 모듈의 함수를 부르고(모듈 전역 변수 공유),
+// 아니면 파일을 새로 읽어 실행한다.
+ScriptRunner makeScriptRunner(python::PythonRuntime* python, std::string initError, fs::path scriptsDir,
+                              python::PythonGameScripts* globals) {
+    return [python, initError, scriptsDir, globals](const std::string& script, const std::string& function,
+                                                   CommandContext& ctx) -> ScriptCallResult {
         if (!python) {
-            return "Python을 시작하지 못했습니다: " + initError;
+            return {"Python을 시작하지 못했습니다: " + initError, {}};
         }
         if (script.find_first_of("/\\") != std::string::npos || script.find("..") != std::string::npos) {
-            return "scripts 폴더 밖의 파일은 호출할 수 없습니다: " + script;
+            return {"scripts 폴더 밖의 파일은 호출할 수 없습니다: " + script, {}};
+        }
+        ScriptCallResult call;
+        if (globals) {
+            if (std::optional<std::string> loaded = globals->loadedPath(script)) {
+                python::ScriptResult result;
+                switch (python->callModuleFunction(*loaded, function, ctx, &result, &call.returned)) {
+                case python::CallStatus::Ok: return call;
+                case python::CallStatus::Missing:
+                    return {"전역 스크립트 " + script + "에 호출할 함수 '" + function + "'가 없습니다", {}};
+                case python::CallStatus::Failed: return {"Python 스크립트 오류 (" + result.error.type + ")", {}};
+                }
+            }
         }
         fs::path path = scriptsDir / pathFromUtf8(script);
         if (!fs::exists(path)) {
-            return "스크립트 파일이 없습니다: scripts/" + script;
+            return {"스크립트 파일이 없습니다: scripts/" + script, {}};
         }
-        auto result = python->runFile(utf8(fs::absolute(path)), ctx, function);
-        return result.ok ? std::string() : "Python 스크립트 오류 (" + result.error.type + ")";
+        auto result = python->runFile(utf8(fs::absolute(path)), ctx, function, &call.returned);
+        if (!result.ok) {
+            call.error = "Python 스크립트 오류 (" + result.error.type + ")";
+        }
+        return call;
     };
-#else
-    (void)scriptsDir;
-    return [](const std::string&, const std::string&, CommandContext&) {
-        return std::string("이 player는 Python 없이 빌드되었습니다");
-    };
-#endif
 }
-
+#endif
 TTF_Font* openFont(const std::string& requested) {
     std::vector<std::string> candidates;
     if (!requested.empty()) {
@@ -379,10 +357,39 @@ int main(int argc, char** argv) {
                                                 : (project.scenes.empty() ? std::string() : project.scenes.front().id);
     }
     std::string title = project.name + " — Naru Player";
+    fs::path scriptsDir = ProjectIO::scriptsDirectory(options->projectDir);
 
-    GameWorld world(std::move(project), makeScriptRunner(ProjectIO::scriptsDirectory(options->projectDir)));
+    // 소멸 순서: world → 전역 스크립트(모듈 정리) → Python
+#if NARU_PLAYER_HAS_PYTHON
+    std::unique_ptr<python::PythonRuntime> python;
+    std::string pythonError;
+    try {
+        python = std::make_unique<python::PythonRuntime>();
+    } catch (const std::exception& ex) {
+        pythonError = ex.what();
+    }
+    std::unique_ptr<python::PythonGameScripts> globals;
+    if (python && !project.globalScripts.empty()) {
+        std::vector<std::string> paths;
+        for (const std::string& name : project.globalScripts) {
+            paths.push_back(utf8(fs::absolute(scriptsDir / pathFromUtf8(name))));
+        }
+        globals = std::make_unique<python::PythonGameScripts>(*python, std::move(paths));
+    }
+    bool wantsGlobals = !project.globalScripts.empty();
+    GameWorld world(std::move(project), makeScriptRunner(python.get(), pythonError, scriptsDir, globals.get()));
     world.logger().addSink(writeLog);
-    if (!world.enterScene(sceneId)) {
+    world.setGameScripts(globals.get());
+    if (!python && wantsGlobals) {
+        world.logger().error("Python을 시작하지 못해 전역 스크립트를 실행하지 않습니다: " + pythonError);
+    }
+#else
+    GameWorld world(std::move(project), [](const std::string&, const std::string&, CommandContext&) {
+        return ScriptCallResult{"이 player는 Python 없이 빌드되었습니다", {}};
+    });
+    world.logger().addSink(writeLog);
+#endif
+    if (!world.startGame(sceneId)) {
         return 1;
     }
     const Scene& scene = *world.scene();
@@ -417,6 +424,8 @@ int main(int argc, char** argv) {
     }
 
     InputState input;
+    // 누르고 있는 실제 키 이름 (SDL 키 이름). 매 프레임 키 배치(전역 스크립트가 바꿀 수 있음)로 동작을 계산한다.
+    std::set<std::string> heldKeys;
     TextCache speakerText;
     TextCache bodyText;
     bool running = true;
@@ -431,36 +440,40 @@ int main(int argc, char** argv) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_EVENT_QUIT) {
                 running = false;
-            } else if (event.type == SDL_EVENT_KEY_DOWN || event.type == SDL_EVENT_KEY_UP) {
-                if (std::optional<InputAction> action = mapKey(event.key.scancode)) {
-                    if (event.type == SDL_EVENT_KEY_DOWN) {
-                        input.press(*action);
-                    } else {
-                        input.release(*action);
-                    }
+            } else if (event.type == SDL_EVENT_KEY_DOWN) {
+                heldKeys.insert(SDL_GetScancodeName(event.key.scancode));
+            } else if (event.type == SDL_EVENT_KEY_UP) {
+                heldKeys.erase(SDL_GetScancodeName(event.key.scancode));
+            }
+        }
+        std::set<std::string> scriptedHeld;
+        for (const ScriptedInput& s : options->scripted) {
+            if (static_cast<int>(frame) >= s.from && static_cast<int>(frame) <= s.to) {
+                scriptedHeld.insert(s.action);
+            }
+        }
+        // 자동 검사: 대사가 뜬 지 0.5초가 지나면 결정 키를 한 프레임 누른 것으로 친다.
+        if (options->autoConfirm && world.message() && frame - messageSince >= 30 && frame % 2 == 0) {
+            scriptedHeld.insert(toKey(InputAction::Confirm));
+        }
+        std::set<std::string> actions(scriptedHeld.begin(), scriptedHeld.end());
+        for (const std::string& a : world.inputMap().actions()) {
+            actions.insert(a);
+        }
+        for (const std::string& action : actions) {
+            bool held = scriptedHeld.count(action) > 0;
+            for (const std::string& key : world.inputMap().keys(action)) {
+                for (const std::string& pressed : heldKeys) {
+                    held = held || InputMap::keyMatches(key, pressed);
                 }
             }
+            input.set(action, held);
         }
-        for (const ScriptedInput& s : options->scripted) {
-            if (static_cast<int>(frame) == s.from) {
-                input.press(s.action);
-            } else if (static_cast<int>(frame) == s.to + 1) {
-                input.release(s.action);
-            }
-        }
-        // 자동 검사: 대사가 뜬 지 0.5초가 지나면 결정 키를 누른 것으로 친다.
-        if (options->autoConfirm && world.message() && frame - messageSince >= 30) {
-            input.press(InputAction::Confirm);
-        }
-
         Uint64 now = SDL_GetTicksNS();
         double dt = fixedFrames ? 1.0 / 60.0 : static_cast<double>(now - last) / 1e9;
         last = now;
         world.update(dt, input);
         input.endFrame();
-        if (options->autoConfirm) {
-            input.release(InputAction::Confirm);
-        }
         std::string messageKey = world.message() ? world.message()->speaker + "\n" + world.message()->text : "";
         if (messageKey != shownMessage) {
             shownMessage = messageKey;

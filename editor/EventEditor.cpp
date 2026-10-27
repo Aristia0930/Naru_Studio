@@ -72,7 +72,8 @@ QString describe(const EventCommand& c) {
     case EventCommandType::Log:
         return QStringLiteral("로그: %1").arg(q(c.text));
     case EventCommandType::CallScript:
-        return QStringLiteral("스크립트 호출: %1 · %2()").arg(q(c.script), q(c.function));
+        return c.variable.empty() ? QStringLiteral("스크립트 호출: %1 · %2()").arg(q(c.script), q(c.function))
+                                  : QStringLiteral("스크립트 호출: %1 = %2 · %3()").arg(q(c.variable), q(c.script), q(c.function));
     case EventCommandType::Comment:
         return QStringLiteral("주석: %1").arg(q(c.text));
     case EventCommandType::GetData:
@@ -536,18 +537,23 @@ void EventEditor::startTest() {
         return;
     }
     QString scriptsDir = doc_->scriptsDirectory();
+    // 테스트 실행은 게임 밖이므로 전역 스크립트도 매번 새로 읽는다 (모듈 전역 변수는 유지되지 않고 ctx.player 등은 None).
     naru::ScriptRunner runner = [this, scriptsDir](const std::string& script, const std::string& function,
-                                                   naru::CommandContext& ctx) -> std::string {
+                                                   naru::CommandContext& ctx) -> naru::ScriptCallResult {
         QString name = q(script);
         if (name.contains('/') || name.contains('\\') || name.contains(QStringLiteral(".."))) {
-            return "scripts 폴더 밖의 파일은 호출할 수 없습니다: " + script;
+            return {"scripts 폴더 밖의 파일은 호출할 수 없습니다: " + script, {}};
         }
         QString path = QDir(scriptsDir).filePath(name);
         if (!QFileInfo::exists(path)) {
-            return "스크립트 파일이 없습니다: scripts/" + script;
+            return {"스크립트 파일이 없습니다: scripts/" + script, {}};
         }
-        auto result = python_->runFile(QFileInfo(path).absoluteFilePath().toStdString(), ctx, function);
-        return result.ok ? std::string() : "Python 스크립트 오류 (" + result.error.type + ")";
+        naru::ScriptCallResult call;
+        auto result = python_->runFile(QFileInfo(path).absoluteFilePath().toStdString(), ctx, function, &call.returned);
+        if (!result.ok) {
+            call.error = "Python 스크립트 오류 (" + result.error.type + ")";
+        }
+        return call;
     };
 
     // 실행 중 편집해도 테스트가 영향을 받지 않도록 데이터베이스 사본을 쓴다.

@@ -5,6 +5,7 @@
 #include "naru/events/EventCompiler.h"
 #include "naru/events/EventRunner.h"
 #include "naru/project/Project.h"
+#include "naru/runtime/GameScripts.h"
 #include "naru/runtime/Input.h"
 
 #include <cstddef>
@@ -20,12 +21,17 @@ namespace naru {
 
 enum class Facing { Down, Up, Left, Right };
 
+const char* toKey(Facing facing);
+std::optional<Facing> facingFromKey(const std::string& key);
+
 // 게임 실행 상태. 편집 문서의 사본을 받아 장면에 들어가고, 실행 조건에 따라 객체 이벤트를 실행한다.
 // 그리기·입력 장치·창은 다루지 않는다 (player와 테스트가 같은 코드를 쓴다).
 //
 // 기본 조작(코딩 없이 동작, RPG Maker 방식): 장면의 플레이어 객체를 방향 입력으로 움직이고,
-// 지나갈 수 없는 객체와 장면 가장자리에 막힌다. 이벤트가 화면을 막고 있거나 대사가 떠 있으면 움직이지 않는다.
-// 스크립트로 기본 조작을 끄거나 덧붙이는 기능은 전역 스크립트 훅과 함께 추가한다 (ROADMAP P2).
+// 지나갈 수 없는 객체와 장면 가장자리에 막힌다. 결정 입력으로 앞의 객체를 조사한다.
+// 이벤트가 화면을 막고 있거나 대사가 떠 있으면 움직이지 않는다.
+// 전역 스크립트는 setDefaultControl(false)로 기본 조작을 끄고 movePlayer()/interact()로 직접 조작하거나,
+// 기본 조작은 둔 채 속도·키 배치를 바꾸고 새 동작을 덧붙일 수 있다.
 //
 // 실행 조건:
 //   - 조사: 결정 키를 누르면 플레이어가 바라보는 쪽 바로 앞(또는 밟고 있는 통과 가능한) 객체
@@ -35,6 +41,8 @@ enum class Facing { Down, Up, Left, Right };
 //   - 병렬 처리: 장면에 들어올 때 모두 함께, 다른 이벤트를 막지 않음
 // 조사·접촉·자동 실행 이벤트는 실행 중 플레이어 조작을 막으며 한 번에 하나씩 실행된다.
 // 반복 조건(스위치·페이지)은 아직 없어 자동 실행·병렬 처리는 장면 진입 시 한 번 실행된다.
+//
+// 한 틱의 순서: on_update 훅 → 막는 이벤트 → 기본 조작 → 접촉 판정 → 병렬 이벤트 → 예약된 장면 이동.
 class GameWorld : public DialogueHost {
 public:
     struct Message {
@@ -52,27 +60,52 @@ public:
     GameWorld(const GameWorld&) = delete;
     GameWorld& operator=(const GameWorld&) = delete;
 
-    // 장면에 들어간다. 이전 장면의 이벤트는 중지된다. 장면이 없으면 오류를 기록하고 false.
+    // 전역 스크립트를 연결한다 (startGame 전에). 소유하지 않으며 GameWorld보다 오래 살아야 한다.
+    void setGameScripts(GameScripts* scripts) { gameScripts_ = scripts; }
+    // 전역 스크립트를 읽고 on_game_start를 부른 뒤 첫 장면에 들어간다. 장면이 없으면 false.
+    bool startGame(const std::string& sceneId);
+    // 장면에 들어간다. 이전 장면의 이벤트는 중지된다 (on_scene_exit → 전환 → on_scene_enter).
+    // 장면이 없으면 오류를 기록하고 false.
     bool enterScene(const std::string& sceneId);
+    // 이번 틱이 끝난 뒤 장면을 바꾼다 (스크립트·이벤트 실행 도중에 장면이 사라지지 않도록).
+    void requestScene(const std::string& sceneId) { pendingScene_ = sceneId; }
     // 실제 경과 시간과 이번 프레임 입력을 받아 필요한 만큼 고정 틱을 진행한다.
     void update(double realSeconds, const InputState& input);
 
     const Project& project() const { return project_; }
     // 실행 중인 장면 (플레이어 위치 등 실행 중 바뀐 상태 포함). 들어간 장면이 없으면 nullptr.
     const Scene* scene() const { return scene_ ? &*scene_ : nullptr; }
-    // 현재 장면의 플레이어 객체. 지정하지 않았으면 nullptr.
-    const SceneObject* player() const;
-    Facing facing() const { return facing_; }
     const std::optional<Message>& message() const { return message_; }
     Variables& variables() { return variables_; }
     Logger& logger() { return logger_; }
-    // 플레이어 조작을 막는 이벤트(조사·접촉·자동 실행)가 실행 중이거나 기다리는 중인가.
+    // 플레이어 조작을 막는 이벤트(조사·접촉·자동 실행)나 대사가 진행 중인가.
+    bool busy() const { return blockingEventActive() || message_.has_value(); }
     bool blockingEventActive() const;
     std::size_t runningEventCount() const;
+    // 실패한 이벤트와 오류가 난 전역 스크립트 훅의 수.
     int failedEventCount() const { return failedEvents_; }
     std::uint64_t tickCount() const { return ticks_; }
+
+    // ---- 입력 (현재 틱 기준. "새로 누름"은 프레임의 첫 틱에서만 참)
+    InputMap& inputMap() { return inputMap_; }
+    const InputMap& inputMap() const { return inputMap_; }
+    const InputState& input() const { return tickInput_; }
+
+    // ---- 플레이어
+    // 현재 장면의 플레이어 객체. 지정하지 않았으면 nullptr.
+    const SceneObject* player() const;
+    Facing facing() const { return facing_; }
+    void setFacing(Facing facing) { facing_ = facing; }
     double playerSpeed() const { return playerSpeed_; }
     void setPlayerSpeed(double pixelsPerSecond) { playerSpeed_ = pixelsPerSecond; }
+    bool defaultControl() const { return defaultControl_; }
+    void setDefaultControl(bool enabled) { defaultControl_ = enabled; }
+    // 충돌을 따져 dx, dy 픽셀만큼 움직인다 (접촉 이벤트도 판정). 플레이어가 없으면 false.
+    bool movePlayer(double dx, double dy);
+    // 충돌 없이 위치를 옮긴다.
+    bool setPlayerPosition(double x, double y);
+    // 결정 키를 누른 것처럼 앞의 객체를 조사한다. 이벤트를 시작했으면 true.
+    bool interact();
 
     // DialogueHost
     void showMessage(const std::string& speaker, const std::string& text) override;
@@ -88,12 +121,14 @@ private:
     // 막는 이벤트를 진행한다. 즉시 끝나는 이벤트는 같은 틱 안에서 이어서 실행한다.
     void runBlocking(double dt);
     void stopAll();
+    void callHook(const char* hook);
 
     SceneObject* playerObject();
-    void controlPlayer(const InputState& input, bool actionPressed, double dt);
-    // 한 축으로 이동하고 막힌 객체를 contacts에 넣는다.
-    void movePlayer(SceneObject& player, double dx, double dy, std::set<std::string>& contacts);
-    void tryAction(const SceneObject& player);
+    void controlPlayer(bool actionPressed, double dt);
+    // 한 축으로 이동하고 막힌 객체를 tickContacts_에 넣는다.
+    void moveAxis(SceneObject& player, double dx, double dy);
+    // 이번 틱의 접촉을 정리하고, 새로 닿은 객체의 접촉 이벤트를 시작한다.
+    void finishContacts();
     void queueBlocking(const SceneObject& object);
 
     Project project_;
@@ -104,14 +139,26 @@ private:
     std::optional<Scene> scene_;
     std::optional<Message> message_;
 
+    GameScripts* gameScripts_ = nullptr;
+    // 전역 스크립트 훅이 쓰는 실행 컨텍스트 (이벤트와 같은 변수·로그·데이터베이스).
+    CommandContext hookCtx_;
+    // 어느 전역 스크립트에도 없는 훅은 다시 부르지 않는다.
+    std::set<std::string> disabledHooks_;
+    std::optional<std::string> pendingScene_;
+
     std::unique_ptr<RunningEvent> blocking_;
     std::deque<std::string> blockingQueue_;
     std::vector<std::unique_ptr<RunningEvent>> parallel_;
 
+    InputMap inputMap_ = InputMap::defaults();
+    InputState tickInput_;
     double playerSpeed_ = kDefaultPlayerSpeed;
+    bool defaultControl_ = true;
     Facing facing_ = Facing::Down;
     // 지난 틱에 플레이어와 닿아 있던 객체. 새로 닿은 객체만 접촉 이벤트를 실행한다.
     std::set<std::string> contacts_;
+    std::set<std::string> tickContacts_;
+    bool playerMovedThisTick_ = false;
 
     double accumulator_ = 0.0;
     std::uint64_t ticks_ = 0;

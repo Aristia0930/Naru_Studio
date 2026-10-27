@@ -2,7 +2,9 @@
 
 #include "naru/runtime/GameWorld.h"
 
+#include <algorithm>
 #include <cmath>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -58,7 +60,7 @@ Project projectWith(std::vector<SceneObject> objects) {
 }
 
 ScriptRunner noScripts() {
-    return [](const std::string&, const std::string&, CommandContext&) { return std::string("스크립트 없음"); };
+    return [](const std::string&, const std::string&, CommandContext&) { return ScriptCallResult{"스크립트 없음", {}}; };
 }
 
 std::int64_t intVar(GameWorld& world, const std::string& name) {
@@ -316,6 +318,117 @@ TEST_CASE("a scene without a player has no player control") {
     hold(world, InputAction::Right, 30);
     CHECK(world.player() == nullptr);
     CHECK(world.scene()->objects[0].x == 0.0);
+}
+
+// ---------------------------------------------------------------- 전역 스크립트 훅
+
+namespace {
+
+// 전역 스크립트 대역: 불린 훅을 기록하고, 훅마다 할 일을 넣을 수 있다.
+struct FakeScripts : GameScripts {
+    std::vector<std::string> calls;
+    std::function<HookStatus(const std::string&, CommandContext&)> body;
+    int load(CommandContext&) override {
+        calls.push_back("load");
+        return 0;
+    }
+    HookStatus call(const std::string& hook, CommandContext& ctx) override {
+        calls.push_back(hook);
+        return body ? body(hook, ctx) : HookStatus::Ok;
+    }
+    int count(const std::string& hook) const {
+        return static_cast<int>(std::count(calls.begin(), calls.end(), hook));
+    }
+};
+
+} // namespace
+
+TEST_CASE("global hooks run in order: load, game start, scene enter, update, scene exit") {
+    Project p = playerProject({});
+    Scene second = p.scenes[0];
+    second.id = "scene_002";
+    second.name = "둘째";
+    p.scenes.push_back(second);
+    FakeScripts scripts;
+    GameWorld world(p, noScripts());
+    world.setGameScripts(&scripts);
+    CHECK(world.startGame("scene_001"));
+    CHECK((scripts.calls == std::vector<std::string>{"load", "on_game_start", "on_scene_enter"}));
+    step(world);
+    CHECK(scripts.calls.back() == "on_update");
+    world.requestScene("scene_002");
+    CHECK(world.scene()->id == "scene_001"); // 틱이 끝난 뒤에 바뀐다
+    step(world);
+    CHECK(world.scene()->id == "scene_002");
+    auto n = scripts.calls.size();
+    CHECK(scripts.calls[n - 2] == "on_scene_exit" && scripts.calls[n - 1] == "on_scene_enter");
+}
+
+TEST_CASE("a missing hook is not called again, a failing hook is counted") {
+    FakeScripts scripts;
+    scripts.body = [](const std::string& hook, CommandContext&) {
+        return hook == "on_update" ? HookStatus::Missing
+               : hook == "on_scene_enter" ? HookStatus::Failed
+                                          : HookStatus::Ok;
+    };
+    GameWorld world(playerProject({}), noScripts());
+    world.setGameScripts(&scripts);
+    world.startGame("scene_001");
+    for (int i = 0; i < 5; ++i) {
+        step(world);
+    }
+    CHECK(scripts.count("on_update") == 1);
+    CHECK(world.failedEventCount() == 1);
+}
+
+TEST_CASE("hooks share game variables with events and can drive the player") {
+    SceneObject wall = box("wall", 100, 0, 20, 32);
+    wall.event.trigger = EventTrigger::Touch;
+    wall.event.commands = {add("bump", 1)};
+    FakeScripts scripts;
+    scripts.body = [](const std::string& hook, CommandContext& ctx) {
+        if (hook == "on_game_start") {
+            ctx.variables.set("n", std::int64_t{10});
+            ctx.game->setDefaultControl(false); // 기본 조작 끄기
+        } else if (hook == "on_update") {
+            ctx.game->movePlayer(8, 0);         // 스크립트가 직접 이동 (충돌·접촉 판정 포함)
+        }
+        return HookStatus::Ok;
+    };
+    SceneObject counter = box("counter", 300, 200, 10, 10);
+    counter.event.trigger = EventTrigger::Autorun;
+    counter.event.commands = {add("n", 1)};
+    GameWorld world(playerProject({wall, counter}), noScripts());
+    world.setGameScripts(&scripts);
+    world.startGame("scene_001");
+    hold(world, InputAction::Left, 30); // 기본 조작이 꺼져 있어 왼쪽 입력은 무시된다
+    CHECK(intVar(world, "n") == 11);    // 훅이 넣은 값에 이벤트가 더했다
+    CHECK(world.player()->x == 100.0 - 32.0);
+    CHECK(intVar(world, "bump") == 1);  // 스크립트 이동으로 부딪혀도 접촉 이벤트는 한 번
+}
+
+TEST_CASE("custom input actions: held every tick, pressed only on the first tick of a frame") {
+    FakeScripts scripts;
+    int held = 0;
+    int pressed = 0;
+    scripts.body = [&](const std::string& hook, CommandContext& ctx) {
+        if (hook == "on_update") {
+            held += ctx.game->input().isHeld("dash") ? 1 : 0;
+            pressed += ctx.game->input().wasPressed("dash") ? 1 : 0;
+        }
+        return HookStatus::Ok;
+    };
+    GameWorld world(playerProject({}), noScripts());
+    world.setGameScripts(&scripts);
+    world.startGame("scene_001");
+    world.inputMap().bind("dash", {"Shift"});
+    CHECK((world.inputMap().actionsForKey("Left Shift") == std::vector<std::string>{"dash"}));
+    CHECK(InputMap::keyMatches("Enter", "Return") && !InputMap::keyMatches("Shift", "Left Ctrl"));
+    InputState input;
+    input.press("dash");
+    world.update(3.0 / 60.0, input); // 한 프레임에 3틱
+    CHECK(held == 3);
+    CHECK(pressed == 1);
 }
 
 TEST_MAIN()

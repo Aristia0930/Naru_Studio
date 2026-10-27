@@ -34,6 +34,8 @@ public:
     static constexpr const char* kProjectFile = "project.json";
 
     static bool isProjectDirectory(const std::filesystem::path& dir);
+    // scripts/ 바로 안의 .py 파일 이름인가 (전역 스크립트 등록에 쓴다. 경로 문자·".." 금지).
+    static bool isValidScriptName(const std::string& name);
 
     // 비어 있거나 없는 폴더에 새 프로젝트(기본 장면·예제 스크립트 포함)를 만든다.
     static ProjectLoadResult create(const std::filesystem::path& dir, const std::string& name);

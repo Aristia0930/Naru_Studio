@@ -200,15 +200,23 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
         case EventCommandType::CallScript: {
             std::string script = c.script;
             std::string function = c.function.empty() ? std::string("run") : c.function;
+            std::string resultVariable = c.variable;
             out.push_back(std::make_unique<CallCommand>(
-                id, [runScript, script, function](CommandContext& ctx) -> std::string {
+                id, [runScript, script, function, resultVariable](CommandContext& ctx) -> std::string {
                     if (script.empty()) {
                         return "호출할 스크립트를 지정하지 않았습니다";
                     }
                     if (!runScript) {
                         return "스크립트 실행기가 연결되지 않았습니다";
                     }
-                    return runScript(script, function, ctx);
+                    ScriptCallResult result = runScript(script, function, ctx);
+                    if (!result.error.empty()) {
+                        return result.error;
+                    }
+                    if (!resultVariable.empty()) {
+                        ctx.variables.set(resultVariable, std::move(result.returned));
+                    }
+                    return {};
                 }));
             break;
         }

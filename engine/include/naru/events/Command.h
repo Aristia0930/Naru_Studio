@@ -9,6 +9,7 @@ namespace naru {
 
 class Logger;
 class Variables;
+class GameWorld;
 struct Database;
 
 enum class CommandStatus { Pending, Running, Waiting, Completed, Failed, Cancelled };
@@ -33,6 +34,8 @@ struct CommandContext {
     std::optional<std::size_t> jump{};
     // 읽기 전용 데이터베이스 (실행 중에는 바꾸지 않는다). 없으면 데이터 명령이 실패한다.
     const Database* database = nullptr;
+    // 게임 실행 중이면 실행 상태(플레이어·입력·장면). 에디터 테스트 실행이나 단독 스크립트 실행에서는 nullptr.
+    GameWorld* game = nullptr;
 };
 
 // 이벤트 명령 하나. start()에서 즉시 끝나면 Completed를, 시간이 필요하면 Waiting을 반환하고

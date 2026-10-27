@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <QString>
+#include <QStringList>
 #include <QUndoStack>
 
 #include <memory>
@@ -34,8 +35,14 @@ public:
     void removeObject(const std::string& sceneId, const std::string& objectId);
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
     void setDatabase(const naru::Database& database);
+    void setGlobalScripts(const std::vector<std::string>& scripts);
+
+    // scripts/ 안의 .py 파일 이름 (이름순).
+    QStringList scriptFiles() const;
+    bool isGlobalScript(const QString& fileName) const;
 
 signals:
+    void globalScriptsChanged();
     void databaseChanged();
     void scenesChanged();
     void sceneChanged(const QString& sceneId);

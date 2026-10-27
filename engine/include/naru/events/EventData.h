@@ -19,7 +19,7 @@ struct EventCommand {
     std::string speaker;            // Say
     std::string text;               // Say 대사, Log 메시지, Comment 내용
     double seconds = 0.0;           // Wait
-    std::string variable;           // SetVariable, IfVariable, GetData(결과를 넣을 변수)
+    std::string variable;           // SetVariable, IfVariable, GetData·CallScript(결과를 넣을 변수, CallScript는 비어 있으면 버림)
     std::string dataType;           // GetData: 데이터 종류 키
     std::string record;             // GetData: 항목 ID
     std::string field;              // GetData: 속성 키 ("id", "name"도 가능)

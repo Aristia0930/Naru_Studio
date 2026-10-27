@@ -105,7 +105,7 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 | `naru_project_tests.exe` | 프로젝트 생성·저장·불러오기·오류 검증 테스트 |
 | `naru_database_tests.exe` | 데이터베이스 템플릿·값 검사·형식 변환·검증·데이터 → 변수 명령 테스트 |
 | `naru_event_tests.exe` | 이벤트 명령 실행(대사 대기·변수·조건 분기·스크립트 호출·오류 위치) 테스트 |
-| `naru_python_tests.exe` | Python 임베딩·오류 위치·재로드 테스트 |
+| `naru_python_tests.exe` | Python 임베딩·오류 위치·재로드·반환값·전역 스크립트(모듈 유지·import·이름 겹침·오류 훅) 테스트 |
 
 빌드 후 `windeployqt`가 Qt DLL/플러그인을, CMake가 `python3xx.dll`을 bin 폴더에 복사한다.
 
@@ -115,7 +115,7 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 2. 왼쪽 **장면** 트리에서 장면/객체 선택, 가운데 캔버스에서 객체를 드래그해 배치, 마우스 휠로 확대/축소.
 3. 오른쪽 **인스펙터**에서 이름·위치·크기·색(객체) 또는 이름·크기·배경색(장면) 편집.
 4. 툴바: 새 장면, 객체 추가(Ctrl+N), 삭제(Del, 캔버스/트리에서), 실행 취소(Ctrl+Z)/다시 실행(Ctrl+Y), 저장(Ctrl+S).
-5. **스크립트**: 목록 더블클릭으로 탭 열기, 새 스크립트, 문법 검사(F7), 실행(F5 — 스크립트 탭이면 그 파일, 장면 탭이면 `scripts/main.py`).
+5. **스크립트**: 목록 더블클릭으로 탭 열기, 새 스크립트, 문법 검사(F7), 실행(F5 — 스크립트 탭이면 그 파일, 장면 탭이면 `scripts/main.py`). 스크립트 → 전역 스크립트… (또는 목록 오른쪽 클릭)로 게임 전체에서 실행할 스크립트 등록.
 6. **이벤트**: 객체를 더블클릭(또는 선택 후 Enter)하면 이벤트 탭이 열린다.
    - 실행 조건: 조사 / 플레이어 접촉 / 자동 실행 / 이벤트 접촉 / 병렬 처리. 모두 게임 실행 화면에서 동작한다 (이벤트 접촉의 "객체가 움직여 닿을 때"는 객체 이동 기능 이후).
    - 명령 추가: 빈 `◆` 줄을 더블클릭하거나, 명령을 선택하고 "명령 추가"(선택한 명령 위에 들어감). 종류: 대사 표시, 대기, 변수 조작(= += -=), 조건 분기(그렇다면/아니라면, 중첩 가능), 스크립트 호출(scripts/의 파일·함수), 로그, 주석.
@@ -127,7 +127,7 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 **Python 표준 라이브러리 위치:** 개발 빌드는 빌드할 때 찾은 Python 설치 폴더를 사용한다. 실행 시 `NARU_PYTHON_HOME` 환경변수로 바꿀 수 있다. 다른 PC로 실행 파일만 옮기는 배포는 아직 지원하지 않는다(M5).
 
 명령행 옵션: `NaruStudio.exe [프로젝트폴더] [--last] [--new-project <dir>] [--event <objectId> [--run-event]] [--database <type>[/<record>] [--fields-tab]] [--smoke-test <ms>] [--screenshot <png>] [--self-test]`
-설명서 촬영용: `--start-screen`, `--command-dialog <type>`, `--field-dialog` (모두 `--screenshot`과 함께). 자세한 사용법은 [사용 설명서](guide/README.md).
+설명서 촬영용: `--start-screen`, `--command-dialog <type>`, `--field-dialog`, `<프로젝트> --global-scripts-dialog` (모두 `--screenshot`과 함께). 자세한 사용법은 [사용 설명서](guide/README.md).
 (`--smoke-test`·`--self-test` 실행은 최근 프로젝트 목록에 기록하지 않는다.)
 
 ## 5. 알려진 제한

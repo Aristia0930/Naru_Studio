@@ -176,11 +176,12 @@ TEST_CASE("스크립트 호출 명령은 주어진 실행기를 사용한다") {
     ScriptRunner runner = [&called](const std::string& script, const std::string& function, CommandContext& ctx) {
         called.push_back(script + ":" + function);
         ctx.variables.set("from_script", std::int64_t{7});
-        return script == "bad.py" ? std::string("스크립트 오류") : std::string();
+        return script == "bad.py" ? ScriptCallResult{"스크립트 오류", {}} : ScriptCallResult{{}, std::string("보상")};
     };
     EventCommand ok;
     ok.type = EventCommandType::CallScript;
     ok.script = "reward.py";
+    ok.variable = "reward"; // 반환값을 받을 변수
     EventCommand bad = ok;
     bad.script = "bad.py";
     bad.function = "give";
@@ -189,6 +190,7 @@ TEST_CASE("스크립트 호출 명령은 주어진 실행기를 사용한다") {
     run(session, {ok, bad, logCmd("도달하면 안 됨")}, runner);
     CHECK((called == std::vector<std::string>{"reward.py:run", "bad.py:give"}));
     CHECK(session.variables().get("from_script") == Value{std::int64_t{7}});
+    CHECK(session.variables().get("reward") == Value{std::string("보상")});
     CHECK(session.state() == SessionState::Failed);
     CHECK(session.runner().failedCommandId() == "1");
 }

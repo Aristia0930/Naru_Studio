@@ -4,14 +4,19 @@
 #include "naru/core/Value.h"
 #include "naru/data/Database.h"
 #include "naru/events/BuiltinCommands.h"
+#include "naru/python/PythonGameScripts.h"
 #include "naru/python/PythonRuntime.h"
+#include "naru/runtime/GameWorld.h"
 #include "naru/runtime/Session.h"
 
 #include <cstdio>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <memory>
+#include <optional>
 #include <string>
+#include <vector>
 
 using namespace naru;
 using naru::python::PythonRuntime;
@@ -169,6 +174,185 @@ TEST_CASE("async 함수는 아직 지원하지 않는다고 명확히 보고한�
     auto result = g_runtime->runFile(script("async_run.py"), f.ctx);
     CHECK(!result.ok);
     CHECK(result.error.type == "NotImplementedError");
+}
+
+TEST_CASE("반환값을 받는다 (None·bool·int·float·str만)") {
+    Fixture f;
+    Value returned;
+    CHECK(g_runtime->runFile(script("returns.py"), f.ctx, "number", &returned).ok);
+    CHECK(returned == Value{std::int64_t{42}});
+    auto bad = g_runtime->runFile(script("returns.py"), f.ctx, "bad", &returned);
+    CHECK(!bad.ok);
+    CHECK(bad.error.type == "TypeError");
+}
+
+TEST_CASE("게임 밖에서는 ctx.player·ctx.input·ctx.scene이 None이다") {
+    Fixture f;
+    Value returned;
+    CHECK(g_runtime->runFile(script("outside_game.py"), f.ctx, "run", &returned).ok);
+    CHECK(returned == Value{true});
+}
+
+// ---------------------------------------------------------------- 전역 스크립트
+
+namespace {
+
+// 플레이어가 있는 장면과, 전역 스크립트 함수를 부르는 자동 실행 이벤트.
+Project globalProject() {
+    Project p;
+    p.name = "global";
+    Scene s;
+    s.id = "scene_001";
+    s.name = "마을";
+    SceneObject hero;
+    hero.id = "hero";
+    hero.name = "주인공";
+    s.objects.push_back(hero);
+    s.playerObjectId = "hero";
+    SceneObject caller;
+    caller.id = "caller";
+    caller.name = "호출";
+    caller.x = 500;
+    caller.event.trigger = EventTrigger::Autorun;
+    EventCommand bump;
+    bump.type = EventCommandType::CallScript;
+    bump.script = "global_a.py";
+    bump.function = "bump";
+    bump.variable = "after_bump";
+    EventCommand read = bump;
+    read.script = "global_b.py";
+    read.function = "read_a";
+    read.variable = "read_from_b";
+    caller.event.commands = {bump, read};
+    s.objects.push_back(caller);
+    p.scenes.push_back(s);
+    p.startSceneId = s.id;
+    return p;
+}
+
+// player와 같은 규칙: 전역 스크립트로 읽어 둔 파일은 실행 중인 모듈의 함수를 부른다.
+ScriptRunner globalAwareRunner(python::PythonGameScripts& globals) {
+    return [&globals](const std::string& name, const std::string& function, CommandContext& ctx) {
+        ScriptCallResult call;
+        if (auto loaded = globals.loadedPath(name)) {
+            if (g_runtime->callModuleFunction(*loaded, function, ctx, nullptr, &call.returned) != python::CallStatus::Ok) {
+                call.error = "실패";
+            }
+            return call;
+        }
+        if (!g_runtime->runFile(script(name.c_str()), ctx, function, &call.returned).ok) {
+            call.error = "실패";
+        }
+        return call;
+    };
+}
+
+std::optional<Value> var(GameWorld& world, const char* name) {
+    return world.variables().get(name);
+}
+
+} // namespace
+
+TEST_CASE("전역 스크립트: 훅·모듈 전역 변수 유지·이벤트에서 모듈 함수 호출·import") {
+    python::PythonGameScripts globals(*g_runtime, {script("global_a.py"), script("global_b.py")});
+    GameWorld world(globalProject(), globalAwareRunner(globals));
+    world.setGameScripts(&globals);
+    CHECK(world.startGame("scene_001"));
+    CHECK(var(world, "started") == Value{true});
+    CHECK(var(world, "entered") == Value{std::string("마을")});
+
+    InputState input;
+    world.update(1.0 / 60.0, input); // on_update(counter=1) → 자동 실행: bump(+100), read_a
+    CHECK(var(world, "after_bump") == Value{std::int64_t{101}});
+    CHECK(var(world, "read_from_b") == Value{std::int64_t{101}});
+    world.update(1.0 / 60.0, input);
+    world.update(1.0 / 60.0, input);
+    CHECK(var(world, "ticks") == Value{std::int64_t{103}}); // 모듈의 counter가 이어진다
+    CHECK(world.failedEventCount() == 0);
+}
+
+TEST_CASE("전역 스크립트가 만든 동작(dash)과 키 배치로 플레이어를 바꾼다") {
+    python::PythonGameScripts globals(*g_runtime, {script("global_a.py")});
+    GameWorld world(globalProject(), globalAwareRunner(globals));
+    world.setGameScripts(&globals);
+    world.startGame("scene_001");
+    CHECK((world.inputMap().keys("dash") == std::vector<std::string>{"Shift"}));
+    CHECK(InputMap::keyMatches("Shift", "Left Shift"));
+    InputState input;
+    input.press("dash");
+    world.update(1.0 / 60.0, input);
+    CHECK(world.playerSpeed() == 500.0);
+}
+
+TEST_CASE("전역 스크립트 변수 이름이 겹치면 두 위치를 알려 준다") {
+    auto errors = g_runtime->checkGlobalScripts({script("global_a.py"), script("global_conflict.py")});
+    CHECK(errors.size() == 1);
+    if (!errors.empty()) {
+        CHECK(errors[0].type == "NameConflict");
+        CHECK(errors[0].message.find("counter") != std::string::npos);
+        CHECK(errors[0].message.find("global_a.py:2") != std::string::npos);
+        CHECK(errors[0].file == script("global_conflict.py"));
+        CHECK(errors[0].line == 3);
+    }
+    CHECK(g_runtime->checkGlobalScripts({script("global_a.py"), script("global_b.py")}).empty());
+    // 표준 모듈과 같은 파일 이름
+    auto std_errors = g_runtime->checkGlobalScripts({script("random.py")});
+    bool stdConflict = false;
+    for (const auto& e : std_errors) {
+        stdConflict = stdConflict || e.message.find("표준 모듈") != std::string::npos;
+    }
+    CHECK(stdConflict);
+}
+
+TEST_CASE("오류가 난 전역 스크립트 훅은 한 번만 보고하고 다시 부르지 않는다") {
+    python::PythonGameScripts globals(*g_runtime, {script("global_error.py"), script("global_a.py")});
+    GameWorld world(globalProject(), globalAwareRunner(globals));
+    world.setGameScripts(&globals);
+    world.startGame("scene_001");
+    InputState input;
+    for (int i = 0; i < 5; ++i) {
+        world.update(1.0 / 60.0, input);
+    }
+    int valueErrors = 0;
+    for (const auto& e : world.logger().entries()) {
+        valueErrors += e.message.find("ValueError") != std::string::npos ? 1 : 0;
+    }
+    CHECK(valueErrors == 1);
+    CHECK(world.failedEventCount() == 1);
+    // 다른 전역 스크립트의 on_update는 계속 불린다 (bump +100 포함)
+    CHECK(var(world, "ticks") == Value{std::int64_t{105}});
+}
+
+TEST_CASE("스크립트에 공개된 모든 이름과 훅이 docs/SCRIPT_API.md에 적혀 있다") {
+    // 새 ctx 값·함수나 훅을 추가하면 이 테스트가 문서 갱신을 요구한다.
+    std::ifstream in(std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_SCRIPT_API_DOC)), std::ios::binary);
+    std::string doc((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    CHECK(!doc.empty());
+    Fixture f;
+    Value returned;
+    CHECK(g_runtime->runFile(script("api_names.py"), f.ctx, "run", &returned).ok);
+    std::string names = std::holds_alternative<std::string>(returned) ? std::get<std::string>(returned) : "";
+    CHECK(!names.empty());
+    std::vector<std::string> all;
+    for (std::size_t start = 0; start < names.size();) {
+        std::size_t comma = names.find(',', start);
+        if (comma == std::string::npos) {
+            comma = names.size();
+        }
+        all.push_back(names.substr(start, comma - start));
+        start = comma + 1;
+    }
+    for (const char* hook : {kHookGameStart, kHookSceneEnter, kHookSceneExit, kHookUpdate}) {
+        all.emplace_back(hook);
+    }
+    for (const std::string& name : all) {
+        bool documented = doc.find("`" + name) != std::string::npos || doc.find("." + name) != std::string::npos;
+        if (!documented) {
+            std::printf("  docs/SCRIPT_API.md에 없는 이름: %s\n", name.c_str());
+        }
+        CHECK(documented);
+    }
+    std::printf("  문서에서 확인한 이름 %zu개\n", all.size());
 }
 
 int main() {

@@ -1,5 +1,6 @@
 #include "CommandDialog.h"
 #include "FieldDialog.h"
+#include "GlobalScriptsDialog.h"
 #include "MainWindow.h"
 #include "ProjectDocument.h"
 #include "StartDialog.h"
@@ -69,13 +70,15 @@ int main(int argc, char* argv[]) {
                                       QStringLiteral("type/record"));
     QCommandLineOption fieldsTabOption(QStringLiteral("fields-tab"),
                                        QStringLiteral("--database와 함께: '속성 정의' 탭을 연다."));
+    QCommandLineOption globalScriptsOption(QStringLiteral("global-scripts-dialog"),
+                                           QStringLiteral("프로젝트의 전역 스크립트 창을 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption fieldDialogOption(QStringLiteral("field-dialog"),
                                          QStringLiteral("속성 정의 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption lastOption(QStringLiteral("last"),
                                   QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
     parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, runEventOption,
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
-                       lastOption});
+                       globalScriptsOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
 
@@ -122,8 +125,12 @@ int main(int argc, char* argv[]) {
         sample.field = "hp";
         if (*type == naru::EventCommandType::GetData) {
             sample.variable = "enemy_hp";
+        } else if (*type == naru::EventCommandType::CallScript) {
+            sample.script = "game.py";
+            sample.function = "add_combo";
+            sample.variable = "combo";
         }
-        CommandDialog dialog(sample, {QStringLiteral("main.py")}, &db);
+        CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &db);
         return captureDialog(dialog);
     }
     if (parser.isSet(fieldDialogOption)) {
@@ -142,7 +149,18 @@ int main(int argc, char* argv[]) {
                               QStringLiteral("Python 런타임을 시작하지 못했습니다.\n%1").arg(QString::fromUtf8(e.what())));
         return 2;
     }
-
+    if (parser.isSet(globalScriptsOption)) {
+        QString error;
+        auto doc = parser.positionalArguments().isEmpty()
+                       ? nullptr
+                       : ProjectDocument::open(parser.positionalArguments().first(), &error);
+        if (!doc) {
+            return 3;
+        }
+        GlobalScriptsDialog dialog(doc->scriptFiles(), doc->project().globalScripts, doc->scriptsDirectory(),
+                                   python.get());
+        return captureDialog(dialog);
+    }
     LaunchRequest request;
     if (parser.isSet(newOption)) {
         request.directory = parser.value(newOption);

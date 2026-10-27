@@ -51,6 +51,8 @@ TEST_CASE("새 프로젝트는 폴더 구조·기본 장면·예제 스크립트
     CHECK(ProjectIO::isProjectDirectory(dir.path));
     CHECK(fs::is_regular_file(dir.path / "scenes" / "scene_001.json"));
     CHECK(fs::is_regular_file(dir.path / "scripts" / "main.py"));
+    CHECK(fs::is_regular_file(dir.path / "scripts" / "game.py"));
+    CHECK((created.project->globalScripts == std::vector<std::string>{"game.py"}));
     CHECK(fs::is_directory(dir.path / "assets"));
     CHECK(created.project->startSceneId == "scene_001");
     CHECK(created.project->scenes.size() == 1);
@@ -168,6 +170,7 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     second.objects.push_back(o);
     second.playerObjectId = o.id;
     project.scenes.push_back(second);
+    project.globalScripts = {"game.py", "battle.py"}; // 순서도 보존된다
     project.startSceneId = second.id;
 
     CHECK(ProjectIO::save(project, dir.path).empty());
@@ -193,6 +196,25 @@ TEST_CASE("장면에 없는 플레이어 객체나 형식이 틀린 통과 값�
     badBool.replace(badBool.find("\"color\""), 7, "\"passable\": 1, \"color\"");
     writeText(scene, badBool);
     CHECK(hasErrorContaining(ProjectIO::load(dir.path), "scenes/scene_001.json", "passable"));
+}
+
+TEST_CASE("전역 스크립트 목록의 잘못된 이름과 중복을 거부한다") {
+    for (const char* bad : {"../evil.py", "sub/x.py", "game.txt", ".py"}) {
+        CHECK(!ProjectIO::isValidScriptName(bad));
+    }
+    CHECK(ProjectIO::isValidScriptName("게임.py"));
+    TempDir dir;
+    CHECK(ProjectIO::create(dir.path, "x").ok());
+    fs::path file = dir.path / "project.json";
+    std::ifstream in(file, std::ios::binary);
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.close();
+    std::size_t at = text.find("\"game.py\"");
+    CHECK(at != std::string::npos);
+    writeText(file, text.substr(0, at) + "\"game.py\", \"game.py\", \"../x.py\"" + text.substr(at + 9));
+    auto loaded = ProjectIO::load(dir.path);
+    CHECK(hasErrorContaining(loaded, "project.json", "중복"));
+    CHECK(hasErrorContaining(loaded, "project.json", "../x.py"));
 }
 
 TEST_CASE("비어 있지 않은 폴더에는 새 프로젝트를 만들지 않는다") {

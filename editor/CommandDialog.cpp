@@ -128,7 +128,13 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         function_ = new QLineEdit(QString::fromStdString(command.function.empty() ? "run" : command.function), this);
         form->addRow(QStringLiteral("스크립트 (scripts/)"), script_);
         form->addRow(QStringLiteral("함수"), function_);
-        form->addRow(new QLabel(QStringLiteral("함수는 def 함수이름(ctx): 형태여야 합니다."), this));
+        variable_ = new QLineEdit(QString::fromStdString(command.variable), this);
+        variable_->setPlaceholderText(QStringLiteral("비워 두면 반환값을 쓰지 않음"));
+        form->addRow(QStringLiteral("반환값 → 변수"), variable_);
+        form->addRow(new QLabel(QStringLiteral("함수는 def 함수이름(ctx): 형태여야 합니다.\n"
+                                               "return 값(None·bool·int·float·str)을 변수에 넣어 조건 분기에서 쓸 수 있습니다.\n"
+                                               "전역 스크립트로 등록한 파일이면 게임 중 실행 중인 그 모듈의 함수가 불립니다."),
+                                this));
         break;
     case EventCommandType::GetData: {
         // 종류 → 항목 → 속성 순으로 고른다. 직접 입력도 된다 (나중에 만들 항목 등).
@@ -269,6 +275,7 @@ void CommandDialog::accept() {
         }
         c.script = script.toStdString();
         c.function = function_->text().trimmed().isEmpty() ? "run" : function_->text().trimmed().toStdString();
+        c.variable = variable_->text().trimmed().toStdString();
         break;
     }
     case EventCommandType::GetData: {
