@@ -292,6 +292,13 @@ json commandToJson(const EventCommand& c) {
         j["target"] = c.target;
         j["visible"] = c.show;
         break;
+    case EventCommandType::ChangeScene:
+        j["scene"] = c.scene;
+        j["direction"] = c.direction;
+        j["setPosition"] = c.setPosition;
+        j["x"] = c.x;
+        j["y"] = c.y;
+        break;
     }
     return j;
 }
@@ -345,7 +352,16 @@ EventCommand commandFromJson(const json& j, int depth) {
     c.field = getString(j, "field", std::string());
     c.target = getString(j, "target", c.target);
     c.direction = getString(j, "direction", c.direction);
-    if (c.type == EventCommandType::MoveObject && !facingKeyValid(c.direction)) {
+    if (c.type == EventCommandType::ChangeScene) {
+        c.direction = getString(j, "direction", std::string());
+        if (!c.direction.empty() && !facingKeyValid(c.direction)) {
+            throw std::runtime_error("알 수 없는 방향: " + c.direction);
+        }
+        c.scene = getString(j, "scene", std::string());
+        c.setPosition = getBool(j, "setPosition", true);
+        c.x = getNumber(j, "x", 0.0);
+        c.y = getNumber(j, "y", 0.0);
+    } else if (c.type == EventCommandType::MoveObject && !facingKeyValid(c.direction)) {
         throw std::runtime_error("알 수 없는 이동 방향: " + c.direction);
     }
     c.distance = getNumber(j, "distance", c.distance);

@@ -69,11 +69,21 @@ public:
     void setGameScripts(GameScripts* scripts) { gameScripts_ = scripts; }
     // 전역 스크립트를 읽고 on_game_start를 부른 뒤 첫 장면에 들어간다. 장면이 없으면 false.
     bool startGame(const std::string& sceneId);
-    // 장면에 들어간다. 이전 장면의 이벤트는 중지된다 (on_scene_exit → 전환 → on_scene_enter).
+    // 장면에 들어갈 때 플레이어를 놓을 곳. 비어 있는 값은 장면 편집 상태 그대로 (방향은 아래).
+    struct Arrival {
+        std::optional<double> x, y;
+        std::optional<Facing> facing;
+    };
+    // 장면에 들어간다. 이전 장면의 이벤트는 중지된다 (on_scene_exit → 전환·도착 위치 → on_scene_enter → 자동 실행).
     // 장면이 없으면 오류를 기록하고 false.
-    bool enterScene(const std::string& sceneId);
+    bool enterScene(const std::string& sceneId, const Arrival& arrival = {});
     // 이번 틱이 끝난 뒤 장면을 바꾼다 (스크립트·이벤트 실행 도중에 장면이 사라지지 않도록).
-    void requestScene(const std::string& sceneId) { pendingScene_ = sceneId; }
+    // 같은 틱에 여러 번 부르면 마지막 것이 쓰인다.
+    void requestScene(const std::string& sceneId, const Arrival& arrival = {}) {
+        pendingScene_ = sceneId;
+        pendingArrival_ = arrival;
+    }
+    bool sceneChangePending() const { return pendingScene_.has_value(); }
     // 실제 경과 시간과 이번 프레임 입력을 받아 필요한 만큼 고정 틱을 진행한다.
     void update(double realSeconds, const InputState& input);
 
@@ -172,6 +182,7 @@ private:
     // 어느 전역 스크립트에도 없는 훅은 다시 부르지 않는다.
     std::set<std::string> disabledHooks_;
     std::optional<std::string> pendingScene_;
+    Arrival pendingArrival_;
 
     std::unique_ptr<RunningEvent> blocking_;
     std::deque<std::string> blockingQueue_;

@@ -116,14 +116,14 @@ class SceneObject:
         return _naru.object_move(self._id, float(dx), float(dy))
 
 class Scene:
-    """현재 장면 (게임 실행 중). change("scene_002")로 장면 이동 (이번 틱이 끝난 뒤 바뀐다).
+    """현재 장면 (게임 실행 중). change("scene_002", x, y, facing)로 장면 이동 (이번 틱이 끝난 뒤 바뀐다. 위치·방향은 생략 가능).
     object(ID) / find(이름) → SceneObject 또는 None, objects() → 모든 객체"""
     id = _ro(_naru.scene_get, "id")
     name = _ro(_naru.scene_get, "name")
     width = _ro(_naru.scene_get, "width")
     height = _ro(_naru.scene_get, "height")
-    def change(self, scene_id):
-        _naru.scene_change(scene_id)
+    def change(self, scene_id, x=None, y=None, facing=None):
+        _naru.scene_change(scene_id, x, y, facing)
     def ids(self):
         return _naru.scene_ids()
     def object(self, object_id):
@@ -659,8 +659,11 @@ PyObject* naruSceneGet(PyObject*, PyObject* args) {
 
 PyObject* naruSceneChange(PyObject*, PyObject* args) {
     const char* sceneId = nullptr;
+    PyObject* x = Py_None;
+    PyObject* y = Py_None;
+    PyObject* facing = Py_None;
     GameWorld* game = nullptr;
-    if (!PyArg_ParseTuple(args, "s", &sceneId) || !(game = requireGame())) {
+    if (!PyArg_ParseTuple(args, "s|OOO", &sceneId, &x, &y, &facing) || !(game = requireGame())) {
         return nullptr;
     }
     if (!game->project().findScene(sceneId)) {
@@ -668,7 +671,32 @@ PyObject* naruSceneChange(PyObject*, PyObject* args) {
         PyErr_SetString(PyExc_KeyError, message.c_str());
         return nullptr;
     }
-    game->requestScene(sceneId);
+    // 도착 위치: 둘 다 주거나 둘 다 생략 (생략하면 장면 편집의 플레이어 위치)
+    GameWorld::Arrival arrival;
+    if ((x == Py_None) != (y == Py_None)) {
+        PyErr_SetString(PyExc_ValueError, "도착 위치는 x와 y를 함께 주어야 합니다");
+        return nullptr;
+    }
+    if (x != Py_None) {
+        double px = PyFloat_AsDouble(x);
+        double py = PyFloat_AsDouble(y);
+        if (PyErr_Occurred()) {
+            PyErr_Clear();
+            PyErr_SetString(PyExc_TypeError, "x, y에는 숫자를 넣어야 합니다");
+            return nullptr;
+        }
+        arrival.x = px;
+        arrival.y = py;
+    }
+    if (facing != Py_None) {
+        auto f = facingFromKey(utf8(facing));
+        if (!f) {
+            PyErr_SetString(PyExc_ValueError, "facing은 \"up\" \"down\" \"left\" \"right\" 중 하나여야 합니다");
+            return nullptr;
+        }
+        arrival.facing = f;
+    }
+    game->requestScene(sceneId, arrival);
     Py_RETURN_NONE;
 }
 
@@ -842,7 +870,7 @@ PyMethodDef kMethods[] = {
     {"player_move", naruPlayerMove, METH_VARARGS, "player_move(dx, dy)"},
     {"player_interact", naruPlayerInteract, METH_NOARGS, "player_interact()"},
     {"scene_get", naruSceneGet, METH_VARARGS, "scene_get(name)"},
-    {"scene_change", naruSceneChange, METH_VARARGS, "scene_change(scene_id)"},
+    {"scene_change", naruSceneChange, METH_VARARGS, "scene_change(scene_id, x, y, facing)"},
     {"scene_ids", naruSceneIds, METH_NOARGS, "scene_ids()"},
     {"scene_find", naruSceneFind, METH_VARARGS, "scene_find(name)"},
     {"scene_object_ids", naruSceneObjectIds, METH_NOARGS, "scene_object_ids()"},

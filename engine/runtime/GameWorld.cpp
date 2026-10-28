@@ -95,7 +95,7 @@ bool GameWorld::startGame(const std::string& sceneId) {
     return enterScene(sceneId);
 }
 
-bool GameWorld::enterScene(const std::string& sceneId) {
+bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
     const Scene* source = project_.findScene(sceneId);
     if (!source) {
         logger_.error("장면이 없습니다: " + sceneId);
@@ -111,11 +111,19 @@ bool GameWorld::enterScene(const std::string& sceneId) {
     objectBumps_.clear();
     tickObjectBumps_.clear();
     playerMovedThisTick_ = false;
-    facing_ = Facing::Down;
+    facing_ = arrival.facing.value_or(Facing::Down);
     scene_ = *source;
     logger_.info("장면 시작: " + scene_->name);
     if (!scene_->playerObjectId.empty() && !playerObject()) {
         logger_.warning("플레이어 객체가 장면에 없습니다: " + scene_->playerObjectId);
+    }
+    if (arrival.x || arrival.y) {
+        if (SceneObject* player = playerObject()) {
+            player->x = arrival.x.value_or(player->x);
+            player->y = arrival.y.value_or(player->y);
+        } else {
+            logger_.warning("플레이어 객체가 없는 장면이라 도착 위치를 쓰지 않습니다: " + scene_->name);
+        }
     }
 
     for (const SceneObject& object : scene_->objects) {
@@ -177,7 +185,7 @@ void GameWorld::update(double realSeconds, const InputState& input) {
         if (pendingScene_) {
             std::string next = std::move(*pendingScene_);
             pendingScene_.reset();
-            enterScene(next);
+            enterScene(next, pendingArrival_);
         }
     }
     if (ran == kMaxTicksPerUpdate) {

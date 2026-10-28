@@ -10,7 +10,8 @@ bool EventCommand::operator==(const EventCommand& o) const {
            variable == o.variable && op == o.op && compare == o.compare && value == o.value &&
            script == o.script && function == o.function && dataType == o.dataType && record == o.record &&
            field == o.field && target == o.target && direction == o.direction && distance == o.distance &&
-           speed == o.speed && waitForEnd == o.waitForEnd && show == o.show && thenCommands == o.thenCommands &&
+           speed == o.speed && waitForEnd == o.waitForEnd && show == o.show && scene == o.scene &&
+           setPosition == o.setPosition && x == o.x && y == o.y && thenCommands == o.thenCommands &&
            elseCommands == o.elseCommands;
 }
 
@@ -40,7 +41,8 @@ const char* nameOf(const std::array<std::pair<E, const char*>, N>& table, E valu
     return "";
 }
 
-constexpr std::array<std::pair<EventCommandType, const char*>, 10> kTypes{{
+constexpr std::array<std::pair<EventCommandType, const char*>, 11> kTypes{{
+    {EventCommandType::ChangeScene, "change_scene"},
     {EventCommandType::MoveObject, "move_object"},
     {EventCommandType::SetVisible, "set_visible"},
     {EventCommandType::GetData, "get_data"},

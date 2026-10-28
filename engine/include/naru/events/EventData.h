@@ -10,7 +10,7 @@ namespace naru {
 
 // 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
 enum class EventCommandType {
-    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible
+    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene
 };
 enum class VariableOp { Set, Add, Subtract };
 enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
@@ -32,11 +32,15 @@ struct EventCommand {
     std::string function = "run";   // CallScript
     // MoveObject, SetVisible: 대상 객체 ID 또는 kTargetSelf·kTargetPlayer
     std::string target = "@self";
-    std::string direction = "right"; // MoveObject: "up" "down" "left" "right"
+    std::string direction = "right"; // MoveObject: "up" "down" "left" "right", ChangeScene: 같은 값 또는 ""(그대로)
     double distance = 48.0;          // MoveObject: 픽셀
     double speed = 240.0;            // MoveObject: 픽셀/초, 0이면 순간 이동
     bool waitForEnd = true;          // MoveObject: 이동이 끝날 때까지 다음 명령으로 넘어가지 않음
     bool show = true;                // SetVisible: true 보이기, false 숨기기
+    std::string scene;               // ChangeScene: 대상 장면 ID
+    bool setPosition = true;         // ChangeScene: false면 플레이어가 장면 편집에서 놓인 위치 그대로
+    double x = 0.0;                  // ChangeScene: 도착 위치 (플레이어 객체의 왼쪽 위 좌표)
+    double y = 0.0;
     std::vector<EventCommand> thenCommands; // IfVariable
     std::vector<EventCommand> elseCommands; // IfVariable
 

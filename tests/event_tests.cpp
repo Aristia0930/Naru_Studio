@@ -248,3 +248,22 @@ TEST_CASE("객체 이동·보이기/숨기기는 게임 밖(테스트 실행)에
     run(bad, {badDirection});
     CHECK(bad.state() == SessionState::Failed);
 }
+
+TEST_CASE("장면 이동은 게임 밖(테스트 실행)에서 로그만 남긴다") {
+    EventCommand change;
+    change.type = EventCommandType::ChangeScene;
+    change.scene = "scene_002";
+    change.x = 320;
+    change.y = 400;
+    change.direction = "";
+    Session session(Variables{});
+    run(session, {change});
+    CHECK(session.state() == SessionState::Completed);
+    CHECK(logs(session).back().find("scene_002 (320, 400)") != std::string::npos);
+
+    EventCommand noScene = change;
+    noScene.scene.clear();
+    Session bad(Variables{});
+    run(bad, {noScene});
+    CHECK(bad.state() == SessionState::Failed);
+}

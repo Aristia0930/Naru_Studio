@@ -19,9 +19,10 @@ class CommandDialog : public QDialog {
     Q_OBJECT
 
 public:
-    // scene: 대상 객체 목록 ("객체 이동" 등). 없으면 이 객체·플레이어만 고를 수 있다.
+    // project: 데이터베이스·장면 목록. scene: 이 이벤트가 있는 장면 (대상 객체 목록).
+    // 없으면 그 칸은 직접 입력하거나 이 객체·플레이어만 고를 수 있다.
     CommandDialog(const naru::EventCommand& command, const QStringList& scripts,
-                  const naru::Database* database = nullptr, const naru::Scene* scene = nullptr,
+                  const naru::Project* project = nullptr, const naru::Scene* scene = nullptr,
                   QWidget* parent = nullptr);
 
     naru::EventCommand command() const { return command_; }
@@ -30,6 +31,8 @@ public:
     // 대상 표시 이름: "이 객체", "플레이어", 객체 이름 (장면에 없는 객체면 ID).
     static QString targetLabel(const std::string& target, const naru::Scene* scene);
     static QString directionLabel(const std::string& direction);
+    // 장면 표시 이름 (없는 장면이면 ID와 표시).
+    static QString sceneLabel(const std::string& sceneId, const naru::Project* project);
 
 private:
     void accept() override;
@@ -57,4 +60,8 @@ private:
     QDoubleSpinBox* speed_ = nullptr;
     QCheckBox* waitForEnd_ = nullptr;
     QComboBox* show_ = nullptr;
+    QComboBox* scene_ = nullptr;
+    QCheckBox* setPosition_ = nullptr;
+    QDoubleSpinBox* x_ = nullptr;
+    QDoubleSpinBox* y_ = nullptr;
 };

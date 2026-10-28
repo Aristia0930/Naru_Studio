@@ -10,6 +10,7 @@
 #include <QLineEdit>
 #include <QMessageBox>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -22,6 +23,13 @@ using naru::VariableOp;
 namespace {
 
 enum ValueKind { NumberKind, StringKind, BoolKind, NoneKind };
+
+QDoubleSpinBox* coordinate(QWidget* parent) {
+    auto* box = new QDoubleSpinBox(parent);
+    box->setRange(-100000.0, 100000.0);
+    box->setDecimals(0);
+    return box;
+}
 
 int kindOf(const Value& v) {
     if (std::holds_alternative<std::string>(v)) return StringKind;
@@ -44,6 +52,7 @@ QString CommandDialog::typeLabel(EventCommandType type) {
     case EventCommandType::GetData: return QStringLiteral("데이터 → 변수");
     case EventCommandType::MoveObject: return QStringLiteral("객체 이동");
     case EventCommandType::SetVisible: return QStringLiteral("보이기/숨기기");
+    case EventCommandType::ChangeScene: return QStringLiteral("장면 이동");
     }
     return {};
 }
@@ -59,6 +68,11 @@ QString CommandDialog::targetLabel(const std::string& target, const naru::Scene*
     return o ? QString::fromStdString(o->name) : QStringLiteral("%1 (장면에 없음)").arg(QString::fromStdString(target));
 }
 
+QString CommandDialog::sceneLabel(const std::string& sceneId, const naru::Project* project) {
+    const naru::Scene* s = project ? project->findScene(sceneId) : nullptr;
+    return s ? QString::fromStdString(s->name) : QStringLiteral("%1 (없는 장면)").arg(QString::fromStdString(sceneId));
+}
+
 QString CommandDialog::directionLabel(const std::string& direction) {
     if (direction == "up") return QStringLiteral("위");
     if (direction == "down") return QStringLiteral("아래");
@@ -68,8 +82,9 @@ QString CommandDialog::directionLabel(const std::string& direction) {
 }
 
 CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringList& scripts,
-                             const naru::Database* database, const naru::Scene* scene, QWidget* parent)
+                             const naru::Project* project, const naru::Scene* scene, QWidget* parent)
     : QDialog(parent), command_(command) {
+    const naru::Database* database = project ? &project->database : nullptr;
     setWindowTitle(typeLabel(command.type));
     auto* form = new QFormLayout;
 
@@ -211,6 +226,69 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
                                 this));
         break;
     }
+    case EventCommandType::ChangeScene: {
+        scene_ = new QComboBox(this);
+        if (project) {
+            for (const auto& s : project->scenes) {
+                scene_->addItem(QStringLiteral("%1  (%2)").arg(QString::fromStdString(s.name), QString::fromStdString(s.id)),
+                                QString::fromStdString(s.id));
+            }
+        }
+        if (!command.scene.empty() && scene_->findData(QString::fromStdString(command.scene)) < 0) {
+            scene_->addItem(QStringLiteral("%1  (없는 장면)").arg(QString::fromStdString(command.scene)),
+                            QString::fromStdString(command.scene));
+        }
+        scene_->setCurrentIndex(std::max(0, scene_->findData(QString::fromStdString(command.scene))));
+        setPosition_ = new QCheckBox(QStringLiteral("도착 위치 지정 (끄면 그 장면에 놓인 위치 그대로)"), this);
+        setPosition_->setChecked(command.setPosition);
+        x_ = coordinate(this);
+        y_ = coordinate(this);
+        x_->setValue(command.x);
+        y_->setValue(command.y);
+        auto* fromPlayer = new QPushButton(QStringLiteral("플레이어 위치로"), this);
+        fromPlayer->setToolTip(QStringLiteral("도착 장면에서 플레이어 객체가 놓인 위치를 넣습니다."));
+        auto* position = new QHBoxLayout;
+        position->addWidget(new QLabel(QStringLiteral("X"), this));
+        position->addWidget(x_, 1);
+        position->addWidget(new QLabel(QStringLiteral("Y"), this));
+        position->addWidget(y_, 1);
+        position->addWidget(fromPlayer);
+        direction_ = new QComboBox(this);
+        direction_->addItem(QStringLiteral("그대로"), QString());
+        for (const char* key : {"up", "down", "left", "right"}) {
+            direction_->addItem(directionLabel(key), QString::fromLatin1(key));
+        }
+        direction_->setCurrentIndex(std::max(0, direction_->findData(QString::fromStdString(command.direction))));
+        form->addRow(QStringLiteral("장면"), scene_);
+        form->addRow(QString(), setPosition_);
+        form->addRow(QStringLiteral("도착 위치"), position);
+        form->addRow(QStringLiteral("방향"), direction_);
+        form->addRow(new QLabel(QStringLiteral("위치는 플레이어 객체의 왼쪽 위 좌표입니다 (인스펙터의 X, Y와 같음).\n"
+                                               "장면이 바뀌면 이 이벤트의 남은 명령은 실행되지 않습니다.\n"
+                                               "도착한 뒤 할 일은 새 장면의 자동 실행 이벤트에 넣으세요.\n"
+                                               "F6 테스트 실행에서는 장면을 바꾸지 않고 로그만 남깁니다."),
+                                this));
+        auto fillFromPlayer = [this, project] {
+            const naru::Scene* s = project ? project->findScene(scene_->currentData().toString().toStdString()) : nullptr;
+            const naru::SceneObject* p = s ? s->findObject(s->playerObjectId) : nullptr;
+            if (p) {
+                x_->setValue(p->x);
+                y_->setValue(p->y);
+            }
+        };
+        connect(fromPlayer, &QPushButton::clicked, this, fillFromPlayer);
+        auto sync = [this, fromPlayer] {
+            x_->setEnabled(setPosition_->isChecked());
+            y_->setEnabled(setPosition_->isChecked());
+            fromPlayer->setEnabled(setPosition_->isChecked());
+        };
+        connect(setPosition_, &QCheckBox::toggled, this, sync);
+        sync();
+        if (command.scene.empty()) { // 새 명령: 첫 장면과 그 플레이어 위치로 시작
+            fillFromPlayer();
+        }
+        break;
+    }
     case EventCommandType::SetVisible:
         addTargetRow();
         show_ = new QComboBox(this);
@@ -293,7 +371,8 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     auto* layout = new QVBoxLayout(this);
     layout->addLayout(form);
     layout->addWidget(buttons);
-    resize(command.type == EventCommandType::Say ? 520 : 440, sizeHint().height());
+    resize(command.type == EventCommandType::Say ? 520 : command.type == EventCommandType::ChangeScene ? 600 : 440,
+           sizeHint().height());
 }
 
 bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* boolBox, Value& out) {
@@ -388,6 +467,17 @@ void CommandDialog::accept() {
     case EventCommandType::SetVisible:
         c.target = target_->currentData().toString().toStdString();
         c.show = show_->currentIndex() == 0;
+        break;
+    case EventCommandType::ChangeScene:
+        c.scene = scene_->currentData().toString().toStdString();
+        if (c.scene.empty()) {
+            QMessageBox::warning(this, windowTitle(), QStringLiteral("이동할 장면을 고르세요."));
+            return;
+        }
+        c.setPosition = setPosition_->isChecked();
+        c.x = x_->value();
+        c.y = y_->value();
+        c.direction = direction_->currentData().toString().toStdString();
         break;
     }
     command_ = c;

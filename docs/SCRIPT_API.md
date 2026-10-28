@@ -121,7 +121,7 @@
 | `id` | str | 읽기 | 장면 ID (예: `scene_001`) |
 | `name` | str | 읽기 | 장면 이름 |
 | `width`, `height` | int | 읽기 | 장면 크기(픽셀). 플레이어 이동 한계 |
-| `change(장면ID)` | | | 장면 이동을 **예약**. 지금 틱이 끝난 뒤 `on_scene_exit` → 전환 → `on_scene_enter` 순서로 바뀜. 없는 ID면 `KeyError` |
+| `change(장면ID, x=None, y=None, facing=None)` | | | 장면 이동을 **예약**. 지금 틱이 끝난 뒤 `on_scene_exit` → 전환 → `on_scene_enter` 순서로 바뀜. 없는 ID면 `KeyError`. `x`, `y`: 도착할 플레이어 위치(왼쪽 위 좌표, 둘 다 주거나 둘 다 생략 — 생략하면 장면 편집의 위치). `facing`: `"up"` `"down"` `"left"` `"right"` (생략하면 아래). 예: `ctx.scene.change("scene_002", 320, 400, "up")`. 이벤트 명령 "장면 이동"과 같음 |
 | `ids()` | list[str] | | 프로젝트의 모든 장면 ID |
 
 | `object(ID)` | SceneObject 또는 None | ID로 객체 찾기 (예: `ctx.scene.object("obj_002")`). ID는 인스펙터 맨 위에 보이는 값 |
@@ -187,10 +187,11 @@ def on_update(ctx):
 1. `on_update` (등록된 전역 스크립트 순서대로)
 2. 조작을 막는 이벤트 진행 (조사·접촉·자동 실행, 한 번에 하나씩)
 3. 엔진 기본 조작 — `default_control`이 True이고 대사·막는 이벤트가 없을 때만: 결정 키 조사 → 방향 입력 이동
-4. 접촉 판정 (이번 틱의 기본 조작 이동과 `move()` 이동을 합쳐서 한 번)
-5. 새로 시작된 막는 이벤트의 첫 명령 실행 (대사가 바로 뜨도록)
-6. 병렬 처리 이벤트 진행
-7. 예약된 장면 이동 (`ctx.scene.change`)
+4. 이벤트 명령 "객체 이동"으로 걸어가는 객체들이 한 틱만큼 이동
+5. 접촉 판정 (이번 틱의 기본 조작 이동, `move()` 이동, "객체 이동"을 합쳐서 한 번)
+6. 새로 시작된 막는 이벤트의 첫 명령 실행 (대사가 바로 뜨도록)
+7. 병렬 처리 이벤트 진행
+8. 예약된 장면 이동 (`ctx.scene.change`, 이벤트 명령 "장면 이동")
 
 ---
 

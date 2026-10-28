@@ -366,6 +366,27 @@ TEST_CASE("스크립트로 다른 객체를 찾고 바꾸고 움직인다 (ctx.s
     CHECK(bad.error.type == "ValueError");
 }
 
+TEST_CASE("ctx.scene.change는 도착 위치와 방향을 받는다") {
+    Project p = globalProject();
+    p.scenes[0].objects[1].event.commands.clear();
+    Scene second = p.scenes[0];
+    second.id = "scene_002";
+    p.scenes.push_back(second);
+    GameWorld world(p, ScriptRunner{});
+    world.startGame("scene_001");
+    for (const char* bad : {"half", "bad_facing"}) {
+        auto result = g_runtime->runFile(script("scene_change.py"), f_ctxOf(world), bad);
+        CHECK(!result.ok && result.error.type == "ValueError");
+    }
+    CHECK(!world.sceneChangePending());
+    CHECK(g_runtime->runFile(script("scene_change.py"), f_ctxOf(world), "go").ok);
+    InputState input;
+    world.update(1.0 / 60.0, input);
+    CHECK(world.scene()->id == "scene_002");
+    CHECK(world.player()->x == 64.0 && world.player()->y == 96.0);
+    CHECK(world.facing() == Facing::Left);
+}
+
 TEST_CASE("docs/examples의 예제는 문법 오류가 없고 함께 전역 등록해도 이름이 겹치지 않는다") {
     std::vector<std::string> paths;
     for (const char* name : {"chase.py", "patrol.py", "push.py", "door.py"}) {

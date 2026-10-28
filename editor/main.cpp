@@ -39,6 +39,9 @@ int main(int argc, char* argv[]) {
     QApplication::setOrganizationName(QStringLiteral("Naru"));
     QApplication::setApplicationName(QStringLiteral("Naru Studio"));
     QApplication::setApplicationVersion(QStringLiteral(NARU_STUDIO_VERSION));
+    // Windows 11 스타일 메뉴는 페이드인 동안 반투명이라 글자가 흐리게 보인다. 바로 불투명하게 띄운다.
+    QApplication::setEffectEnabled(Qt::UI_FadeMenu, false);
+    QApplication::setEffectEnabled(Qt::UI_AnimateMenu, false);
 
     QCommandLineParser parser;
     parser.setApplicationDescription(QStringLiteral("Naru Studio 제작툴"));
@@ -147,8 +150,23 @@ int main(int argc, char* argv[]) {
         } else if (*type == naru::EventCommandType::SetVisible) {
             sample.target = "obj_003";
             sample.show = false;
+        } else if (*type == naru::EventCommandType::ChangeScene) {
+            sample.scene = "scene_002";
+            sample.x = 600;
+            sample.y = 640;
+            sample.direction = "up";
         }
-        CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &db, &scene);
+        naru::Project project;
+        project.database = db;
+        scene.id = "scene_001";
+        scene.name = "마을";
+        project.scenes.push_back(scene);
+        naru::Scene inside;
+        inside.id = "scene_002";
+        inside.name = "여관 안";
+        project.scenes.push_back(inside);
+        CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &project,
+                             &project.scenes[0]);
         return captureDialog(dialog);
     }
     if (parser.isSet(fieldDialogOption)) {

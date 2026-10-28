@@ -274,6 +274,58 @@ private:
     bool show_;
 };
 
+// 장면을 바꾼다 (이번 틱이 끝난 뒤). 장면이 바뀌면 이 이벤트는 중지되므로 뒤의 명령은 실행되지 않는다.
+// 게임 밖(에디터 테스트 실행)에서는 로그만 남긴다.
+class ChangeSceneCommand : public Command {
+public:
+    ChangeSceneCommand(std::string id, const EventCommand& c)
+        : Command(std::move(id)), scene_(c.scene), direction_(c.direction), setPosition_(c.setPosition), x_(c.x),
+          y_(c.y) {}
+
+    CommandStatus start(CommandContext& ctx) override {
+        std::optional<Facing> facing;
+        if (!direction_.empty()) {
+            facing = facingFromKey(direction_);
+            if (!facing) {
+                setError("알 수 없는 방향: " + direction_);
+                return CommandStatus::Failed;
+            }
+        }
+        if (scene_.empty()) {
+            setError("이동할 장면을 지정하지 않았습니다");
+            return CommandStatus::Failed;
+        }
+        if (!ctx.game) {
+            std::string where = setPosition_ ? " (" + number(x_) + ", " + number(y_) + ")" : std::string();
+            ctx.logger.info("장면 이동 (게임 실행 중에만 바뀝니다): " + scene_ + where, {"", 0, id()});
+            return CommandStatus::Completed;
+        }
+        if (!ctx.game->project().findScene(scene_)) {
+            setError("장면이 없습니다: " + scene_);
+            return CommandStatus::Failed;
+        }
+        GameWorld::Arrival arrival;
+        if (setPosition_) {
+            arrival.x = x_;
+            arrival.y = y_;
+        }
+        // 방향을 정하지 않으면 지금 바라보는 방향 그대로
+        arrival.facing = facing.value_or(ctx.game->facing());
+        ctx.game->requestScene(scene_, arrival);
+        return CommandStatus::Waiting;
+    }
+
+    // 장면이 바뀌면서 취소될 때까지 기다린다.
+    CommandStatus update(CommandContext&, double) override { return CommandStatus::Waiting; }
+
+private:
+    std::string scene_;
+    std::string direction_;
+    bool setPosition_;
+    double x_;
+    double y_;
+};
+
 // "그렇다면" 분기 끝에서 "아니라면" 분기를 건너뛴다.
 class JumpCommand : public Command {
 public:
@@ -355,6 +407,9 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
             break;
         case EventCommandType::SetVisible:
             out.push_back(std::make_unique<SetVisibleCommand>(id, c.target, c.show));
+            break;
+        case EventCommandType::ChangeScene:
+            out.push_back(std::make_unique<ChangeSceneCommand>(id, c));
             break;
         case EventCommandType::Comment:
             break; // 실행하지 않는다

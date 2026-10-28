@@ -54,7 +54,7 @@ QString firstLine(const std::string& text) {
     return nl < 0 ? t : t.left(nl) + QStringLiteral(" …");
 }
 
-QString describe(const EventCommand& c, const naru::Scene* scene) {
+QString describe(const EventCommand& c, const naru::Scene* scene, const naru::Project* project) {
     switch (c.type) {
     case EventCommandType::Say:
         return QStringLiteral("대사: %1%2")
@@ -87,6 +87,11 @@ QString describe(const EventCommand& c, const naru::Scene* scene) {
     case EventCommandType::SetVisible:
         return QStringLiteral("%1: %2").arg(c.show ? QStringLiteral("보이기") : QStringLiteral("숨기기"),
                                             CommandDialog::targetLabel(c.target, scene));
+    case EventCommandType::ChangeScene:
+        return QStringLiteral("장면 이동: %1%2%3")
+            .arg(CommandDialog::sceneLabel(c.scene, project),
+                 c.setPosition ? QStringLiteral(" (%1, %2)").arg(c.x).arg(c.y) : QStringLiteral(" (놓인 위치)"),
+                 c.direction.empty() ? QString() : QStringLiteral(", ") + CommandDialog::directionLabel(c.direction));
     }
     return {};
 }
@@ -126,7 +131,8 @@ std::optional<EventCommandType> chooseType(QWidget* parent) {
     QMenu menu(parent);
     for (auto type : {EventCommandType::Say, EventCommandType::Wait, EventCommandType::SetVariable,
                       EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::MoveObject,
-                      EventCommandType::SetVisible, EventCommandType::CallScript, EventCommandType::Log,
+                      EventCommandType::SetVisible, EventCommandType::ChangeScene, EventCommandType::CallScript,
+                      EventCommandType::Log,
                       EventCommandType::Comment}) {
         menu.addAction(CommandDialog::typeLabel(type))->setData(static_cast<int>(type));
     }
@@ -309,7 +315,7 @@ void EventEditor::rebuild() {
                 const EventCommand& c = list[i];
                 std::string id = naru::commandId(prefix, i);
                 QTreeWidgetItem* item = makeItem();
-                item->setText(0, QStringLiteral("◆ ") + describe(c, scene()));
+                item->setText(0, QStringLiteral("◆ ") + describe(c, scene(), &doc_->project()));
                 item->setData(0, kKindRole, CommandItem);
                 item->setData(0, kListRole, q(prefix));
                 item->setData(0, kIndexRole, static_cast<int>(i));
@@ -462,10 +468,13 @@ void EventEditor::addCommandAt(const std::string& listPrefix, int index) {
     if (*type == EventCommandType::Wait) {
         command.seconds = 1.0;
     }
+    if (*type == EventCommandType::ChangeScene) {
+        command.direction.clear(); // 방향 그대로
+    }
     if (*type == EventCommandType::IfVariable || *type == EventCommandType::SetVariable) {
         command.value = std::int64_t{0};
     }
-    CommandDialog dialog(command, scriptNames(), &doc_->project().database, scene(), this);
+    CommandDialog dialog(command, scriptNames(), &doc_->project(), scene(), this);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
@@ -510,8 +519,7 @@ void EventEditor::editSelected() {
     if (!list || index >= static_cast<int>(list->size())) {
         return;
     }
-    CommandDialog dialog((*list)[static_cast<std::size_t>(index)], scriptNames(), &doc_->project().database, scene(),
-                         this);
+    CommandDialog dialog((*list)[static_cast<std::size_t>(index)], scriptNames(), &doc_->project(), scene(), this);
     if (dialog.exec() == QDialog::Accepted) {
         replaceCommand(listPrefix, index, dialog.command());
     }

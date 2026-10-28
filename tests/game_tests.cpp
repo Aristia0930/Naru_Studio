@@ -5,7 +5,9 @@
 #include <algorithm>
 #include <cmath>
 #include <functional>
+#include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace naru;
@@ -625,4 +627,74 @@ TEST_CASE("show/hide command changes visibility during the game") {
     CHECK(!world.object("lever")->visible);
     hold(world, InputAction::Right, 60);
     CHECK(world.player()->x == 100.0 - 32.0); // 다시 보이는 벽에 막힌다
+}
+
+// ---------------------------------------------------------------- 이벤트 명령: 장면 이동
+
+namespace {
+
+EventCommand changeScene(std::string scene, std::optional<std::pair<double, double>> position, std::string direction) {
+    EventCommand c;
+    c.type = EventCommandType::ChangeScene;
+    c.scene = std::move(scene);
+    c.setPosition = position.has_value();
+    if (position) {
+        c.x = position->first;
+        c.y = position->second;
+    }
+    c.direction = std::move(direction);
+    return c;
+}
+
+// scene_001(문이 있는 장면)과 scene_002(주인공이 (200, 100)에 놓인 장면, 들어오면 자동 실행으로 arrived += 1).
+Project twoScenes(EventCommand doorCommand) {
+    SceneObject door = box("door", 40, 0, 32, 32); // 주인공 오른쪽 바로 앞 (오른쪽을 보고 조사)
+    door.event.commands = {add("before", 1), doorCommand, add("after", 1)};
+    Project p = playerProject({door});
+    Scene inside = p.scenes[0];
+    inside.id = "scene_002";
+    inside.name = "안";
+    inside.objects = {box("hero", 200, 100, 32, 32)};
+    SceneObject welcome = box("welcome", 350, 250, 10, 10);
+    welcome.event.trigger = EventTrigger::Autorun;
+    welcome.event.commands = {add("arrived", 1)};
+    inside.objects.push_back(welcome);
+    p.scenes.push_back(inside);
+    return p;
+}
+
+} // namespace
+
+TEST_CASE("change scene command moves the player to the arrival point and stops the event") {
+    GameWorld world(twoScenes(changeScene("scene_002", std::pair{64.0, 128.0}, "left")), noScripts());
+    world.enterScene("scene_001");
+    world.setFacing(Facing::Right);
+    step(world, confirm());
+    CHECK(world.scene()->id == "scene_002");
+    CHECK(world.player()->x == 64.0 && world.player()->y == 128.0);
+    CHECK(world.facing() == Facing::Left);
+    CHECK(intVar(world, "before") == 1);
+    CHECK(intVar(world, "after") == -1); // 장면이 바뀌면 남은 명령은 실행되지 않는다
+    step(world);
+    CHECK(intVar(world, "arrived") == 1); // 새 장면의 자동 실행
+}
+
+TEST_CASE("change scene without a position keeps the edited spot and the current facing") {
+    GameWorld world(twoScenes(changeScene("scene_002", std::nullopt, "")), noScripts());
+    world.enterScene("scene_001");
+    world.setFacing(Facing::Right);
+    step(world, confirm());
+    CHECK(world.scene()->id == "scene_002");
+    CHECK(world.player()->x == 200.0 && world.player()->y == 100.0);
+    CHECK(world.facing() == Facing::Right); // 방향 "그대로"
+}
+
+TEST_CASE("change scene to a missing scene fails the event and stays") {
+    GameWorld world(twoScenes(changeScene("scene_404", std::pair{0.0, 0.0}, "up")), noScripts());
+    world.enterScene("scene_001");
+    world.setFacing(Facing::Right);
+    step(world, confirm());
+    CHECK(world.scene()->id == "scene_001");
+    CHECK(world.failedEventCount() == 1);
+    CHECK(intVar(world, "after") == -1);
 }

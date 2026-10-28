@@ -178,7 +178,14 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     hideCmd.type = EventCommandType::SetVisible;
     hideCmd.target = o.id;
     hideCmd.show = false;
-    o.event.commands = {commentCmd, outer, logCmd, boolSet, noneSet, moveCmd, hideCmd};
+    EventCommand sceneCmd;
+    sceneCmd.type = EventCommandType::ChangeScene;
+    sceneCmd.scene = "scene_001";
+    sceneCmd.setPosition = false;
+    sceneCmd.x = 12;
+    sceneCmd.y = 34;
+    sceneCmd.direction = "";
+    o.event.commands = {commentCmd, outer, logCmd, boolSet, noneSet, moveCmd, hideCmd, sceneCmd};
     second.objects.push_back(o);
     second.playerObjectId = o.id;
     project.scenes.push_back(second);
