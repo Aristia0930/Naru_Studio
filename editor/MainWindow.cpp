@@ -293,11 +293,15 @@ void MainWindow::createActions() {
     scene->addAction(dbAction);
 
     runGameAction_ = make(QStringLiteral("게임 실행"), QKeySequence(Qt::CTRL | Qt::Key_R), [this] { runGame(); });
-    runGameAction_->setToolTip(QStringLiteral("저장한 뒤 현재 장면부터 게임 실행 화면을 띄웁니다 (Ctrl+R)"));
+    runGameAction_->setToolTip(QStringLiteral("저장한 뒤 시작 장면부터 게임 실행 화면을 띄웁니다 (Ctrl+R)"));
+    runCurrentSceneAction_ = make(QStringLiteral("현재 장면부터 실행"), QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_R),
+                                  [this] { runGame(true); });
+    runCurrentSceneAction_->setToolTip(QStringLiteral("저장한 뒤 지금 편집 중인 장면부터 게임 실행 화면을 띄웁니다 (Ctrl+Shift+R)"));
     stopGameAction_ = make(QStringLiteral("게임 중지"), {}, &MainWindow::stopGame);
     updateGameActions();
     auto* game = menuBar()->addMenu(QStringLiteral("게임(&G)"));
     game->addAction(runGameAction_);
+    game->addAction(runCurrentSceneAction_);
     game->addAction(stopGameAction_);
 
     auto* events = menuBar()->addMenu(QStringLiteral("이벤트(&V)"));
@@ -781,7 +785,7 @@ void MainWindow::runScript() {
 
 // ---------------------------------------------------------------- 게임 실행
 
-bool MainWindow::runGame(const QStringList& extraArgs) {
+bool MainWindow::runGame(bool fromCurrentScene, const QStringList& extraArgs) {
     if (game_) {
         statusBar()->showMessage(QStringLiteral("게임이 이미 실행 중입니다"), 3000);
         return false;
@@ -800,7 +804,8 @@ bool MainWindow::runGame(const QStringList& extraArgs) {
     }
 
     QStringList args{doc_->directory()};
-    if (!currentSceneId_.isEmpty()) {
+    // 장면을 넘기지 않으면 player가 프로젝트의 시작 장면을 연다.
+    if (fromCurrentScene && !currentSceneId_.isEmpty()) {
         args << QStringLiteral("--scene") << currentSceneId_;
     }
     args << extraArgs;
@@ -891,6 +896,7 @@ void MainWindow::readGameOutput() {
 
 void MainWindow::updateGameActions() {
     runGameAction_->setEnabled(game_ == nullptr);
+    runCurrentSceneAction_->setEnabled(game_ == nullptr);
     stopGameAction_->setEnabled(game_ != nullptr);
 }
 
@@ -1211,7 +1217,7 @@ bool MainWindow::runSelfTest() {
     // 게임 실행: 저장 → NaruPlayer가 현재 장면을 연다 → 주인공을 오른쪽으로 움직여 상자 앞에서 결정 키    // → 상자의 조사 이벤트가 실행된다 → 120프레임 뒤 스스로 닫히고 로그가 제작툴에 들어온다
     {
         logMessages_.clear();
-        bool started = runGame({QStringLiteral("--frames"), QStringLiteral("120"), QStringLiteral("--hold"),
+        bool started = runGame(true, {QStringLiteral("--frames"), QStringLiteral("120"), QStringLiteral("--hold"),
                                 QStringLiteral("right:0-80"), QStringLiteral("--hold"), QStringLiteral("confirm:85-85")});
         QElapsedTimer waited;
         waited.start();

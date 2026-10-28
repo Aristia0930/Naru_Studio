@@ -44,8 +44,9 @@ public:
     void startEventTest();
     // 데이터베이스 탭을 열고 종류/항목을 선택한다. fieldsTab이면 "속성 정의" 탭을 보여 준다.
     void showDatabase(const QString& typeKey, const QString& recordId, bool fieldsTab);
-    // 저장한 뒤 게임 실행 화면(NaruPlayer)을 현재 장면부터 띄운다. extraArgs는 자동 검사·촬영용 player 옵션.
-    bool runGame(const QStringList& extraArgs = {});
+    // 저장한 뒤 게임 실행 화면(NaruPlayer)을 띄운다. 시작 장면부터, fromCurrentScene이면 편집 중인 장면부터.
+    // extraArgs는 자동 검사·촬영용 player 옵션.
+    bool runGame(bool fromCurrentScene = false, const QStringList& extraArgs = {});
     void stopGame();
 
 private:
@@ -105,6 +106,7 @@ private:
     QAction* addObjectAction_ = nullptr;
     QAction* deleteAction_ = nullptr;
     QAction* runGameAction_ = nullptr;
+    QAction* runCurrentSceneAction_ = nullptr;
     QAction* stopGameAction_ = nullptr;
 
     QProcess* game_ = nullptr;
