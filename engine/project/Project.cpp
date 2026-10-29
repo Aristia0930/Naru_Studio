@@ -44,6 +44,23 @@ int Project::indexOfScene(const std::string& sceneId) const {
     return -1;
 }
 
+const VariableDef* Project::findVariable(const std::string& variableName) const {
+    for (const auto& v : variables) {
+        if (v.name == variableName) {
+            return &v;
+        }
+    }
+    return nullptr;
+}
+
+Variables Project::initialVariables() const {
+    Variables result;
+    for (const auto& v : variables) {
+        result.set(v.name, v.initial);
+    }
+    return result;
+}
+
 std::string Project::newId(const std::string& prefix) const {
     std::set<std::string> used;
     for (const auto& scene : scenes) {

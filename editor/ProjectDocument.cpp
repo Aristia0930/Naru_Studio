@@ -153,6 +153,11 @@ void ProjectDocument::setGlobalScripts(const std::vector<std::string>& scripts) 
     emit globalScriptsChanged();
 }
 
+void ProjectDocument::setVariables(const std::vector<naru::VariableDef>& variables) {
+    project_.variables = variables;
+    emit variablesChanged();
+}
+
 QStringList ProjectDocument::scriptFiles() const {
     return QDir(scriptsDirectory()).entryList({QStringLiteral("*.py")}, QDir::Files, QDir::Name);
 }

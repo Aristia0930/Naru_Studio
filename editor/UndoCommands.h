@@ -122,6 +122,19 @@ private:
     int mergeKey_;
 };
 
+// 공용 변수·스위치 정의 변경 (변수·스위치 창에서 확인을 누를 때 한 번).
+class SetVariablesCommand : public QUndoCommand {
+public:
+    SetVariablesCommand(ProjectDocument* doc, std::vector<naru::VariableDef> after);
+    void redo() override;
+    void undo() override;
+
+private:
+    ProjectDocument* doc_;
+    std::vector<naru::VariableDef> before_;
+    std::vector<naru::VariableDef> after_;
+};
+
 // 전역 스크립트 목록(등록·해제·순서) 변경.
 class SetGlobalScriptsCommand : public QUndoCommand {
 public:

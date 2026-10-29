@@ -1,5 +1,6 @@
 #pragma once
 
+#include "naru/core/Value.h"
 #include "naru/data/Database.h"
 #include "naru/events/EventData.h"
 
@@ -44,6 +45,16 @@ struct Scene {
     bool operator==(const Scene&) const = default;
 };
 
+// 프로젝트 공용 변수 정의. 게임 실행·이벤트 테스트를 시작할 때 이 처음 값이 들어간다.
+// 처음 값의 형식이 변수의 종류다: 정수(int64)·소수(double)·글자(string)·스위치(bool, 참/거짓).
+struct VariableDef {
+    std::string name;
+    Value initial = std::int64_t{0};
+    std::string description;
+
+    bool operator==(const VariableDef&) const = default;
+};
+
 // 편집 문서로서의 프로젝트. 폴더 위치는 ProjectIO가 다루며 여기에는 저장하지 않는다.
 struct Project {
     int formatVersion = 1;
@@ -53,10 +64,15 @@ struct Project {
     Database database;
     // 게임 전체에서 실행되는 전역 스크립트 (scripts/ 안의 파일 이름, 등록 순서대로 훅을 부른다).
     std::vector<std::string> globalScripts;
+    // 공용 변수·스위치 정의 (편집 화면에 보이는 순서).
+    std::vector<VariableDef> variables;
 
     Scene* findScene(const std::string& sceneId);
     const Scene* findScene(const std::string& sceneId) const;
     int indexOfScene(const std::string& sceneId) const;
+    const VariableDef* findVariable(const std::string& variableName) const;
+    // 정의한 변수들의 처음 값. 게임·테스트 실행 세션은 이 값에서 시작한다.
+    Variables initialVariables() const;
 
     // prefix_001 형식의, 프로젝트 안에서 쓰이지 않은 ID를 만든다 (prefix: "scene", "obj").
     std::string newId(const std::string& prefix) const;

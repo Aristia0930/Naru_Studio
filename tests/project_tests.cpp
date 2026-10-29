@@ -191,6 +191,11 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     project.scenes.push_back(second);
     project.globalScripts = {"game.py", "battle.py"}; // 순서도 보존된다
     project.startSceneId = second.id;
+    // 공용 변수: 네 종류 모두, 설명 있음·없음, 순서 보존
+    project.variables = {{"gold", std::int64_t{100}, "가진 돈"},
+                         {"speed_rate", 1.5, ""},
+                         {"hero_name", std::string("아리"), "주인공 이름"},
+                         {"door_open", true, ""}};
 
     CHECK(ProjectIO::save(project, dir.path).empty());
     auto loaded = ProjectIO::load(dir.path);
@@ -234,6 +239,34 @@ TEST_CASE("전역 스크립트 목록의 잘못된 이름과 중복을 거부한
     auto loaded = ProjectIO::load(dir.path);
     CHECK(hasErrorContaining(loaded, "project.json", "중복"));
     CHECK(hasErrorContaining(loaded, "project.json", "../x.py"));
+}
+
+TEST_CASE("새 프로젝트에는 예제 변수가 있고, 잘못된 변수 정의는 거부한다") {
+    TempDir dir;
+    auto created = ProjectIO::create(dir.path, "x");
+    CHECK(created.ok());
+    const VariableDef* box = created.project->findVariable("box_opened");
+    CHECK((box && box->initial == Value{std::int64_t{0}}));
+    Variables initial = created.project->initialVariables();
+    CHECK(initial.get("box_opened") == std::optional<Value>{std::int64_t{0}});
+
+    fs::path file = dir.path / "project.json";
+    std::ifstream in(file, std::ios::binary);
+    std::string text((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
+    in.close();
+    std::size_t at = text.find("\"variables\"");
+    CHECK(at != std::string::npos);
+    std::size_t end = text.find(']', at);
+    auto withVariables = [&](const std::string& list) {
+        writeText(file, text.substr(0, at) + "\"variables\": " + list + text.substr(end + 1));
+        return ProjectIO::load(dir.path);
+    };
+    CHECK(hasErrorContaining(withVariables(R"([{"name": "a", "value": 1}, {"name": "a", "value": 2}])"), "project.json", "중복"));
+    CHECK(hasErrorContaining(withVariables(R"([{"name": "", "value": 1}])"), "project.json", "비어"));
+    CHECK(hasErrorContaining(withVariables(R"([{"name": "a", "value": null}])"), "project.json", "처음 값"));
+    CHECK(hasErrorContaining(withVariables(R"([{"name": "a", "value": [1]}])"), "project.json", "값은"));
+    auto ok = withVariables(R"([{"name": "flag", "value": false}])");
+    CHECK((ok.ok() && ok.project->variables.size() == 1 && ok.project->variables[0].initial == Value{false}));
 }
 
 TEST_CASE("비어 있지 않은 폴더에는 새 프로젝트를 만들지 않는다") {

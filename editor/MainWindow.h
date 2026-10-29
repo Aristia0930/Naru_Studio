@@ -70,6 +70,7 @@ private:
 
     void newScript();
     void editGlobalScripts();
+    void editVariables();
     void toggleGlobalScript(const QString& fileName);
     bool checkGlobalScripts();
     ScriptEditor* openScript(const QString& path);

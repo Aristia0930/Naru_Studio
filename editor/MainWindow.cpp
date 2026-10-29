@@ -8,6 +8,7 @@
 #include "SceneView.h"
 #include "ScriptEditor.h"
 #include "UndoCommands.h"
+#include "VariablesDialog.h"
 
 #include "naru/events/BuiltinCommands.h"
 #include "naru/python/PythonRuntime.h"
@@ -315,11 +316,15 @@ void MainWindow::createActions() {
                                   [this] { runGame(true); });
     runCurrentSceneAction_->setToolTip(QStringLiteral("저장한 뒤 지금 편집 중인 장면부터 게임 실행 화면을 띄웁니다 (Ctrl+Shift+R)"));
     stopGameAction_ = make(QStringLiteral("게임 중지"), {}, &MainWindow::stopGame);
+    auto* variables = make(QStringLiteral("변수·스위치..."), {}, &MainWindow::editVariables);
+    variables->setToolTip(QStringLiteral("게임 전체에서 쓰는 변수·스위치와 처음 값을 정합니다"));
     updateGameActions();
     auto* game = menuBar()->addMenu(QStringLiteral("게임(&G)"));
     game->addAction(runGameAction_);
     game->addAction(runCurrentSceneAction_);
     game->addAction(stopGameAction_);
+    game->addSeparator();
+    game->addAction(variables);
 
     auto* events = menuBar()->addMenu(QStringLiteral("이벤트(&V)"));
     events->addAction(eventOpen);
@@ -585,6 +590,17 @@ void MainWindow::rebuildScriptList() {
     }
 }
 
+void MainWindow::editVariables() {
+    VariablesDialog dialog(doc_->project().variables, this);
+    if (dialog.exec() != QDialog::Accepted) {
+        return;
+    }
+    std::vector<naru::VariableDef> after = dialog.variables();
+    if (after != doc_->project().variables) {
+        doc_->undoStack()->push(new SetVariablesCommand(doc_, std::move(after)));
+    }
+}
+
 void MainWindow::editGlobalScripts() {
     GlobalScriptsDialog dialog(doc_->scriptFiles(), doc_->project().globalScripts, doc_->scriptsDirectory(), python_, this);
     if (dialog.exec() != QDialog::Accepted) {
@@ -771,7 +787,7 @@ void MainWindow::runScript() {
     const std::string pathUtf8 = path.toStdString();
 
     naru::Database database = doc_->project().database; // 실행용 사본
-    naru::Session session(naru::Variables{});
+    naru::Session session(doc_->project().initialVariables());
     session.setDatabase(&database);
     session.logger().addSink([this](const naru::LogEntry& entry) { appendLog(entry); });
     session.logger().info("실행 시작: " + QFileInfo(path).fileName().toStdString());

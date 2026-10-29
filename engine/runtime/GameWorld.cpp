@@ -77,7 +77,9 @@ struct GameWorld::RunningEvent {
 
 GameWorld::GameWorld(Project project, ScriptRunner scripts, double fixedStep)
     : project_(std::move(project)), scripts_(std::move(scripts)), fixedStep_(fixedStep),
-      hookCtx_{variables_, logger_, this, std::nullopt, &project_.database, this} {}
+      hookCtx_{variables_, logger_, this, std::nullopt, &project_.database, this} {
+    variables_ = project_.initialVariables();
+}
 
 GameWorld::~GameWorld() {
     stopAll();

@@ -581,7 +581,7 @@ void EventEditor::startTest() {
 
     // 실행 중 편집해도 테스트가 영향을 받지 않도록 데이터베이스 사본을 쓴다.
     runDatabase_ = doc_->project().database;
-    session_ = std::make_unique<naru::Session>(naru::Variables{}, 1.0 / 60.0, this);
+    session_ = std::make_unique<naru::Session>(doc_->project().initialVariables(), 1.0 / 60.0, this);
     session_->setDatabase(&runDatabase_);
     session_->logger().addSink([this](const naru::LogEntry& entry) {
         if (logSink_) {

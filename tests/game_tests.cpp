@@ -82,6 +82,36 @@ InputState confirm() {
 
 } // namespace
 
+TEST_CASE("게임은 프로젝트 공용 변수의 처음 값으로 시작하고 장면이 바뀌어도 유지한다") {
+    EventCommand ifClosed;
+    ifClosed.type = EventCommandType::IfVariable;
+    ifClosed.variable = "door_open";
+    ifClosed.compare = CompareOp::Equal;
+    ifClosed.value = false;
+    ifClosed.thenCommands = {add("closed_seen", 1)};
+    EventCommand go;
+    go.type = EventCommandType::ChangeScene;
+    go.scene = "scene_002";
+    go.setPosition = false;
+    Project p = projectWith({object("a", EventTrigger::Autorun, {add("gold", 5), ifClosed, go})});
+    Scene second;
+    second.id = "scene_002";
+    second.name = "둘째";
+    p.scenes.push_back(second);
+    p.variables = {{"gold", std::int64_t{100}, "가진 돈"}, {"door_open", false, ""}};
+
+    GameWorld world(std::move(p), noScripts());
+    CHECK(world.variables().get("gold") == std::optional<Value>{std::int64_t{100}});
+    CHECK(world.enterScene("scene_001"));
+    for (int i = 0; i < 5; ++i) {
+        step(world);
+    }
+    CHECK(world.scene()->id == "scene_002");
+    CHECK(intVar(world, "gold") == 105);
+    CHECK(intVar(world, "closed_seen") == 1);
+    CHECK(world.variables().get("door_open") == std::optional<Value>{false});
+}
+
 TEST_CASE("missing scene is reported") {
     GameWorld world(projectWith({}), noScripts());
     CHECK(!world.enterScene("nope"));

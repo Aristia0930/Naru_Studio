@@ -1,5 +1,7 @@
 #include "CommandDialog.h"
 
+#include "VariablesDialog.h"
+
 #include <QCheckBox>
 #include <QComboBox>
 #include <QDialogButtonBox>
@@ -117,6 +119,60 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         sync();
     };
 
+    // 변수 칸: 정의한 변수·스위치를 고르거나 직접 입력한다. 아래 줄에 고른 변수의 종류·처음 값을 보여 준다.
+    auto addVariableRow = [this, form, project](const QString& label, const QString& placeholder) {
+        variable_ = new QComboBox(this);
+        variable_->setEditable(true);
+        variable_->setInsertPolicy(QComboBox::NoInsert);
+        if (project) {
+            for (const auto& v : project->variables) {
+                variable_->addItem(QString::fromStdString(v.name));
+            }
+        }
+        variable_->setCurrentText(QString::fromStdString(command_.variable));
+        variable_->lineEdit()->setPlaceholderText(placeholder);
+        auto* info = new QLabel(this);
+        info->setStyleSheet(QStringLiteral("color: gray"));
+        auto describe = [info, project](const QString& text) {
+            QString name = text.trimmed();
+            const naru::VariableDef* def = project ? project->findVariable(name.toStdString()) : nullptr;
+            if (name.isEmpty()) {
+                info->setText(QString());
+            } else if (def) {
+                QString value = std::holds_alternative<bool>(def->initial)
+                                    ? (std::get<bool>(def->initial) ? QStringLiteral("참") : QStringLiteral("거짓"))
+                                    : QString::fromStdString(naru::toDisplayString(def->initial));
+                info->setText(QStringLiteral("%1 · 처음 값 %2%3")
+                                  .arg(VariablesDialog::kindLabel(def->initial), value,
+                                       def->description.empty() ? QString()
+                                                                : QStringLiteral(" · ") + QString::fromStdString(def->description)));
+            } else {
+                info->setText(QStringLiteral("변수·스위치 목록에 없는 이름입니다 (처음에는 값이 없음)."));
+            }
+        };
+        connect(variable_, &QComboBox::currentTextChanged, this, describe);
+        describe(variable_->currentText());
+        form->addRow(label, variable_);
+        form->addRow(QString(), info);
+    };
+    // 목록에서 변수를 고르면 값 칸의 형식을 그 변수에 맞춘다 (스위치면 = 참).
+    auto matchValueToVariable = [this, project] {
+        connect(variable_, &QComboBox::activated, this, [this, project](int index) {
+            const naru::VariableDef* def =
+                project ? project->findVariable(variable_->itemText(index).toStdString()) : nullptr;
+            if (!def || !valueType_) {
+                return;
+            }
+            if (std::holds_alternative<bool>(def->initial)) {
+                valueType_->setCurrentIndex(BoolKind);
+                valueBool_->setCurrentIndex(0);
+                op_->setCurrentIndex(0); // = 대입 / == 같다
+            } else {
+                valueType_->setCurrentIndex(std::holds_alternative<std::string>(def->initial) ? StringKind : NumberKind);
+            }
+        });
+    };
+
     auto addTargetRow = [this, form, scene] {
         target_ = new QComboBox(this);
         target_->addItem(QStringLiteral("이 이벤트의 객체"), QString::fromLatin1(naru::kTargetSelf));
@@ -155,23 +211,23 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         form->addRow(QStringLiteral("시간"), seconds_);
         break;
     case EventCommandType::SetVariable:
-        variable_ = new QLineEdit(QString::fromStdString(command.variable), this);
+        addVariableRow(QStringLiteral("변수 이름"), QString());
         op_ = new QComboBox(this);
         op_->addItems({QStringLiteral("= 대입"), QStringLiteral("+= 더하기"), QStringLiteral("-= 빼기")});
         op_->setCurrentIndex(static_cast<int>(command.op));
-        form->addRow(QStringLiteral("변수 이름"), variable_);
         form->addRow(QStringLiteral("연산"), op_);
         addValueRow(QStringLiteral("값"));
+        matchValueToVariable();
         break;
     case EventCommandType::IfVariable:
-        variable_ = new QLineEdit(QString::fromStdString(command.variable), this);
+        addVariableRow(QStringLiteral("변수 이름"), QString());
         op_ = new QComboBox(this);
         op_->addItems({QStringLiteral("== 같다"), QStringLiteral("!= 다르다"), QStringLiteral("< 작다"),
                        QStringLiteral("<= 작거나 같다"), QStringLiteral("> 크다"), QStringLiteral(">= 크거나 같다")});
         op_->setCurrentIndex(static_cast<int>(command.compare));
-        form->addRow(QStringLiteral("변수 이름"), variable_);
         form->addRow(QStringLiteral("비교"), op_);
         addValueRow(QStringLiteral("값"));
+        matchValueToVariable();
         form->addRow(new QLabel(QStringLiteral("값이 없는 변수는 숫자와 비교할 때 0으로 봅니다."), this));
         break;
     case EventCommandType::Log:
@@ -187,9 +243,7 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         function_ = new QLineEdit(QString::fromStdString(command.function.empty() ? "run" : command.function), this);
         form->addRow(QStringLiteral("스크립트 (scripts/)"), script_);
         form->addRow(QStringLiteral("함수"), function_);
-        variable_ = new QLineEdit(QString::fromStdString(command.variable), this);
-        variable_->setPlaceholderText(QStringLiteral("비워 두면 반환값을 쓰지 않음"));
-        form->addRow(QStringLiteral("반환값 → 변수"), variable_);
+        addVariableRow(QStringLiteral("반환값 → 변수"), QStringLiteral("비워 두면 반환값을 쓰지 않음"));
         form->addRow(new QLabel(QStringLiteral("함수는 def 함수이름(ctx): 형태여야 합니다.\n"
                                                "return 값(None·bool·int·float·str)을 변수에 넣어 조건 분기에서 쓸 수 있습니다.\n"
                                                "전역 스크립트로 등록한 파일이면 게임 중 실행 중인 그 모듈의 함수가 불립니다."),
@@ -355,11 +409,10 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
         }
         fillDependent(command.record, command.field.empty() ? std::string("name") : command.field);
         connect(dataType_, &QComboBox::currentIndexChanged, this, [fillDependent] { fillDependent({}, "name"); });
-        variable_ = new QLineEdit(QString::fromStdString(command.variable), this);
         form->addRow(QStringLiteral("데이터 종류"), dataType_);
         form->addRow(QStringLiteral("항목"), record_);
         form->addRow(QStringLiteral("속성"), field_);
-        form->addRow(QStringLiteral("넣을 변수"), variable_);
+        addVariableRow(QStringLiteral("넣을 변수"), QString());
         form->addRow(new QLabel(QStringLiteral("예: 몬스터 slime의 hp를 변수 enemy_hp에 넣기"), this));
         break;
     }
@@ -411,7 +464,7 @@ void CommandDialog::accept() {
         break;
     case EventCommandType::SetVariable:
     case EventCommandType::IfVariable: {
-        QString name = variable_->text().trimmed();
+        QString name = variable_->currentText().trimmed();
         if (name.isEmpty()) {
             QMessageBox::warning(this, windowTitle(), QStringLiteral("변수 이름을 입력하세요."));
             return;
@@ -439,7 +492,7 @@ void CommandDialog::accept() {
         }
         c.script = script.toStdString();
         c.function = function_->text().trimmed().isEmpty() ? "run" : function_->text().trimmed().toStdString();
-        c.variable = variable_->text().trimmed().toStdString();
+        c.variable = variable_->currentText().trimmed().toStdString();
         break;
     }
     case EventCommandType::GetData: {
@@ -450,7 +503,7 @@ void CommandDialog::accept() {
         c.dataType = keyOf(dataType_).toStdString();
         c.record = keyOf(record_).toStdString();
         c.field = keyOf(field_).toStdString();
-        c.variable = variable_->text().trimmed().toStdString();
+        c.variable = variable_->currentText().trimmed().toStdString();
         if (c.dataType.empty() || c.record.empty() || c.field.empty() || c.variable.empty()) {
             QMessageBox::warning(this, windowTitle(), QStringLiteral("데이터 종류·항목·속성·변수를 모두 정하세요."));
             return;

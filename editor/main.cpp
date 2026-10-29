@@ -4,6 +4,7 @@
 #include "MainWindow.h"
 #include "ProjectDocument.h"
 #include "StartDialog.h"
+#include "VariablesDialog.h"
 
 #include "naru/python/PythonRuntime.h"
 
@@ -77,11 +78,13 @@ int main(int argc, char* argv[]) {
                                            QStringLiteral("프로젝트의 전역 스크립트 창을 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption fieldDialogOption(QStringLiteral("field-dialog"),
                                          QStringLiteral("속성 정의 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
+    QCommandLineOption variablesDialogOption(QStringLiteral("variables-dialog"),
+                                             QStringLiteral("변수·스위치 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption lastOption(QStringLiteral("last"),
                                   QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
     parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, runEventOption,
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
-                       globalScriptsOption, lastOption});
+                       globalScriptsOption, variablesDialogOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
 
@@ -158,6 +161,10 @@ int main(int argc, char* argv[]) {
         }
         naru::Project project;
         project.database = db;
+        project.variables = {{"visits", std::int64_t{0}, "마을에 온 횟수"},
+                             {"enemy_hp", std::int64_t{0}, "싸우는 적의 체력"},
+                             {"combo", std::int64_t{0}, ""},
+                             {"gate_open", false, "성문이 열렸는가"}};
         scene.id = "scene_001";
         scene.name = "마을";
         project.scenes.push_back(scene);
@@ -167,6 +174,13 @@ int main(int argc, char* argv[]) {
         project.scenes.push_back(inside);
         CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &project,
                              &project.scenes[0]);
+        return captureDialog(dialog);
+    }
+    if (parser.isSet(variablesDialogOption)) {
+        VariablesDialog dialog({{"box_opened", std::int64_t{0}, "상자를 연 횟수 (상자 이벤트에서 1씩 더함)"},
+                                {"gold", std::int64_t{100}, "가진 돈"},
+                                {"hero_name", std::string("아리"), "주인공 이름"},
+                                {"inn_door_open", false, "여관 문이 열렸는가"}});
         return captureDialog(dialog);
     }
     if (parser.isSet(fieldDialogOption)) {

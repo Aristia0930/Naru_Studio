@@ -632,6 +632,7 @@ ProjectLoadResult ProjectIO::create(const fs::path& dir, const std::string& name
     addObject("주인공", 320, 400, "#e0a040");
     project.scenes.front().playerObjectId = project.scenes.front().objects.back().id;
     project.globalScripts = {"game.py"};
+    project.variables.push_back({"box_opened", std::int64_t{0}, "상자를 연 횟수 (상자 이벤트에서 1씩 더함)"});
     addObject("상자", 640, 400, "#8a6a40");
 
     // 이벤트 편집기 사용 예: 대사 → 변수 더하기 → 조건 분기
@@ -717,6 +718,27 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
                 result.errors.push_back({kProjectFile, "전역 스크립트가 중복 등록되었습니다: " + script});
             } else {
                 project.globalScripts.push_back(script);
+            }
+        }
+        for (const auto& vj : getArray(root, "variables")) {
+            if (!vj.is_object()) {
+                throw std::runtime_error("'variables'에는 변수 정의 객체만 넣을 수 있습니다");
+            }
+            VariableDef def;
+            def.name = getString(vj, "name", std::string());
+            def.description = getString(vj, "description", std::string());
+            auto value = vj.find("value");
+            if (value != vj.end()) {
+                def.initial = valueFromJson(*value);
+            }
+            if (def.name.empty() || def.name.size() > 64) {
+                result.errors.push_back({kProjectFile, "변수 이름이 비어 있거나 너무 깁니다 (64자까지)"});
+            } else if (project.findVariable(def.name)) {
+                result.errors.push_back({kProjectFile, "변수 이름이 중복됩니다: " + def.name});
+            } else if (std::holds_alternative<std::monostate>(def.initial)) {
+                result.errors.push_back({kProjectFile, "변수 '" + def.name + "'의 처음 값이 없습니다 (정수·소수·글자·참거짓)"});
+            } else {
+                project.variables.push_back(std::move(def));
             }
         }
         std::set<std::string> objectIds;
@@ -851,6 +873,15 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
                  {"scenes", sceneIds},
                  {"dataTypes", dataKeys},
                  {"globalScripts", project.globalScripts}};
+    json variables = json::array();
+    for (const auto& v : project.variables) {
+        json vj = {{"name", v.name}, {"value", valueToJson(v.initial)}};
+        if (!v.description.empty()) {
+            vj["description"] = v.description;
+        }
+        variables.push_back(vj);
+    }
+    root["variables"] = variables;
     std::string error;
     if (!writeJson(dir / kProjectFile, root, error)) {
         errors.push_back({kProjectFile, error});

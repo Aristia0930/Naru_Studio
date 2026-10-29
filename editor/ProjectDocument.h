@@ -36,6 +36,7 @@ public:
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
     void setDatabase(const naru::Database& database);
     void setGlobalScripts(const std::vector<std::string>& scripts);
+    void setVariables(const std::vector<naru::VariableDef>& variables);
 
     // scripts/ 안의 .py 파일 이름 (이름순).
     QStringList scriptFiles() const;
@@ -43,6 +44,7 @@ public:
 
 signals:
     void globalScriptsChanged();
+    void variablesChanged();
     void databaseChanged();
     void scenesChanged();
     void sceneChanged(const QString& sceneId);

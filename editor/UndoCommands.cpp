@@ -129,6 +129,14 @@ bool SetObjectCommand::mergeWith(const QUndoCommand* other) {
     return true;
 }
 
+SetVariablesCommand::SetVariablesCommand(ProjectDocument* doc, std::vector<naru::VariableDef> after)
+    : doc_(doc), before_(doc->project().variables), after_(std::move(after)) {
+    setText(QStringLiteral("변수·스위치 변경"));
+}
+
+void SetVariablesCommand::redo() { doc_->setVariables(after_); }
+void SetVariablesCommand::undo() { doc_->setVariables(before_); }
+
 SetGlobalScriptsCommand::SetGlobalScriptsCommand(ProjectDocument* doc, std::vector<std::string> after)
     : doc_(doc), before_(doc->project().globalScripts), after_(std::move(after)) {
     setText(QStringLiteral("전역 스크립트 변경"));

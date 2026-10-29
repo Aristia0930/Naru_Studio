@@ -44,7 +44,7 @@ private:
     QPlainTextEdit* text_ = nullptr;
     QLineEdit* line_ = nullptr;
     QDoubleSpinBox* seconds_ = nullptr;
-    QLineEdit* variable_ = nullptr;
+    QComboBox* variable_ = nullptr; // 편집 가능: 정의한 변수 목록 + 직접 입력
     QComboBox* op_ = nullptr;
     QComboBox* valueType_ = nullptr;
     QLineEdit* valueEdit_ = nullptr;

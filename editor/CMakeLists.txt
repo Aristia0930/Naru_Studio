@@ -17,6 +17,8 @@ qt_add_executable(naru_editor
   GlobalScriptsDialog.h
   ValueEditor.cpp
   ValueEditor.h
+  VariablesDialog.cpp
+  VariablesDialog.h
   EventEditor.cpp
   EventEditor.h
   Inspector.cpp
