@@ -143,6 +143,23 @@ void MainWindow::createDocks() {
             openEventTab();
         }
     });
+    // 오른쪽 클릭: 장면을 시작 장면으로 지정
+    tree_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(tree_, &QWidget::customContextMenuRequested, this, [this](const QPoint& pos) {
+        QTreeWidgetItem* item = tree_->itemAt(pos);
+        if (!item || item->data(0, kKindRole).toInt() != SceneItem) {
+            return;
+        }
+        tree_->setCurrentItem(item);
+        bool isStart = item->data(0, kSceneRole).toString().toStdString() == doc_->project().startSceneId;
+        QMenu menu(this);
+        QAction* start = menu.addAction(isStart ? QStringLiteral("시작 장면 (지금 지정됨)")
+                                                : QStringLiteral("시작 장면으로 지정"));
+        start->setEnabled(!isStart);
+        if (menu.exec(tree_->viewport()->mapToGlobal(pos)) == start) {
+            setStartScene();
+        }
+    });
     auto* treeDock = new QDockWidget(QStringLiteral("장면"), this);
     treeDock->setObjectName(QStringLiteral("sceneTreeDock"));
     treeDock->setWidget(tree_);
