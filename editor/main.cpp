@@ -4,6 +4,7 @@
 #include "MainWindow.h"
 #include "ProjectDocument.h"
 #include "StartDialog.h"
+#include "EventConditionsDialog.h"
 #include "VariablesDialog.h"
 
 #include "naru/python/PythonRuntime.h"
@@ -80,11 +81,13 @@ int main(int argc, char* argv[]) {
                                          QStringLiteral("속성 정의 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption variablesDialogOption(QStringLiteral("variables-dialog"),
                                              QStringLiteral("변수·스위치 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
+    QCommandLineOption conditionsDialogOption(QStringLiteral("conditions-dialog"),
+                                              QStringLiteral("이벤트 실행 조건 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption lastOption(QStringLiteral("last"),
                                   QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
     parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, runEventOption,
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
-                       globalScriptsOption, variablesDialogOption, lastOption});
+                       globalScriptsOption, variablesDialogOption, conditionsDialogOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
 
@@ -181,6 +184,14 @@ int main(int argc, char* argv[]) {
                                 {"gold", std::int64_t{100}, "가진 돈"},
                                 {"hero_name", std::string("아리"), "주인공 이름"},
                                 {"inn_door_open", false, "여관 문이 열렸는가"}});
+        return captureDialog(dialog);
+    }
+    if (parser.isSet(conditionsDialogOption)) {
+        naru::Project project;
+        project.variables = {{"inn_door_open", false, "여관 문이 열렸는가"}, {"gold", std::int64_t{100}, "가진 돈"}};
+        EventConditionsDialog dialog({{"inn_door_open", naru::CompareOp::Equal, true},
+                                      {"gold", naru::CompareOp::GreaterEqual, std::int64_t{50}}},
+                                     &project);
         return captureDialog(dialog);
     }
     if (parser.isSet(fieldDialogOption)) {

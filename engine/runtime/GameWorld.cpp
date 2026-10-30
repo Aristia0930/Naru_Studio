@@ -33,6 +33,11 @@ bool runsOnContact(const SceneObject& o) {
     return o.visible && !o.event.commands.empty() &&
            (o.event.trigger == EventTrigger::Touch || o.event.trigger == EventTrigger::EventTouch);
 }
+
+bool runsAutomatically(const SceneObject& o) {
+    return !o.event.commands.empty() &&
+           (o.event.trigger == EventTrigger::Autorun || o.event.trigger == EventTrigger::Parallel);
+}
 } // namespace
 
 const char* toKey(Facing facing) {
@@ -110,6 +115,7 @@ bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
     message_.reset();
     contacts_.clear();
     tickContacts_.clear();
+    autoStarted_.clear();
     objectBumps_.clear();
     tickObjectBumps_.clear();
     playerMovedThisTick_ = false;
@@ -127,19 +133,37 @@ bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
             logger_.warning("플레이어 객체가 없는 장면이라 도착 위치를 쓰지 않습니다: " + scene_->name);
         }
     }
+    callHook(kHookSceneEnter);
+    startAutoEvents();
+    return true;
+}
 
+bool GameWorld::conditionsMet(const SceneObject& object) const {
+    return naru::conditionsMet(object.event.conditions, variables_);
+}
+
+void GameWorld::startAutoEvents() {
+    if (!scene_) {
+        return;
+    }
     for (const SceneObject& object : scene_->objects) {
-        if (object.event.commands.empty()) {
+        if (!runsAutomatically(object) || (!object.event.repeat && autoStarted_.count(object.id)) ||
+            !conditionsMet(object)) {
             continue;
         }
         if (object.event.trigger == EventTrigger::Autorun) {
-            blockingQueue_.push_back(object.id);
-        } else if (object.event.trigger == EventTrigger::Parallel) {
+            if (!queueBlocking(object)) {
+                continue; // 아직 실행 중이거나 기다리는 중
+            }
+        } else {
+            if (std::any_of(parallel_.begin(), parallel_.end(),
+                            [&object](const auto& e) { return e->objectId == object.id; })) {
+                continue;
+            }
             parallel_.push_back(makeEvent(object));
         }
+        autoStarted_.insert(object.id);
     }
-    callHook(kHookSceneEnter);
-    return true;
 }
 
 void GameWorld::update(double realSeconds, const InputState& input) {
@@ -164,6 +188,8 @@ void GameWorld::update(double realSeconds, const InputState& input) {
         ++ran;
 
         callHook(kHookUpdate);
+        // 끝난 반복 이벤트는 다음 틱에 다시 시작한다 (같은 틱 안에서 끝없이 돌지 않게).
+        startAutoEvents();
         runBlocking(fixedStep_);
         if (!busy() && defaultControl_) {
             controlPlayer(actionPressed, fixedStep_);
@@ -471,7 +497,7 @@ void GameWorld::finishContacts() {
         for (const std::string& id : tickObjectBumps_) {
             const SceneObject* o = scene_->findObject(id);
             if (o && o->visible && !objectBumps_.count(id) && o->event.trigger == EventTrigger::EventTouch &&
-                !o->event.commands.empty()) {
+                !o->event.commands.empty() && conditionsMet(*o)) {
                 queueBlocking(*o);
             }
         }
@@ -495,7 +521,7 @@ void GameWorld::finishContacts() {
     }
     if (!busy()) {
         for (const SceneObject& o : scene_->objects) {
-            if (tickContacts_.count(o.id) && !contacts_.count(o.id) && runsOnContact(o)) {
+            if (tickContacts_.count(o.id) && !contacts_.count(o.id) && runsOnContact(o) && conditionsMet(o)) {
                 queueBlocking(o);
             }
         }
@@ -521,7 +547,8 @@ bool GameWorld::interact() {
     const SceneObject* best = nullptr;
     double bestArea = 0.0;
     for (const SceneObject& o : scene_->objects) {
-        if (o.id == player->id || !o.visible || o.event.trigger != EventTrigger::Action || o.event.commands.empty()) {
+        if (o.id == player->id || !o.visible || o.event.trigger != EventTrigger::Action || o.event.commands.empty() ||
+            !conditionsMet(o)) {
             continue;
         }
         double area = overlapArea(probe, rectOf(o));
@@ -540,13 +567,14 @@ bool GameWorld::interact() {
     return true;
 }
 
-void GameWorld::queueBlocking(const SceneObject& object) {
+bool GameWorld::queueBlocking(const SceneObject& object) {
     // 같은 객체 이벤트가 이미 실행 중이거나 기다리고 있으면 또 넣지 않는다.
     if ((blocking_ && blocking_->objectId == object.id) ||
         std::find(blockingQueue_.begin(), blockingQueue_.end(), object.id) != blockingQueue_.end()) {
-        return;
+        return false;
     }
     blockingQueue_.push_back(object.id);
+    return true;
 }
 
 void GameWorld::runBlocking(double dt) {

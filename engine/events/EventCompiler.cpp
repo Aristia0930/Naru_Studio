@@ -90,6 +90,11 @@ private:
     Value value_;
 };
 
+// 비교할 변수 값. 아직 없는 변수를 숫자와 비교하면 0으로 본다 (변수 더하기와 같은 규칙).
+Value comparedValue(const Variables& variables, const std::string& name, const Value& operand) {
+    return variables.get(name).value_or(isNumber(operand) ? Value{std::int64_t{0}} : Value{});
+}
+
 // 조건이 거짓이면 elseTarget(아니라면 분기 시작 또는 분기 끝)으로 이동한다.
 class BranchCommand : public Command {
 public:
@@ -100,10 +105,7 @@ public:
 
     CommandStatus start(CommandContext& ctx) override {
         std::string error;
-        // 아직 없는 변수를 숫자와 비교하면 0으로 본다 (변수 더하기와 같은 규칙).
-        Value current = ctx.variables.get(name_).value_or(
-            isNumber(value_) ? Value{std::int64_t{0}} : Value{});
-        bool result = compareValues(current, compare_, value_, error);
+        bool result = compareValues(comparedValue(ctx.variables, name_, value_), compare_, value_, error);
         if (!error.empty()) {
             setError("조건 '" + name_ + "': " + error);
             return CommandStatus::Failed;
@@ -459,6 +461,16 @@ bool compareValues(const Value& left, CompareOp op, const Value& right, std::str
     }
     error = std::string(typeName(left)) + "와(과) " + typeName(right) + "의 크기를 비교할 수 없습니다";
     return false;
+}
+
+bool conditionsMet(const std::vector<EventCondition>& conditions, const Variables& variables) {
+    std::string error;
+    for (const EventCondition& c : conditions) {
+        if (!compareValues(comparedValue(variables, c.variable, c.value), c.compare, c.value, error) || !error.empty()) {
+            return false;
+        }
+    }
+    return true;
 }
 
 std::optional<Value> applyVariableOp(const Value& current, VariableOp op, const Value& operand, std::string& error) {

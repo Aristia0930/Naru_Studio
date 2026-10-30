@@ -55,8 +55,22 @@ inline constexpr const char* kTargetPlayer = "@player";
 // (순서는 저장 키와 무관하지만 편집 화면 목록 순서와 같다)
 enum class EventTrigger { Action, Touch, Autorun, EventTouch, Parallel };
 
+// 이벤트를 실행하려면 맞아야 하는 조건 하나: 공용 변수(스위치) 값 비교. 조건 분기와 같은 규칙으로 비교한다.
+struct EventCondition {
+    std::string variable;
+    CompareOp compare = CompareOp::Equal;
+    Value value = true;
+
+    bool operator==(const EventCondition& other) const = default;
+};
+
 struct ObjectEvent {
     EventTrigger trigger = EventTrigger::Action;
+    // 모두 맞을 때만 실행한다 (비어 있으면 언제나). 조사·접촉은 시작할 때, 자동 실행·병렬 처리는 매 틱 확인한다.
+    std::vector<EventCondition> conditions;
+    // 자동 실행·병렬 처리: 끝나면 조건이 맞는 동안 다시 실행한다. false면 장면에 들어올 때마다 한 번
+    // (조건이 처음 맞을 때). 다른 실행 조건에서는 쓰지 않는다.
+    bool repeat = false;
     std::vector<EventCommand> commands;
 
     bool operator==(const ObjectEvent& other) const;

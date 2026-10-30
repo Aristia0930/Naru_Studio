@@ -1124,6 +1124,25 @@ bool MainWindow::runSelfTest() {
                   logMessages_.contains(QStringLiteral("분기 성공")),
               "테스트 실행: 대사 넘김 후 변수·조건 분기 실행");
 
+        // 실행 조건·반복: 조건이 맞지 않아도 테스트 실행은 경고만 하고 실행한다.
+        check(eventEditor_->setConditions({{"visits", naru::CompareOp::GreaterEqual, std::int64_t{3}}}, true) &&
+                  event().conditions.size() == 1 && event().repeat,
+              "이벤트 실행 조건 지정");
+        doc_->undoStack()->undo();
+        check(event().conditions == original.conditions && event().repeat == original.repeat, "실행 조건 실행 취소");
+        doc_->undoStack()->redo();
+        logMessages_.clear();
+        eventEditor_->startTest();
+        eventEditor_->advanceDialogue();
+        waited.restart();
+        while (eventEditor_->isRunning() && waited.elapsed() < 3000) {
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        }
+        check(std::any_of(logMessages_.begin(), logMessages_.end(),
+                          [](const QString& m) { return m.contains(QStringLiteral("실행 조건이 처음 값으로는 맞지 않습니다")); }) &&
+                  logMessages_.contains(QStringLiteral("분기 성공")),
+              "조건이 맞지 않아도 테스트 실행은 경고 후 실행");
+
         check(saveAll(), "이벤트 저장");
         auto reloadedEvents = ProjectDocument::open(doc_->directory(), &error);
         check(reloadedEvents && reloadedEvents->project() == doc_->project(), "이벤트 재로드 동일");
@@ -1132,6 +1151,7 @@ bool MainWindow::runSelfTest() {
         while (event().commands.size() > original.commands.size()) {
             eventEditor_->removeCommand("", 0);
         }
+        eventEditor_->setConditions(original.conditions, original.repeat);
         saveAll();
     }
 

@@ -728,3 +728,109 @@ TEST_CASE("change scene to a missing scene fails the event and stays") {
     CHECK(world.failedEventCount() == 1);
     CHECK(intVar(world, "after") == -1);
 }
+
+// ---------------------------------------------------------------- 실행 조건·반복
+
+namespace {
+
+EventCondition when(std::string variable, CompareOp compare, Value value) {
+    return {std::move(variable), compare, std::move(value)};
+}
+
+} // namespace
+
+TEST_CASE("조건이 맞지 않는 조사·접촉 이벤트는 실행되지 않고, 조사는 다음 객체를 찾는다") {
+    SceneObject locked = box("locked", 0, 32, 32, 32); // 플레이어 바로 아래
+    locked.event.commands = {add("locked", 1)};
+    locked.event.conditions = {when("door_open", CompareOp::Equal, true)};
+    SceneObject floor = box("floor", 0, 0, 32, 32); // 밟고 있는 통과 가능한 객체
+    floor.passable = true;
+    floor.event.commands = {add("floor", 1)};
+    SceneObject trap = box("trap", 100, 0, 20, 32);
+    trap.event.trigger = EventTrigger::Touch;
+    trap.event.conditions = {when("armed", CompareOp::Equal, true)};
+    trap.event.commands = {add("trap", 1)};
+    GameWorld world(playerProject({locked, floor, trap}), noScripts());
+    world.enterScene("scene_001");
+    step(world, confirm());
+    CHECK(intVar(world, "locked") == -1);
+    CHECK(intVar(world, "floor") == 1); // 조건이 맞지 않는 앞 객체 대신 밟고 있는 객체
+    world.variables().set("door_open", true);
+    step(world, confirm());
+    CHECK(intVar(world, "locked") == 1);
+
+    hold(world, InputAction::Right, 30); // 함정에 부딪힘 (조건 안 맞음)
+    CHECK(intVar(world, "trap") == -1);
+}
+
+TEST_CASE("반복하지 않는 자동 실행은 조건이 처음 맞을 때 한 번 실행된다") {
+    SceneObject boss = box("boss", 300, 200, 10, 10);
+    boss.event.trigger = EventTrigger::Autorun;
+    boss.event.conditions = {when("boss_ready", CompareOp::Equal, true)};
+    boss.event.commands = {add("cutscene", 1)};
+    GameWorld world(playerProject({boss}), noScripts());
+    world.enterScene("scene_001");
+    for (int i = 0; i < 5; ++i) {
+        step(world);
+    }
+    CHECK(intVar(world, "cutscene") == -1);
+    world.variables().set("boss_ready", true); // 다른 이벤트·스크립트가 스위치를 켠 것처럼
+    for (int i = 0; i < 5; ++i) {
+        step(world);
+    }
+    CHECK(intVar(world, "cutscene") == 1);
+    world.enterScene("scene_001"); // 장면에 다시 들어오면 다시 한 번
+    step(world);
+    CHECK(intVar(world, "cutscene") == 2);
+}
+
+TEST_CASE("반복하는 자동 실행은 조건이 맞는 동안 한 틱에 한 번씩 다시 실행되고, 끝나면 조작이 돌아온다") {
+    SceneObject counter = box("counter", 300, 200, 10, 10);
+    counter.event.trigger = EventTrigger::Autorun;
+    counter.event.repeat = true;
+    counter.event.conditions = {when("n", CompareOp::Less, std::int64_t{5})}; // 아직 없는 n은 0으로 본다
+    counter.event.commands = {add("n", 1)};
+    GameWorld world(playerProject({counter}), noScripts());
+    world.enterScene("scene_001");
+    for (int i = 0; i < 3; ++i) {
+        step(world);
+    }
+    CHECK(intVar(world, "n") == 3);
+    hold(world, InputAction::Right, 10);
+    CHECK(intVar(world, "n") == 5);
+    CHECK(!world.busy());
+    CHECK(world.player()->x > 0.0);
+}
+
+TEST_CASE("병렬 처리는 반복을 켜면 끝날 때마다 다시 실행되고, 끄면 한 번만 실행된다") {
+    SceneObject blink = box("blink", 300, 200, 10, 10);
+    blink.event.trigger = EventTrigger::Parallel;
+    blink.event.repeat = true;
+    blink.event.commands = {add("blink", 1), wait(0.1)};
+    SceneObject once = box("once", 300, 100, 10, 10);
+    once.event.trigger = EventTrigger::Parallel;
+    once.event.commands = {add("once", 1)};
+    SceneObject gated = box("gated", 300, 0, 10, 10);
+    gated.event.trigger = EventTrigger::Parallel;
+    gated.event.repeat = true;
+    gated.event.conditions = {when("rain", CompareOp::Equal, true)};
+    gated.event.commands = {add("drop", 1)};
+    GameWorld world(playerProject({blink, once, gated}), noScripts());
+    world.enterScene("scene_001");
+    hold(world, InputAction::Right, 60); // 1초: 병렬 처리는 조작을 막지 않는다
+    CHECK(world.player()->x > 100.0);
+    CHECK(intVar(world, "blink") >= 7);
+    CHECK(intVar(world, "blink") <= 11);
+    CHECK(intVar(world, "once") == 1);
+    CHECK(intVar(world, "drop") == -1);
+    world.variables().set("rain", true);
+    for (int i = 0; i < 4; ++i) {
+        step(world);
+    }
+    CHECK(intVar(world, "drop") == 4);
+    world.variables().set("rain", false);
+    for (int i = 0; i < 4; ++i) {
+        step(world);
+    }
+    CHECK(intVar(world, "drop") == 4);
+}

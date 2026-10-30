@@ -399,7 +399,19 @@ json objectToJson(const SceneObject& o) {
         j["visible"] = false;
     }
     if (!(o.event == ObjectEvent{})) {
-        j["event"] = {{"trigger", toKey(o.event.trigger)}, {"commands", commandsToJson(o.event.commands)}};
+        json ej = {{"trigger", toKey(o.event.trigger)}};
+        if (!o.event.conditions.empty()) {
+            json conditions = json::array();
+            for (const EventCondition& c : o.event.conditions) {
+                conditions.push_back({{"variable", c.variable}, {"compare", toKey(c.compare)}, {"value", valueToJson(c.value)}});
+            }
+            ej["conditions"] = conditions;
+        }
+        if (o.event.repeat) {
+            ej["repeat"] = true;
+        }
+        ej["commands"] = commandsToJson(o.event.commands);
+        j["event"] = ej;
     }
     return j;
 }
@@ -450,6 +462,30 @@ Scene sceneFromJson(const json& j) {
                 throw std::runtime_error("알 수 없는 이벤트 실행 조건: " + triggerKey);
             }
             o.event.trigger = *trigger;
+            for (const auto& cj : getArray(ej, "conditions")) {
+                requireObject(cj, "이벤트 실행 조건");
+                EventCondition c;
+                c.variable = requireString(cj, "variable");
+                if (c.variable.empty()) {
+                    throw std::runtime_error("이벤트 실행 조건의 변수 이름이 비어 있습니다");
+                }
+                std::string compareKey = getString(cj, "compare", std::string("=="));
+                auto compare = compareOpFromKey(compareKey);
+                if (!compare) {
+                    throw std::runtime_error("이벤트 실행 조건의 알 수 없는 비교: " + compareKey);
+                }
+                c.compare = *compare;
+                auto value = cj.find("value");
+                if (value == cj.end()) {
+                    throw std::runtime_error("이벤트 실행 조건에 비교할 값이 없습니다: " + c.variable);
+                }
+                c.value = valueFromJson(*value);
+                if (std::holds_alternative<std::monostate>(c.value)) {
+                    throw std::runtime_error("이벤트 실행 조건의 값이 비어 있습니다: " + c.variable);
+                }
+                o.event.conditions.push_back(std::move(c));
+            }
+            o.event.repeat = getBool(ej, "repeat", false);
             o.event.commands = commandsFromJson(getArray(ej, "commands"), 0);
         }
         s.objects.push_back(std::move(o));

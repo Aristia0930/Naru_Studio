@@ -1,6 +1,7 @@
 #include "EventEditor.h"
 
 #include "CommandDialog.h"
+#include "EventConditionsDialog.h"
 #include "ProjectDocument.h"
 #include "UndoCommands.h"
 
@@ -8,6 +9,7 @@
 #include "naru/python/PythonRuntime.h"
 #include "naru/runtime/Session.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QCursor>
 #include <QDir>
@@ -149,10 +151,26 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
     : QWidget(parent), doc_(doc), python_(python) {
     title_ = new QLabel(this);
     trigger_ = new QComboBox(this);
-    trigger_->addItems({QStringLiteral("조사 (결정 키·클릭)"), QStringLiteral("플레이어 접촉"), QStringLiteral("자동 실행 (장면 시작)"),
-                        QStringLiteral("이벤트 접촉 (이 객체가 플레이어에게 닿을 때)"), QStringLiteral("병렬 처리 (다른 행동과 동시에 반복)")});
-    trigger_->setToolTip(QStringLiteral("이벤트가 시작되는 조건입니다. 저장되며, 게임 실행 화면이 만들어지면 적용됩니다.\n"
-                                        "지금은 아래 '테스트 실행'으로 바로 실행해 볼 수 있습니다."));
+    trigger_->addItems({QStringLiteral("조사 (결정 키·클릭)"), QStringLiteral("플레이어 접촉"),
+                        QStringLiteral("자동 실행 (장면 시작, 조작을 막음)"),
+                        QStringLiteral("이벤트 접촉 (이 객체가 플레이어에게 닿을 때)"),
+                        QStringLiteral("병렬 처리 (다른 행동과 동시에)")});
+    trigger_->setToolTip(QStringLiteral("이벤트가 언제 시작되는지 정합니다.\n"
+                                        "아래 '조건'이 있으면 그 조건도 맞아야 시작합니다."));
+
+    conditions_ = new QLabel(this);
+    conditions_->setWordWrap(true);
+    auto* conditionsButton = new QPushButton(QStringLiteral("조건..."), this);
+    conditionsButton->setToolTip(QStringLiteral("스위치·변수 값이 맞을 때만 이 이벤트를 실행하게 합니다 (RPG Maker의 페이지 조건)."));
+    repeat_ = new QCheckBox(QStringLiteral("끝나면 다시 실행 (조건이 맞는 동안 반복)"), this);
+    repeat_->setToolTip(QStringLiteral("자동 실행·병렬 처리에서만 씁니다.\n"
+                                       "끄면 장면에 들어온 뒤 조건이 처음 맞을 때 한 번만 실행합니다."));
+    repeatWarning_ = new QLabel(QStringLiteral("⚠ 조건 없이 반복하는 자동 실행은 끝없이 다시 실행되어 플레이어가 움직일 수 없습니다. "
+                                               "이벤트 안에서 끄는 스위치를 조건으로 넣으세요."),
+                                this);
+    repeatWarning_->setWordWrap(true);
+    repeatWarning_->setStyleSheet(QStringLiteral("color: #b00020;"));
+    repeatWarning_->hide();
 
     tree_ = new QTreeWidget(this);
     tree_->setHeaderHidden(true);
@@ -189,6 +207,12 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
     header->addWidget(new QLabel(QStringLiteral("실행 조건"), this));
     header->addWidget(trigger_);
 
+    auto* conditionRow = new QHBoxLayout;
+    conditionRow->addWidget(new QLabel(QStringLiteral("조건:"), this));
+    conditionRow->addWidget(conditions_, 1);
+    conditionRow->addWidget(conditionsButton);
+    conditionRow->addWidget(repeat_);
+
     auto* buttons = new QHBoxLayout;
     for (QPushButton* b : {addButton, editButton, removeButton, upButton, downButton}) {
         buttons->addWidget(b);
@@ -199,6 +223,8 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
 
     auto* layout = new QVBoxLayout(this);
     layout->addLayout(header);
+    layout->addLayout(conditionRow);
+    layout->addWidget(repeatWarning_);
     layout->addWidget(tree_, 1);
     layout->addLayout(buttons);
     layout->addWidget(dialogueBox_);
@@ -224,6 +250,15 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
                 e.trigger = static_cast<naru::EventTrigger>(index);
                 return true;
             });
+        }
+    });
+
+    connect(conditionsButton, &QPushButton::clicked, this, &EventEditor::editConditions);
+    connect(repeat_, &QCheckBox::toggled, this, [this](bool on) {
+        if (!loading_) {
+            if (const naru::SceneObject* object = target()) {
+                setConditions(object->event.conditions, on);
+            }
         }
     });
 
@@ -300,6 +335,13 @@ void EventEditor::rebuild() {
     }
     title_->setText(QStringLiteral("<b>%1</b> <span style='color:gray'>(%2)</span>").arg(q(object->name), q(object->id)));
     trigger_->setCurrentIndex(static_cast<int>(object->event.trigger));
+    conditions_->setText(EventConditionsDialog::summary(object->event.conditions));
+    bool automatic = object->event.trigger == naru::EventTrigger::Autorun ||
+                     object->event.trigger == naru::EventTrigger::Parallel;
+    repeat_->setEnabled(automatic);
+    repeat_->setChecked(automatic && object->event.repeat);
+    repeatWarning_->setVisible(object->event.trigger == naru::EventTrigger::Autorun && object->event.repeat &&
+                               object->event.conditions.empty());
 
     QTreeWidgetItem* toSelect = nullptr;
     auto remember = [&](QTreeWidgetItem* item, int kind, const std::string& list, int index) {
@@ -388,6 +430,25 @@ void EventEditor::highlightCommand(const std::string& id) {
 }
 
 // ---------------------------------------------------------------- 편집
+
+void EventEditor::editConditions() {
+    const naru::SceneObject* object = target();
+    if (!object) {
+        return;
+    }
+    EventConditionsDialog dialog(object->event.conditions, &doc_->project(), this);
+    if (dialog.exec() == QDialog::Accepted) {
+        setConditions(dialog.conditions(), object->event.repeat);
+    }
+}
+
+bool EventEditor::setConditions(const std::vector<naru::EventCondition>& conditions, bool repeat) {
+    return editEvent([&](naru::ObjectEvent& e) {
+        e.conditions = conditions;
+        e.repeat = repeat;
+        return true;
+    });
+}
 
 bool EventEditor::editEvent(const std::function<bool(naru::ObjectEvent&)>& change) {
     const naru::SceneObject* current = target();
@@ -589,6 +650,10 @@ void EventEditor::startTest() {
         }
     });
     session_->logger().info("이벤트 테스트 시작: " + object->name);
+    if (!naru::conditionsMet(object->event.conditions, session_->variables())) {
+        session_->logger().warning("실행 조건이 처음 값으로는 맞지 않습니다 (게임에서는 지금 실행되지 않음). "
+                                   "테스트는 조건 없이 실행합니다.");
+    }
     runButton_->setEnabled(false);
     stopButton_->setEnabled(true);
     session_->start(naru::compileEvent(object->event.commands, runner));

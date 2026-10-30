@@ -127,6 +127,9 @@ TEST_CASE("저장한 프로젝트를 다시 열면 같은 내용이다") {
     o.visible = false;
     // 모든 명령 종류와 중첩 분기를 저장·불러오기 한다.
     o.event.trigger = EventTrigger::Touch;
+    o.event.conditions = {{"door_open", CompareOp::Equal, true}, {"gold", CompareOp::GreaterEqual, std::int64_t{10}},
+                          {"hero_name", CompareOp::NotEqual, std::string("아리")}};
+    o.event.repeat = true;
     EventCommand sayCmd;
     sayCmd.type = EventCommandType::Say;
     sayCmd.speaker = "문지기";
@@ -355,6 +358,16 @@ TEST_CASE("알 수 없는 이벤트 명령과 과도한 중첩을 거부한다")
                   R"({"formatVersion": 1, "id": "scene_001", "objects": [{"id": "a", "event": {"commands": [)" +
                       nested + "]}}]}");
         CHECK(hasErrorContaining(ProjectIO::load(dir.path), "scenes/scene_001.json", "너무 깊습니다"));
+    }
+    // 잘못된 실행 조건: 빈 변수 이름, 모르는 비교, 값 없음, 빈 값
+    for (const char* condition : {R"({"variable": "", "value": true})", R"({"variable": "a", "compare": "~", "value": 1})",
+                                  R"({"variable": "a"})", R"({"variable": "a", "value": null})"}) {
+        TempDir dir;
+        ProjectIO::create(dir.path, "x");
+        writeText(dir.path / "scenes" / "scene_001.json",
+                  std::string(R"({"formatVersion": 1, "id": "scene_001", "objects": [{"id": "a", "event": {"conditions": [)") +
+                      condition + R"(], "commands": []}}]})");
+        CHECK(hasErrorContaining(ProjectIO::load(dir.path), "scenes/scene_001.json", "조건"));
     }
 }
 

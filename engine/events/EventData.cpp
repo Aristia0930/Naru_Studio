@@ -16,7 +16,7 @@ bool EventCommand::operator==(const EventCommand& o) const {
 }
 
 bool ObjectEvent::operator==(const ObjectEvent& o) const {
-    return trigger == o.trigger && commands == o.commands;
+    return trigger == o.trigger && conditions == o.conditions && repeat == o.repeat && commands == o.commands;
 }
 
 namespace {

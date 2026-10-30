@@ -19,6 +19,8 @@ qt_add_executable(naru_editor
   ValueEditor.h
   VariablesDialog.cpp
   VariablesDialog.h
+  EventConditionsDialog.cpp
+  EventConditionsDialog.h
   EventEditor.cpp
   EventEditor.h
   Inspector.cpp

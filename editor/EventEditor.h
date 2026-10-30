@@ -16,6 +16,7 @@
 #include <vector>
 
 class ProjectDocument;
+class QCheckBox;
 class QComboBox;
 class QFrame;
 class QLabel;
@@ -48,6 +49,8 @@ public:
     bool replaceCommand(const std::string& listPrefix, int index, const naru::EventCommand& command);
     bool removeCommand(const std::string& listPrefix, int index);
     bool moveCommand(const std::string& listPrefix, int index, int delta);
+    // 실행 조건과 반복 여부를 바꾼다 (Undo 가능).
+    bool setConditions(const std::vector<naru::EventCondition>& conditions, bool repeat);
 
     // 테스트 실행
     void startTest();
@@ -62,6 +65,7 @@ public:
 
 private:
     void rebuild();
+    void editConditions();
     void addCommandAt(const std::string& listPrefix, int index);
     void editSelected();
     void addAtSelection();
@@ -84,6 +88,9 @@ private:
 
     QLabel* title_;
     QComboBox* trigger_;
+    QLabel* conditions_;
+    QCheckBox* repeat_;
+    QLabel* repeatWarning_;
     QTreeWidget* tree_;
     QPushButton* runButton_;
     QPushButton* stopButton_;

@@ -38,15 +38,19 @@ std::optional<Facing> facingFromKey(const std::string& key);
 //   - 플레이어 접촉: 플레이어가 막는 객체에 부딪히거나 통과 가능한 객체와 겹칠 때.
 //   - 이벤트 접촉: 위의 경우 + 객체가 움직여(moveObject) 플레이어에게 부딪히거나 겹칠 때.
 //     둘 다 계속 밀거나 겹쳐 있는 동안에는 다시 실행하지 않는다.
-//   - 자동 실행: 장면에 들어올 때 객체 순서대로 하나씩
-//   - 병렬 처리: 장면에 들어올 때 모두 함께, 다른 이벤트를 막지 않음
+//   - 자동 실행: 객체 순서대로 하나씩
+//   - 병렬 처리: 모두 함께, 다른 이벤트를 막지 않음
 // 조사·접촉·자동 실행 이벤트는 실행 중 플레이어 조작을 막으며 한 번에 하나씩 실행된다.
-// 반복 조건(스위치·페이지)은 아직 없어 자동 실행·병렬 처리는 장면 진입 시 한 번 실행된다.
+//
+// 이벤트의 조건(공용 변수·스위치 비교)이 맞지 않으면 그 이벤트는 없는 것처럼 본다 (조사할 때 다음 객체를 찾는다).
+// 자동 실행·병렬 처리는 장면에 들어올 때와 매 틱 시작에 조건을 확인한다:
+//   - 반복 끔: 장면에 들어온 뒤 조건이 처음 맞을 때 한 번 (조건이 없으면 장면 시작 때)
+//   - 반복 켬: 실행 중이 아니고 조건이 맞으면 다시 시작 (끝난 다음 틱부터). 실행 중에 조건이 바뀌어도 끝까지 실행한다.
 //
 // 숨긴 객체(visible=false)는 막지도 막히지도 않고 조사·접촉 이벤트도 실행하지 않는다.
 // 숨긴 플레이어는 아무것과도 닿지 않는다. 자동 실행·병렬 처리는 숨겨도 실행된다.
 //
-// 한 틱의 순서: on_update 훅 → 막는 이벤트 → 기본 조작 → 객체 이동 경로 → 접촉 판정 → 막는 이벤트
+// 한 틱의 순서: on_update 훅 → 자동 실행·병렬 처리 시작 → 막는 이벤트 → 기본 조작 → 객체 이동 경로 → 접촉 판정 → 막는 이벤트
 //   → 병렬 이벤트 → 예약된 장면 이동.
 class GameWorld : public DialogueHost {
 public:
@@ -165,7 +169,10 @@ private:
     void moveAxis(SceneObject& mover, double dx, double dy, std::vector<std::string>& blockers);
     // 이번 틱의 접촉을 정리하고, 새로 닿은 객체의 접촉 이벤트를 시작한다.
     void finishContacts();
-    void queueBlocking(const SceneObject& object);
+    // 넣었으면 true (이미 실행 중이거나 기다리는 중이면 false).
+    bool queueBlocking(const SceneObject& object);
+    bool conditionsMet(const SceneObject& object) const;
+    void startAutoEvents();
     void advanceRoutes(double dt);
 
     Project project_;
@@ -204,6 +211,8 @@ private:
     // 지난 틱에 플레이어와 닿아 있던 객체. 새로 닿은 객체만 접촉 이벤트를 실행한다.
     std::set<std::string> contacts_;
     std::set<std::string> tickContacts_;
+    // 이번 장면에서 이미 시작한 자동 실행·병렬 처리 객체 (반복하지 않는 것은 다시 시작하지 않는다).
+    std::set<std::string> autoStarted_;
     // 움직여서 플레이어에 부딪힌 객체 (지난 틱 / 이번 틱). 이벤트 접촉 판정용.
     std::set<std::string> objectBumps_;
     std::set<std::string> tickObjectBumps_;
