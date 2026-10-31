@@ -1,9 +1,11 @@
 #pragma once
 
 #include <cstddef>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace naru {
 
@@ -17,12 +19,49 @@ enum class CommandStatus { Pending, Running, Waiting, Completed, Failed, Cancell
 const char* toString(CommandStatus status);
 
 // 대사 창을 보여 주는 쪽 (에디터 미리보기, 이후 게임 화면). 플레이어가 넘길 때까지 대사 명령이 기다린다.
+struct ChoiceRequest {
+    std::string speaker, text;
+    std::vector<std::string> options;
+    int defaultChoice = 0;
+    int cancelChoice = -1;
+    std::optional<std::size_t> selected;
+    bool cancelled = false;
+};
+
 class DialogueHost {
 public:
     virtual ~DialogueHost() = default;
     virtual void showMessage(const std::string& speaker, const std::string& text) = 0;
     virtual bool messageClosed() const = 0;
     virtual void closeMessage() = 0;
+    // 요청은 실행 명령별로 소유한다. 다른 병렬 이벤트의 선택 결과를 가져가지 않는다.
+    virtual bool showChoices(const std::shared_ptr<ChoiceRequest>& request) {
+        if (!messageClosed()) return false;
+        choices_ = request;
+        showMessage(request->speaker, request->text);
+        return true;
+    }
+    const std::shared_ptr<ChoiceRequest>& choices() const { return choices_; }
+    bool selectChoice(std::size_t index) {
+        if (!choices_ || index >= choices_->options.size()) return false;
+        choices_->selected = index;
+        choices_.reset();
+        closeMessage();
+        return true;
+    }
+    void closeChoices(const std::shared_ptr<ChoiceRequest>& request) {
+        if (choices_ == request) {
+            clearChoices();
+            closeMessage();
+        }
+    }
+protected:
+    void clearChoices() {
+        if (choices_) choices_->cancelled = true;
+        choices_.reset();
+    }
+private:
+    std::shared_ptr<ChoiceRequest> choices_;
 };
 
 // 명령이 실행 중 접근할 수 있는 세션 상태. 편집 문서가 아니라 실행용 복사본을 가리킨다.

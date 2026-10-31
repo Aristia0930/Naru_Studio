@@ -12,7 +12,8 @@ bool EventCommand::operator==(const EventCommand& o) const {
            field == o.field && target == o.target && direction == o.direction && distance == o.distance &&
            speed == o.speed && waitForEnd == o.waitForEnd && show == o.show && scene == o.scene &&
            setPosition == o.setPosition && x == o.x && y == o.y && thenCommands == o.thenCommands &&
-           elseCommands == o.elseCommands;
+           elseCommands == o.elseCommands && choices == o.choices && defaultChoice == o.defaultChoice &&
+           cancelChoice == o.cancelChoice;
 }
 
 bool ObjectEvent::operator==(const ObjectEvent& o) const {
@@ -41,7 +42,8 @@ const char* nameOf(const std::array<std::pair<E, const char*>, N>& table, E valu
     return "";
 }
 
-constexpr std::array<std::pair<EventCommandType, const char*>, 11> kTypes{{
+constexpr std::array<std::pair<EventCommandType, const char*>, 12> kTypes{{
+    {EventCommandType::ShowChoices, "show_choices"},
     {EventCommandType::ChangeScene, "change_scene"},
     {EventCommandType::MoveObject, "move_object"},
     {EventCommandType::SetVisible, "set_visible"},
@@ -95,5 +97,6 @@ std::string commandId(const std::string& listPrefix, std::size_t index) {
 
 std::string thenPrefix(const std::string& id) { return id + "/t"; }
 std::string elsePrefix(const std::string& id) { return id + "/e"; }
+std::string choicePrefix(const std::string& id, std::size_t index) { return id + "/c" + std::to_string(index); }
 
 } // namespace naru

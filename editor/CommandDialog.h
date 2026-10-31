@@ -11,6 +11,7 @@ class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
 class QLineEdit;
+class QListWidget;
 class QPlainTextEdit;
 class QStackedWidget;
 
@@ -41,6 +42,9 @@ private:
     naru::EventCommand command_;
 
     QLineEdit* speaker_ = nullptr;
+    QListWidget* choices_ = nullptr;
+    QComboBox* defaultChoice_ = nullptr;
+    QComboBox* cancelChoice_ = nullptr;
     QPlainTextEdit* text_ = nullptr;
     QLineEdit* line_ = nullptr;
     QDoubleSpinBox* seconds_ = nullptr;

@@ -18,6 +18,8 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QListWidget>
+#include <QShortcut>
 #include <QMenu>
 #include <QPushButton>
 #include <QTreeWidget>
@@ -25,6 +27,7 @@
 #include <QVBoxLayout>
 
 #include <functional>
+#include <algorithm>
 #include <optional>
 
 using naru::EventCommand;
@@ -58,6 +61,8 @@ QString firstLine(const std::string& text) {
 
 QString describe(const EventCommand& c, const naru::Scene* scene, const naru::Project* project) {
     switch (c.type) {
+    case EventCommandType::ShowChoices:
+        return QStringLiteral("선택지: %1 (%2개)").arg(firstLine(c.text)).arg(c.choices.size());
     case EventCommandType::Say:
         return QStringLiteral("대사: %1%2")
             .arg(c.speaker.empty() ? QString() : QStringLiteral("[%1] ").arg(q(c.speaker)), firstLine(c.text));
@@ -115,12 +120,14 @@ std::vector<EventCommand>* listAt(std::vector<EventCommand>& root, const std::st
             return nullptr;
         }
         EventCommand& c = (*list)[static_cast<std::size_t>(index)];
-        if (c.type != EventCommandType::IfVariable) {
-            return nullptr;
-        }
-        if (parts[i + 1] == QLatin1String("t")) {
+        if (c.type == EventCommandType::ShowChoices && parts[i + 1].startsWith('c')) {
+            bool choiceOk = false;
+            int choice = parts[i + 1].mid(1).toInt(&choiceOk);
+            if (!choiceOk || choice < 0 || choice >= static_cast<int>(c.choices.size())) return nullptr;
+            list = &c.choices[static_cast<std::size_t>(choice)].commands;
+        } else if (c.type == EventCommandType::IfVariable && parts[i + 1] == QLatin1String("t")) {
             list = &c.thenCommands;
-        } else if (parts[i + 1] == QLatin1String("e")) {
+        } else if (c.type == EventCommandType::IfVariable && parts[i + 1] == QLatin1String("e")) {
             list = &c.elseCommands;
         } else {
             return nullptr;
@@ -131,7 +138,7 @@ std::vector<EventCommand>* listAt(std::vector<EventCommand>& root, const std::st
 
 std::optional<EventCommandType> chooseType(QWidget* parent) {
     QMenu menu(parent);
-    for (auto type : {EventCommandType::Say, EventCommandType::Wait, EventCommandType::SetVariable,
+    for (auto type : {EventCommandType::Say, EventCommandType::ShowChoices, EventCommandType::Wait, EventCommandType::SetVariable,
                       EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::MoveObject,
                       EventCommandType::SetVisible, EventCommandType::ChangeScene, EventCommandType::CallScript,
                       EventCommandType::Log,
@@ -195,10 +202,44 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
     dialogueText_->setWordWrap(true);
     dialogueText_->setMinimumHeight(48);
     auto* nextButton = new QPushButton(QStringLiteral("다음 ▶"), dialogueBox_);
+    nextButton_ = nextButton;
     nextButton->setDefault(true);
     auto* dialogueLayout = new QVBoxLayout(dialogueBox_);
     dialogueLayout->addWidget(dialogueSpeaker_);
     dialogueLayout->addWidget(dialogueText_);
+    choicesBox_ = new QWidget(dialogueBox_);
+    auto* choicesLayout = new QVBoxLayout(choicesBox_);
+    choicesLayout->setContentsMargins(0, 0, 0, 0);
+    choiceList_ = new QListWidget(choicesBox_);
+    choiceList_->setObjectName(QStringLiteral("previewChoices"));
+    choiceList_->setStyleSheet(QStringLiteral("QListWidget { background: #1e2430; color: white; } QListWidget::item:selected { background: #425d88; }"));
+    choiceList_->setMaximumHeight(180);
+    auto* selectButton = new QPushButton(QStringLiteral("선택"), choicesBox_);
+    selectButton->setObjectName(QStringLiteral("previewChoose"));
+    cancelChoiceButton_ = new QPushButton(QStringLiteral("취소"), choicesBox_);
+    cancelChoiceButton_->setObjectName(QStringLiteral("previewCancelChoice"));
+    choicesLayout->addWidget(choiceList_);
+    auto* choiceButtons = new QHBoxLayout;
+    choiceButtons->addStretch();
+    choiceButtons->addWidget(cancelChoiceButton_);
+    choiceButtons->addWidget(selectButton);
+    choicesLayout->addLayout(choiceButtons);
+    dialogueLayout->addWidget(choicesBox_);
+    choicesBox_->hide();
+    auto choose = [this] {
+        if (choiceList_->currentRow() >= 0) selectChoice(static_cast<std::size_t>(choiceList_->currentRow()));
+    };
+    connect(selectButton, &QPushButton::clicked, this, choose);
+    connect(choiceList_, &QListWidget::itemActivated, this, [choose] { choose(); });
+    auto cancelChoice = [this] {
+        if (choices() && choices()->cancelChoice >= 0) selectChoice(static_cast<std::size_t>(choices()->cancelChoice));
+    };
+    connect(cancelChoiceButton_, &QPushButton::clicked, this, cancelChoice);
+    for (auto key : {Qt::Key_Escape, Qt::Key_X}) {
+        auto* shortcut = new QShortcut(QKeySequence(key), choicesBox_);
+        shortcut->setContext(Qt::WidgetWithChildrenShortcut);
+        connect(shortcut, &QShortcut::activated, this, cancelChoice);
+    }
     dialogueLayout->addWidget(nextButton, 0, Qt::AlignRight);
     dialogueBox_->hide();
 
@@ -382,6 +423,21 @@ void EventEditor::rebuild() {
                         branch->setData(0, kIndexRole, 0);
                         remember(branch, BranchItem, branchPrefix, 0);
                         addList(branch, isThen ? c.thenCommands : c.elseCommands, branchPrefix);
+                        branch->setExpanded(true);
+                    }
+                    item->setExpanded(true);
+                }
+                if (c.type == EventCommandType::ShowChoices) {
+                    for (std::size_t option = 0; option < c.choices.size(); ++option) {
+                        std::string branchPrefix = naru::choicePrefix(id, option);
+                        auto* branch = new QTreeWidgetItem(item);
+                        branch->setText(0, QStringLiteral("▷ %1. %2").arg(option + 1).arg(q(c.choices[option].text)));
+                        branch->setForeground(0, QColor(30, 90, 190));
+                        branch->setData(0, kKindRole, BranchItem);
+                        branch->setData(0, kListRole, q(branchPrefix));
+                        branch->setData(0, kIndexRole, 0);
+                        remember(branch, BranchItem, branchPrefix, 0);
+                        addList(branch, c.choices[option].commands, branchPrefix);
                         branch->setExpanded(true);
                     }
                     item->setExpanded(true);
@@ -712,21 +768,36 @@ void EventEditor::finishTest() {
 }
 
 void EventEditor::showMessage(const std::string& speaker, const std::string& text) {
+    choicesBox_->hide();
+    nextButton_->show();
     dialogueSpeaker_->setText(q(speaker));
     dialogueSpeaker_->setVisible(!speaker.empty());
     dialogueText_->setText(q(text));
     dialogueBox_->show();
     messageOpen_ = true;
-    if (auto* next = dialogueBox_->findChild<QPushButton*>()) {
-        next->setFocus();
-    }
+    nextButton_->setFocus();
+}
+
+bool EventEditor::showChoices(const std::shared_ptr<naru::ChoiceRequest>& request) {
+    if (!naru::DialogueHost::showChoices(request)) return false;
+    nextButton_->hide();
+    choiceList_->clear();
+    for (const auto& option : request->options) choiceList_->addItem(q(option));
+    choiceList_->setFixedHeight(std::min(180, static_cast<int>(request->options.size()) * choiceList_->sizeHintForRow(0) + 8));
+    choiceList_->setCurrentRow(request->defaultChoice);
+    cancelChoiceButton_->setEnabled(request->cancelChoice >= 0);
+    choicesBox_->show();
+    choiceList_->setFocus();
+    return true;
 }
 
 void EventEditor::advanceDialogue() {
-    closeMessage();
+    if (!choices()) closeMessage();
 }
 
 void EventEditor::closeMessage() {
+    clearChoices();
+    choicesBox_->hide();
     messageOpen_ = false;
     dialogueBox_->hide();
 }

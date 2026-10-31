@@ -22,6 +22,8 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <cstdio>
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <memory>
@@ -254,11 +256,13 @@ void drawScene(SDL_Renderer* r, const Scene& scene, const SceneObject* player, F
 }
 
 void drawMessage(SDL_Renderer* r, TTF_Font* font, const GameWorld::Message& message, const Scene& scene,
-                 TextCache& speakerText, TextCache& bodyText, Uint64 frame) {
+                 TextCache& speakerText, TextCache& bodyText, Uint64 frame,
+                 const ChoiceRequest* choices, std::size_t selected, std::vector<TextCache>& choiceText,
+                 TextCache& hintText) {
     const float margin = 24.0f;
-    const float boxH = 170.0f;
     const float w = static_cast<float>(scene.width);
     const float h = static_cast<float>(scene.height);
+    const float boxH = choices ? std::min(h - margin * 2, 212.0f + 44.0f * static_cast<float>(choices->options.size())) : 170.0f;
     SDL_FRect box{margin, h - margin - boxH, w - margin * 2, boxH};
 
     SDL_SetRenderDrawBlendMode(r, SDL_BLENDMODE_BLEND);
@@ -272,6 +276,37 @@ void drawMessage(SDL_Renderer* r, TTF_Font* font, const GameWorld::Message& mess
     int wrap = static_cast<int>(box.w - 48.0f);
     if (!message.speaker.empty()) {
         y += speakerText.draw(r, font, message.speaker, SDL_Color{255, 214, 102, 255}, x, y, wrap) + 6.0f;
+    }
+    if (choices) {
+        // 질문은 위 영역에, 선택지는 아래 영역에 그린다. 긴 질문·항목은 창 밖으로 넘치지 않게 자른다.
+        const float headerH = message.text.empty() ? 0.0f : std::min(64.0f, std::max(0.0f, box.h - 120.0f));
+        SDL_Rect clip{static_cast<int>(x), static_cast<int>(y), wrap, static_cast<int>(headerH)};
+        SDL_SetRenderClipRect(r, &clip);
+        bodyText.draw(r, font, message.text, SDL_Color{240, 244, 250, 255}, x, y, wrap);
+        SDL_SetRenderClipRect(r, nullptr);
+        y += headerH + 8.0f;
+        const float rowH = 44.0f;
+        const auto visible = static_cast<std::size_t>(std::max(1.0f, std::floor((box.y + box.h - 48.0f - y) / rowH)));
+        const std::size_t first = selected >= visible ? selected - visible + 1 : 0;
+        for (std::size_t index = first; index < choices->options.size() && index < first + visible; ++index) {
+            SDL_FRect row{x - 6.0f, y, box.w - 36.0f, rowH - 2.0f};
+            if (index == selected) {
+                SDL_SetRenderDrawColor(r, 54, 78, 118, 255);
+                SDL_RenderFillRect(r, &row);
+            }
+            clip = {static_cast<int>(x), static_cast<int>(y), wrap, static_cast<int>(rowH - 2)};
+            SDL_SetRenderClipRect(r, &clip);
+            choiceText[index].draw(r, font, (index == selected ? "> " : "  ") + choices->options[index],
+                                   SDL_Color{240, 244, 250, 255}, x, y + 4.0f, wrap);
+            SDL_SetRenderClipRect(r, nullptr);
+            y += rowH;
+        }
+        const std::string hint = (choices->cancelChoice < 0 ? std::string("위/아래: 선택  결정 키: 결정 (취소 불가)")
+                                                           : std::string("위/아래: 선택  결정 키: 결정  취소 키: 취소")) +
+                                 " (" + std::to_string(selected + 1) + "/" + std::to_string(choices->options.size()) + ")";
+        hintText.draw(r, font, hint,
+                      SDL_Color{255, 214, 102, 255}, x, box.y + box.h - 36, wrap);
+        return;
     }
     bodyText.draw(r, font, message.text, SDL_Color{240, 244, 250, 255}, x, y, wrap);
 
@@ -431,6 +466,8 @@ int main(int argc, char** argv) {
     std::set<std::string> heldKeys;
     TextCache speakerText;
     TextCache bodyText;
+    std::vector<TextCache> choiceText(static_cast<std::size_t>(kMaxChoices));
+    TextCache hintText;
     bool running = true;
     Uint64 frame = 0;
     Uint64 messageSince = 0;
@@ -485,7 +522,8 @@ int main(int argc, char** argv) {
 
         drawScene(renderer, *world.scene(), world.player(), world.facing());
         if (world.message()) {
-            drawMessage(renderer, font, *world.message(), *world.scene(), speakerText, bodyText, frame);
+            drawMessage(renderer, font, *world.message(), *world.scene(), speakerText, bodyText, frame,
+                        world.choices().get(), world.selectedChoice(), choiceText, hintText);
         }
 
         ++frame;
@@ -506,6 +544,8 @@ int main(int argc, char** argv) {
 
     speakerText.reset();
     bodyText.reset();
+    for (auto& text : choiceText) text.reset();
+    hintText.reset();
     if (font) {
         TTF_CloseFont(font);
     }

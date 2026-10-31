@@ -16,6 +16,12 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+# MSVC의 /showIncludes와 CMake/Ninja가 같은 인코딩으로 헤더 의존성을 읽어야 한다.
+# 한글 Windows에서 기본 코드 페이지로 최초 설정하면 접두사가 깨져 헤더 변경을 놓칠 수 있다.
+$OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+[Console]::InputEncoding = $OutputEncoding
+[Console]::OutputEncoding = $OutputEncoding
+& chcp.com 65001 | Out-Null
 $root = Split-Path -Parent $PSScriptRoot
 
 function Import-VsDevEnvironment {

@@ -397,4 +397,55 @@ TEST_CASE("newId는 사용하지 않은 번호를 만든다") {
     CHECK(p.newId("scene") == "scene_002");
 }
 
+TEST_CASE("선택지와 중첩 명령·처음 선택·취소 동작을 저장하고 다시 읽는다") {
+    TempDir dir;
+    auto result = ProjectIO::create(dir.path, "선택지 저장");
+    CHECK(result.ok());
+    auto p = *result.project;
+    EventCommand sayCmd;
+    sayCmd.type = EventCommandType::Say;
+    sayCmd.text = "안쪽";
+    EventCommand inner;
+    inner.type = EventCommandType::ShowChoices;
+    inner.choices = {{"계속", {sayCmd}}};
+    EventCommand choice;
+    choice.type = EventCommandType::ShowChoices;
+    choice.speaker = "상인";
+    choice.text = "구경할까요?";
+    choice.defaultChoice = 1;
+    choice.cancelChoice = 1;
+    choice.choices = {{"구경", {inner}}, {"나가기", {}}};
+    p.scenes[0].objects[0].event.commands = {choice};
+    CHECK(ProjectIO::save(p, dir.path).empty());
+    auto loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok() && *loaded.project == p);
+}
+
+TEST_CASE("잘못된 선택지 형식·범위·중첩은 파일 오류로 거부한다") {
+    TempDir dir;
+    CHECK(ProjectIO::create(dir.path, "x").ok());
+    const auto file = dir.path / "scenes" / "scene_001.json";
+    auto loadCommand = [&](const std::string& command) {
+        writeText(file, R"({"formatVersion":1,"id":"scene_001","objects":[{"id":"a","event":{"commands":[)" + command + "]}}]}");
+        return ProjectIO::load(dir.path);
+    };
+    for (const char* command : {
+            R"({"type":"show_choices"})",
+            R"({"type":"show_choices","choices":[]})",
+            R"({"type":"show_choices","choices":[{"text":"  "}]})",
+            R"({"type":"show_choices","choices":[{"text":"a\nb"}]})",
+            R"({"type":"show_choices","choices":[{"text":2}]})",
+            R"({"type":"show_choices","choices":[{"text":"a"}],"defaultChoice":1})",
+            R"({"type":"show_choices","choices":[{"text":"a"}],"cancelChoice":-2})",
+            R"({"type":"show_choices","choices":[{"text":"a"}],"cancelChoice":1})",
+            R"({"type":"show_choices","choices":[{"text":"a"}],"defaultChoice":0.5})",
+            R"({"type":"show_choices","choices":[{"text":"a","commands":"x"}]})",
+            R"({"type":"show_choices","choices":[{"text":"1"},{"text":"2"},{"text":"3"},{"text":"4"},{"text":"5"},{"text":"6"},{"text":"7"}]})"}) {
+        CHECK(!loadCommand(command).ok());
+    }
+    std::string nested = R"({"type":"comment"})";
+    for (int i = 0; i < 34; ++i) nested = R"({"type":"show_choices","choices":[{"text":"a","commands":[)" + nested + "]}]}";
+    CHECK(hasErrorContaining(loadCommand(nested), "scenes/scene_001.json", "너무 깊습니다"));
+}
+
 TEST_MAIN()

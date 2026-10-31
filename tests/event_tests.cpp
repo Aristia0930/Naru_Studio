@@ -72,6 +72,67 @@ void run(Session& session, const std::vector<EventCommand>& commands, const Scri
 
 } // namespace
 
+TEST_CASE("선택지는 입력을 기다리고 고른 중첩 분기만 실행한 뒤 공통 명령으로 돌아온다") {
+    FakeDialogue dialogue;
+    Session session(Variables{}, 0.25, &dialogue);
+    EventCommand nested;
+    nested.type = EventCommandType::IfVariable;
+    nested.variable = "gold";
+    nested.value = std::int64_t{0};
+    nested.thenCommands = {logCmd("구매")};
+    nested.elseCommands = {logCmd("잘못된 조건")};
+    EventCommand choose;
+    choose.type = EventCommandType::ShowChoices;
+    choose.text = "무엇을 할까?";
+    choose.choices = {{"구매", {nested}}, {"나가기", {logCmd("나감")}}};
+    run(session, {choose, logCmd("공통")});
+    CHECK(session.state() == SessionState::Running);
+    CHECK(dialogue.choices() && dialogue.open);
+    session.advance(1);
+    CHECK(logs(session).empty());
+    CHECK(!dialogue.selectChoice(2));
+    CHECK(dialogue.selectChoice(0));
+    session.advance(0.25);
+    CHECK(session.state() == SessionState::Completed);
+    CHECK((logs(session) == std::vector<std::string>{"선택: 구매", "구매", "공통"}));
+
+    Session second(Variables{}, 0.25, &dialogue);
+    run(second, {choose, logCmd("공통")});
+    CHECK(dialogue.selectChoice(1));
+    second.advance(0.25);
+    CHECK((logs(second) == std::vector<std::string>{"선택: 나가기", "나감", "공통"}));
+}
+
+TEST_CASE("선택지 안의 선택지 오류는 분기 위치를 보존하고 중지하면 창이 닫힌다") {
+    FakeDialogue dialogue;
+    Session session(Variables{}, 0.25, &dialogue);
+    EventCommand inner;
+    inner.type = EventCommandType::ShowChoices;
+    inner.choices = {{"계속", {setVar("value", VariableOp::Subtract, std::string("글자"))}}};
+    EventCommand outer;
+    outer.type = EventCommandType::ShowChoices;
+    outer.choices = {{"안으로", {inner}}};
+    run(session, {outer});
+    CHECK(dialogue.selectChoice(0));
+    session.advance(0.25);
+    CHECK(dialogue.choices());
+    CHECK(dialogue.selectChoice(0));
+    session.advance(0.25);
+    CHECK(session.state() == SessionState::Failed);
+    CHECK(session.runner().failedCommandId() == "0/c0/0/c0/0");
+
+    Session stopped(Variables{}, 0.25, &dialogue);
+    run(stopped, {outer});
+    stopped.stop();
+    CHECK(!dialogue.choices() && !dialogue.open);
+    CHECK(!dialogue.selectChoice(0));
+
+    Session missing(Variables{});
+    run(missing, {outer});
+    CHECK(missing.state() == SessionState::Failed);
+    CHECK(missing.runner().failedCommandId() == "0");
+}
+
 TEST_CASE("대사는 플레이어가 넘길 때까지 기다린다") {
     FakeDialogue dialogue;
     Session session(Variables{}, 0.25, &dialogue);

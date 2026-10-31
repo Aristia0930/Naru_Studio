@@ -41,25 +41,35 @@ public:
         : Command(std::move(id)), speaker_(std::move(speaker)), text_(std::move(text)) {}
 
     CommandStatus start(CommandContext& ctx) override {
+        shown_ = false;
         ctx.logger.info(speaker_.empty() ? text_ : "[" + speaker_ + "] " + text_, {"", 0, id()});
         if (ctx.dialogue == nullptr) {
             return CommandStatus::Completed;
         }
+        if (ctx.dialogue->choices()) return CommandStatus::Waiting;
         ctx.dialogue->showMessage(speaker_, text_);
+        shown_ = true;
         return CommandStatus::Waiting;
     }
 
     CommandStatus update(CommandContext& ctx, double) override {
+        if (!shown_) {
+            if (ctx.dialogue->choices()) return CommandStatus::Waiting;
+            ctx.dialogue->showMessage(speaker_, text_);
+            shown_ = true;
+            return CommandStatus::Waiting;
+        }
         return ctx.dialogue->messageClosed() ? CommandStatus::Completed : CommandStatus::Waiting;
     }
 
     void cancel(CommandContext& ctx) override {
-        if (ctx.dialogue) {
+        if (ctx.dialogue && shown_) {
             ctx.dialogue->closeMessage();
         }
     }
 
 private:
+    bool shown_ = false;
     std::string speaker_;
     std::string text_;
 };
@@ -343,12 +353,82 @@ private:
     std::size_t target_ = 0;
 };
 
+class ChoicesCommand : public Command {
+public:
+    ChoicesCommand(std::string id, const EventCommand& command) : Command(std::move(id)) {
+        request_ = std::make_shared<ChoiceRequest>();
+        request_->speaker = command.speaker;
+        request_->text = command.text;
+        request_->defaultChoice = command.defaultChoice;
+        request_->cancelChoice = command.cancelChoice;
+        for (const auto& choice : command.choices) request_->options.push_back(choice.text);
+    }
+    std::vector<std::size_t> targets;
+    CommandStatus start(CommandContext& ctx) override {
+        const int count = static_cast<int>(request_->options.size());
+        if (!ctx.dialogue || count < 1 || count > kMaxChoices || request_->defaultChoice < 0 ||
+            request_->defaultChoice >= count || request_->cancelChoice < -1 || request_->cancelChoice >= count) {
+            setError("선택지를 표시할 화면이 없거나 선택지 설정이 올바르지 않습니다");
+            return CommandStatus::Failed;
+        }
+        for (const auto& label : request_->options) {
+            if (label.find_first_not_of(" \t\r\n") == std::string::npos || label.find_first_of("\r\n") != std::string::npos) {
+                setError("선택지 글자는 비어 있지 않은 한 줄이어야 합니다");
+                return CommandStatus::Failed;
+            }
+        }
+        request_->selected.reset();
+        request_->cancelled = false;
+        shown_ = ctx.dialogue->showChoices(request_);
+        return CommandStatus::Waiting;
+    }
+    CommandStatus update(CommandContext& ctx, double) override {
+        if (request_->cancelled) {
+            setError("선택을 마치기 전에 선택지 창이 닫혔습니다");
+            return CommandStatus::Failed;
+        }
+        if (request_->selected) {
+            const auto selected = *request_->selected;
+            if (selected >= targets.size()) {
+                setError("선택지 번호가 올바르지 않습니다");
+                return CommandStatus::Failed;
+            }
+            ctx.logger.info("선택: " + request_->options[selected], {"", 0, id()});
+            ctx.jump = targets[selected];
+            return CommandStatus::Completed;
+        }
+        if (!shown_) shown_ = ctx.dialogue->showChoices(request_);
+        return CommandStatus::Waiting;
+    }
+    void cancel(CommandContext& ctx) override {
+        if (ctx.dialogue) ctx.dialogue->closeChoices(request_);
+    }
+private:
+    std::shared_ptr<ChoiceRequest> request_;
+    bool shown_ = false;
+};
+
 void emit(const std::vector<EventCommand>& list, const std::string& prefix,
           std::vector<std::unique_ptr<Command>>& out, const ScriptRunner& runScript) {
     for (std::size_t i = 0; i < list.size(); ++i) {
         const EventCommand& c = list[i];
         std::string id = commandId(prefix, i);
         switch (c.type) {
+        case EventCommandType::ShowChoices: {
+            auto choice = std::make_unique<ChoicesCommand>(id, c);
+            auto* selection = choice.get();
+            out.push_back(std::move(choice));
+            std::vector<JumpCommand*> exits;
+            for (std::size_t option = 0; option < c.choices.size(); ++option) {
+                selection->targets.push_back(out.size());
+                emit(c.choices[option].commands, choicePrefix(id, option), out, runScript);
+                auto jump = std::make_unique<JumpCommand>(id);
+                exits.push_back(jump.get());
+                out.push_back(std::move(jump));
+            }
+            for (auto* jump : exits) jump->setTarget(out.size());
+            break;
+        }
         case EventCommandType::Say:
             out.push_back(std::make_unique<SayCommand>(id, c.speaker, c.text));
             break;

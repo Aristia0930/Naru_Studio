@@ -10,6 +10,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
+#include <QListWidget>
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
@@ -44,6 +45,7 @@ int kindOf(const Value& v) {
 
 QString CommandDialog::typeLabel(EventCommandType type) {
     switch (type) {
+    case EventCommandType::ShowChoices: return QStringLiteral("선택지 표시");
     case EventCommandType::Say: return QStringLiteral("대사 표시");
     case EventCommandType::Wait: return QStringLiteral("대기");
     case EventCommandType::SetVariable: return QStringLiteral("변수 조작");
@@ -194,6 +196,93 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     };
 
     switch (command.type) {
+    case EventCommandType::ShowChoices: {
+        speaker_ = new QLineEdit(QString::fromStdString(command.speaker), this);
+        text_ = new QPlainTextEdit(QString::fromStdString(command.text), this);
+        text_->setMaximumHeight(90);
+        form->addRow(QStringLiteral("이름"), speaker_);
+        form->addRow(QStringLiteral("질문 (생략 가능)"), text_);
+        choices_ = new QListWidget(this);
+        choices_->setObjectName(QStringLiteral("choiceOptions"));
+        choices_->setToolTip(QStringLiteral("더블클릭하여 글자를 고칩니다. 순서를 바꾸면 분기 안의 명령도 함께 이동합니다."));
+        if (command_.choices.empty()) command_.choices = {{"예", {}}, {"아니요", {}}};
+        for (std::size_t i = 0; i < command_.choices.size(); ++i) {
+            auto* item = new QListWidgetItem(QString::fromStdString(command_.choices[i].text), choices_);
+            item->setData(Qt::UserRole, static_cast<int>(i));
+            item->setFlags(item->flags() | Qt::ItemIsEditable);
+        }
+        form->addRow(QStringLiteral("선택지 (1~6개)"), choices_);
+        defaultChoice_ = new QComboBox(this);
+        defaultChoice_->setObjectName(QStringLiteral("choiceDefault"));
+        cancelChoice_ = new QComboBox(this);
+        cancelChoice_->setObjectName(QStringLiteral("choiceCancel"));
+        auto refresh = [this] {
+            int initial = defaultChoice_->currentData().isValid() ? defaultChoice_->currentData().toInt() : command_.defaultChoice;
+            int cancel = cancelChoice_->currentData().isValid() ? cancelChoice_->currentData().toInt() : command_.cancelChoice;
+            defaultChoice_->clear();
+            cancelChoice_->clear();
+            cancelChoice_->addItem(QStringLiteral("취소 불가"), -1);
+            for (int row = 0; row < choices_->count(); ++row) {
+                const auto* item = choices_->item(row);
+                QString label = QStringLiteral("%1. %2").arg(row + 1).arg(item->text());
+                defaultChoice_->addItem(label, item->data(Qt::UserRole));
+                cancelChoice_->addItem(label, item->data(Qt::UserRole));
+            }
+            defaultChoice_->setCurrentIndex(std::max(0, defaultChoice_->findData(initial)));
+            cancelChoice_->setCurrentIndex(std::max(0, cancelChoice_->findData(cancel)));
+            if (auto* add = findChild<QPushButton*>(QStringLiteral("choiceAdd"))) add->setEnabled(choices_->count() < naru::kMaxChoices);
+            if (auto* remove = findChild<QPushButton*>(QStringLiteral("choiceRemove"))) remove->setEnabled(choices_->count() > 1);
+        };
+        refresh();
+        auto* rowButtons = new QHBoxLayout;
+        auto* add = new QPushButton(QStringLiteral("추가"), this);
+        auto* remove = new QPushButton(QStringLiteral("삭제"), this);
+        auto* up = new QPushButton(QStringLiteral("위로"), this);
+        auto* down = new QPushButton(QStringLiteral("아래로"), this);
+        up->setObjectName(QStringLiteral("choiceUp"));
+        down->setObjectName(QStringLiteral("choiceDown"));
+        add->setObjectName(QStringLiteral("choiceAdd"));
+        remove->setObjectName(QStringLiteral("choiceRemove"));
+        for (auto* button : {add, remove, up, down}) rowButtons->addWidget(button);
+        form->addRow(rowButtons);
+        form->addRow(QStringLiteral("처음 선택"), defaultChoice_);
+        form->addRow(QStringLiteral("취소 키를 누르면"), cancelChoice_);
+        form->addRow(new QLabel(QStringLiteral("확인 후 이벤트 목록의 각 선택지 아래에 실행할 명령을 추가하세요.\n"
+                                              "선택지 삭제 시 그 안의 명령도 삭제됩니다 (Ctrl+Z로 복원)."), this));
+        connect(choices_, &QListWidget::itemChanged, this, [refresh] { refresh(); });
+        connect(add, &QPushButton::clicked, this, [this, refresh] {
+            if (choices_->count() >= naru::kMaxChoices) return;
+            int id = static_cast<int>(command_.choices.size());
+            command_.choices.push_back({"선택지", {}});
+            auto* item = new QListWidgetItem(QStringLiteral("선택지"), choices_);
+            item->setData(Qt::UserRole, id);
+            item->setFlags(item->flags() | Qt::ItemIsEditable);
+            choices_->setCurrentItem(item);
+            refresh();
+        });
+        connect(remove, &QPushButton::clicked, this, [this, refresh] {
+            if (choices_->count() <= 1 || !choices_->currentItem()) return;
+            const int id = choices_->currentItem()->data(Qt::UserRole).toInt();
+            if (!command_.choices[static_cast<std::size_t>(id)].commands.empty() &&
+                QMessageBox::question(this, QStringLiteral("선택지 삭제"), QStringLiteral("이 선택지 안의 명령도 삭제합니다. 계속할까요?"),
+                                      QMessageBox::Yes | QMessageBox::No, QMessageBox::No) != QMessageBox::Yes) return;
+            delete choices_->takeItem(choices_->currentRow());
+            refresh();
+        });
+        auto move = [this, refresh](int delta) {
+            int row = choices_->currentRow();
+            if (row < 0 || row + delta < 0 || row + delta >= choices_->count()) return;
+            auto* item = choices_->takeItem(row);
+            choices_->insertItem(row + delta, item);
+            choices_->setCurrentItem(item);
+            refresh();
+        };
+        connect(up, &QPushButton::clicked, this, [move] { move(-1); });
+        connect(down, &QPushButton::clicked, this, [move] { move(1); });
+        choices_->setCurrentRow(0);
+        refresh();
+        break;
+    }
     case EventCommandType::Say:
         speaker_ = new QLineEdit(QString::fromStdString(command.speaker), this);
         speaker_->setPlaceholderText(QStringLiteral("비우면 이름 없이 표시"));
@@ -424,7 +513,7 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     auto* layout = new QVBoxLayout(this);
     layout->addLayout(form);
     layout->addWidget(buttons);
-    resize(command.type == EventCommandType::Say ? 520 : command.type == EventCommandType::ChangeScene ? 600 : 440,
+    resize(command.type == EventCommandType::ShowChoices ? 620 : command.type == EventCommandType::Say ? 520 : command.type == EventCommandType::ChangeScene ? 600 : 440,
            sizeHint().height());
 }
 
@@ -455,6 +544,28 @@ bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* bo
 void CommandDialog::accept() {
     naru::EventCommand c = command_;
     switch (c.type) {
+    case EventCommandType::ShowChoices: {
+        c.speaker = speaker_->text().trimmed().toStdString();
+        c.text = text_->toPlainText().toStdString();
+        c.choices.clear();
+        c.defaultChoice = 0;
+        c.cancelChoice = -1;
+        for (int row = 0; row < choices_->count(); ++row) {
+            const auto* item = choices_->item(row);
+            QString label = item->text().trimmed();
+            if (label.isEmpty() || label.contains('\n') || label.contains('\r')) {
+                QMessageBox::warning(this, windowTitle(), QStringLiteral("선택지 글자는 비어 있지 않은 한 줄이어야 합니다."));
+                return;
+            }
+            int id = item->data(Qt::UserRole).toInt();
+            auto branch = command_.choices[static_cast<std::size_t>(id)];
+            branch.text = label.toStdString();
+            c.choices.push_back(std::move(branch));
+            if (id == defaultChoice_->currentData().toInt()) c.defaultChoice = row;
+            if (id == cancelChoice_->currentData().toInt()) c.cancelChoice = row;
+        }
+        break;
+    }
     case EventCommandType::Say:
         c.speaker = speaker_->text().trimmed().toStdString();
         c.text = text_->toPlainText().toStdString();

@@ -10,10 +10,18 @@ namespace naru {
 
 // 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
 enum class EventCommandType {
-    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene
+    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene, ShowChoices
 };
 enum class VariableOp { Set, Add, Subtract };
 enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
+
+struct EventCommand;
+struct ChoiceBranch {
+    std::string text;
+    std::vector<EventCommand> commands;
+    bool operator==(const ChoiceBranch& other) const = default;
+};
+inline constexpr int kMaxChoices = 6;
 
 struct EventCommand {
     EventCommandType type = EventCommandType::Comment;
@@ -43,6 +51,9 @@ struct EventCommand {
     double y = 0.0;
     std::vector<EventCommand> thenCommands; // IfVariable
     std::vector<EventCommand> elseCommands; // IfVariable
+    std::vector<ChoiceBranch> choices; // ShowChoices: 표시 순서와 분기 명령을 함께 이동한다
+    int defaultChoice = 0; // ShowChoices: 0부터 시작하는 처음 선택 항목
+    int cancelChoice = -1; // -1: 취소 불가, 나머지: 취소하면 해당 항목 선택
 
     bool operator==(const EventCommand& other) const;
 };
@@ -91,5 +102,6 @@ std::optional<EventTrigger> triggerFromKey(const std::string& key);
 std::string commandId(const std::string& listPrefix, std::size_t index);
 std::string thenPrefix(const std::string& id);
 std::string elsePrefix(const std::string& id);
+std::string choicePrefix(const std::string& id, std::size_t index);
 
 } // namespace naru

@@ -1,6 +1,7 @@
 #include "MainWindow.h"
 
 #include "DatabaseEditor.h"
+#include "CommandDialog.h"
 #include "EventEditor.h"
 #include "GlobalScriptsDialog.h"
 #include "Inspector.h"
@@ -15,6 +16,7 @@
 #include "naru/runtime/Session.h"
 
 #include <QAction>
+#include <QComboBox>
 #include <QCloseEvent>
 #include <QDesktopServices>
 #include <QDir>
@@ -40,6 +42,7 @@
 #include <QLineEdit>
 #include <QPointer>
 #include <QProcess>
+#include <QPushButton>
 #include <QTimer>
 
 #include <algorithm>
@@ -1152,6 +1155,75 @@ bool MainWindow::runSelfTest() {
             eventEditor_->removeCommand("", 0);
         }
         eventEditor_->setConditions(original.conditions, original.repeat);
+        saveAll();
+    }
+
+    // 선택지: 순서를 바꿔도 분기 명령·처음 선택·취소 대상이 함께 이동하고, F6에서 실제 버튼으로 선택한다.
+    {
+        const auto& scene = *doc_->project().findScene(currentSceneId_.toStdString());
+        const QString target = q(scene.objects.front().id);
+        sceneView_->selectObject(target);
+        onCanvasSelection(target);
+        openEventTab();
+        naru::EventCommand firstLog;
+        firstLog.type = naru::EventCommandType::Log;
+        firstLog.text = "첫 선택 실행";
+        auto secondLog = firstLog;
+        secondLog.text = "둘째 선택 실행";
+        naru::EventCommand choice;
+        choice.type = naru::EventCommandType::ShowChoices;
+        choice.text = "어느 쪽인가요?";
+        choice.defaultChoice = 1;
+        choice.cancelChoice = 1;
+        choice.choices = {{"첫째", {firstLog}}, {"둘째", {secondLog}}};
+        CommandDialog dialog(choice, {}, &doc_->project(), &scene);
+        auto* options = dialog.findChild<QListWidget*>(QStringLiteral("choiceOptions"));
+        auto* up = dialog.findChild<QPushButton*>(QStringLiteral("choiceUp"));
+        check(options && up, "선택지 입력 창의 편집 위젯");
+        if (options && up) {
+            options->setCurrentRow(1);
+            up->click();
+            QMetaObject::invokeMethod(&dialog, "accept", Qt::DirectConnection);
+            const auto reordered = dialog.command();
+            check(reordered.choices[0].text == "둘째" && reordered.choices[0].commands == choice.choices[1].commands &&
+                      reordered.defaultChoice == 0 && reordered.cancelChoice == 0,
+                  "선택지 순서 변경은 분기 내용·처음 선택·취소 대상을 보존");
+        }
+        check(eventEditor_->insertCommand("", 0, choice), "선택지 명령 추가");
+        check(eventEditor_->insertCommand("0/c0", 1, secondLog), "선택지 안에 명령 추가");
+        doc_->undoStack()->undo();
+        const auto& stored = doc_->project().findScene(currentSceneId_.toStdString())->findObject(target.toStdString())->event.commands[0];
+        check(stored.choices[0].commands.size() == 1, "선택지 안의 명령 추가 Undo");
+        logMessages_.clear();
+        eventEditor_->startTest();
+        auto* preview = eventEditor_->findChild<QListWidget*>(QStringLiteral("previewChoices"));
+        auto* choose = eventEditor_->findChild<QPushButton*>(QStringLiteral("previewChoose"));
+        check(eventEditor_->choices() && preview && preview->currentRow() == 1, "F6 선택지 처음 선택 표시");
+        eventEditor_->advanceDialogue();
+        check(eventEditor_->choices() != nullptr, "선택지는 대사 넘기기로 닫히지 않음");
+        if (choose) choose->click();
+        QElapsedTimer waited;
+        waited.start();
+        while (eventEditor_->isRunning() && waited.elapsed() < 2000) QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        check(!eventEditor_->isRunning() && logMessages_.contains(QStringLiteral("둘째 선택 실행")) &&
+                  !logMessages_.contains(QStringLiteral("첫 선택 실행")), "F6 실제 선택 버튼은 선택한 분기만 실행");
+        eventEditor_->stopTest();
+        eventEditor_->startTest();
+        logMessages_.clear();
+        if (preview) preview->setCurrentRow(0);
+        if (auto* cancel = eventEditor_->findChild<QPushButton*>(QStringLiteral("previewCancelChoice"))) cancel->click();
+        waited.restart();
+        while (eventEditor_->isRunning() && waited.elapsed() < 2000) QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        check(!eventEditor_->isRunning() && logMessages_.contains(QStringLiteral("둘째 선택 실행")) &&
+                  !logMessages_.contains(QStringLiteral("첫 선택 실행")), "F6 취소 버튼은 지정한 취소 항목을 실행");
+        eventEditor_->stopTest();
+        eventEditor_->startTest();
+        eventEditor_->stopTest();
+        check(!eventEditor_->choices() && eventEditor_->messageClosed(), "F8은 선택 요청·미리보기를 닫음");
+        check(saveAll(), "선택지 이벤트 저장");
+        auto reloadedChoices = ProjectDocument::open(doc_->directory(), &error);
+        check(reloadedChoices && reloadedChoices->project() == doc_->project(), "선택지 이벤트 저장·재로드 동일");
+        eventEditor_->removeCommand("", 0);
         saveAll();
     }
 

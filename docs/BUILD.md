@@ -16,6 +16,8 @@
 
 Visual Studio IDE, Qt Creator, VS Code는 선택 사항이다. 설치한 도구·SDK는 Git에 넣지 않는다.
 
+2026-10-31에는 기존 **Visual Studio Community 2026 18.10.3 / MSVC 19.51.36260.0**에 Windows 11 SDK 10.0.26100.0을 추가한 조합도 전체 빌드와 ctest 9/9를 통과했다. Qt는 같은 6.8.3 `msvc2022_64` 키트를 사용했다.
+
 ## 2. Qt 설치
 
 공식 Qt Online Installer(계정 필요)로 Qt 6.8.3 → MSVC 2022 64-bit를 설치하거나, 계정 없이 aqtinstall을 사용한다.
@@ -27,6 +29,31 @@ py -3 -m venv $env:LOCALAPPDATA\naru-tools\aqt-venv
 ```
 
 `pip-system-certs`는 Python이 Windows 인증서 저장소를 쓰게 한다. 보안 프로그램/프록시가 HTTPS를 검사하는 PC에서 aqt가 `SSLError`로 실패할 때 필요했다.
+
+`Qt msvc2022_64 kit을 찾지 못했습니다`가 나오면 위 키트 설치 여부를 확인한다. 다른 위치에 설치했다면 `NARU_QT_DIR`은 `bin`이 아니라 `msvc2022_64` 폴더를 가리켜야 한다.
+
+기본 미러에서 다운로드가 진행되지 않으면 기존 설치를 중단한 뒤 다른 공식 미러로 다시 받을 수 있다. Widgets 제작툴에 필요한 구성만 설치하는 예:
+
+```powershell
+& $env:LOCALAPPDATA\naru-tools\aqt-venv\Scripts\aqt.exe install-qt windows desktop 6.8.3 win64_msvc2022_64 -O C:\Qt -b https://qt.mirror.constant.com --archives qtbase qttools qtsvg
+```
+
+공식 미러 목록: [Qt 다운로드 미러](https://download.qt.io/static/mirrorlist/).
+
+### 빌드 도구가 PATH에 없을 때
+
+CMake·Ninja는 위 가상 환경에도 설치할 수 있다. 다음 설정은 현재 PowerShell에 적용된다.
+
+```powershell
+& $env:LOCALAPPDATA\naru-tools\aqt-venv\Scripts\python.exe -m pip install cmake==4.4.4 ninja==1.13.2
+$env:PATH = "$env:LOCALAPPDATA\naru-tools\aqt-venv\Scripts;$env:PATH"
+```
+
+기존 Python이 3.13 미만이면 별도의 Python 3.13 이상 개발 배포본을 설치하고 `NARU_PYTHON_DIR`에 설치 폴더를 지정한다. 기존 Python을 제거할 필요는 없다. 사용자 환경변수로 경로를 등록했다면 터미널을 새로 열어야 반영된다.
+
+컴파일러 검사에서 `CMAKE_MT-NOTFOUND` 또는 `rc ... no such file or directory`가 나오면 **Windows SDK**도 확인한다. Visual Studio Installer → 수정 → 개별 구성 요소에서 Windows 11 SDK를 추가한다. 컴파일러만 설치된 상태로는 빌드할 수 없다. SDK 설치는 관리자 권한이 필요하다.
+
+한글 Windows에서는 CMake/Ninja의 MSVC `/showIncludes` 접두사도 UTF-8로 기록돼야 헤더 변경을 감지한다. `dev.cmd`와 `tools/build.ps1`은 UTF-8을 설정한다. 과거 빌드에서 헤더를 바꿨는데 일부 타깃이 재컴파일되지 않거나 변경 후에만 비정상 종료하면, VS 개발자 환경에서 `cmake --fresh --preset windows-msvc` → `cmake --build --preset windows-msvc --clean-first` → `ctest --preset windows-msvc`로 캐시·산출물을 다시 만든다.
 
 ## 2-1. SDL3 설치 (게임 실행 화면)
 

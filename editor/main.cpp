@@ -124,6 +124,11 @@ int main(int argc, char* argv[]) {
         sample.op = naru::VariableOp::Add;
         sample.seconds = 1.0;
         sample.script = "main.py";
+        if (*type == naru::EventCommandType::ShowChoices) {
+            sample.text = "여관에서 쉬었다 갈까요?";
+            sample.choices = {{"쉬기 (10골드)", {}}, {"이야기 듣기", {}}, {"나가기", {}}};
+            sample.cancelChoice = 2;
+        }
         naru::Database db;
         db.types.push_back(naru::makeTemplate(naru::DataTemplate::Item, db));
         naru::DataType monsters = naru::makeTemplate(naru::DataTemplate::Monster, db);

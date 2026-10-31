@@ -20,6 +20,7 @@ class QCheckBox;
 class QComboBox;
 class QFrame;
 class QLabel;
+class QListWidget;
 class QPushButton;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -62,6 +63,7 @@ public:
     void showMessage(const std::string& speaker, const std::string& text) override;
     bool messageClosed() const override { return !messageOpen_; }
     void closeMessage() override;
+    bool showChoices(const std::shared_ptr<naru::ChoiceRequest>& request) override;
 
 private:
     void rebuild();
@@ -97,6 +99,10 @@ private:
     QFrame* dialogueBox_;
     QLabel* dialogueSpeaker_;
     QLabel* dialogueText_;
+    QPushButton* nextButton_;
+    QWidget* choicesBox_;
+    QListWidget* choiceList_;
+    QPushButton* cancelChoiceButton_;
     bool loading_ = false;
 
     naru::Database runDatabase_; // 테스트 실행 중 세션이 읽는 사본 (session_보다 먼저 선언해야 나중에 파괴된다)

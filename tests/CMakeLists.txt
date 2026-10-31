@@ -41,3 +41,11 @@ if(NARU_BUILD_EDITOR)
   set_tests_properties(editor_smoke PROPERTIES DEPENDS editor_smoke_prepare)
   set_tests_properties(editor_selftest PROPERTIES DEPENDS editor_smoke)
 endif()
+
+if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
+  find_package(Python3 3.13 REQUIRED COMPONENTS Interpreter)
+  add_test(NAME player_choices COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/player_choices.py $<TARGET_FILE:naru_player>
+    ${PROJECT_SOURCE_DIR}/docs/examples/choices)
+  set_tests_properties(player_choices PROPERTIES TIMEOUT 45)
+endif()

@@ -1,0 +1,101 @@
+{
+  "background": "#243344",
+  "formatVersion": 1,
+  "height": 640,
+  "id": "scene_001",
+  "name": "여관 앞",
+  "objects": [
+    {
+      "color": "#5FA8E8",
+      "height": 48.0,
+      "id": "obj_001",
+      "name": "주인공",
+      "width": 48.0,
+      "x": 220.0,
+      "y": 240.0
+    },
+    {
+      "color": "#D9A45C",
+      "event": {
+        "commands": [
+          {
+            "cancelChoice": -1,
+            "choices": [
+              {
+                "commands": [
+                  {
+                    "op": "add",
+                    "type": "set_variable",
+                    "value": 1,
+                    "variable": "rest_count"
+                  },
+                  {
+                    "speaker": "여관 주인",
+                    "text": "푹 쉬셨나요? 좋은 여행 되세요.",
+                    "type": "say"
+                  }
+                ],
+                "text": "쉬기"
+              },
+              {
+                "commands": [
+                  {
+                    "cancelChoice": 1,
+                    "choices": [
+                      {
+                        "commands": [
+                          {
+                            "speaker": "여관 주인",
+                            "text": "동쪽 숲에 작은 샘이 있다더군요.",
+                            "type": "say"
+                          }
+                        ],
+                        "text": "마을 소문"
+                      },
+                      {
+                        "commands": [],
+                        "text": "다음에 듣기"
+                      }
+                    ],
+                    "defaultChoice": 0,
+                    "speaker": "여관 주인",
+                    "text": "어느 이야기를 들을까요?",
+                    "type": "show_choices"
+                  }
+                ],
+                "text": "이야기 듣기"
+              },
+              {
+                "commands": [
+                  {
+                    "speaker": "여관 주인",
+                    "text": "언제든 들러 주세요.",
+                    "type": "say"
+                  }
+                ],
+                "text": "나가기"
+              }
+            ],
+            "defaultChoice": 0,
+            "speaker": "여관 주인",
+            "text": "어서 오세요. 무엇을 도와드릴까요?",
+            "type": "show_choices"
+          },
+          {
+            "text": "선택한 분기와 공통 후속 명령을 마쳤습니다.",
+            "type": "log"
+          }
+        ],
+        "trigger": "action"
+      },
+      "height": 48.0,
+      "id": "obj_002",
+      "name": "여관 주인",
+      "width": 48.0,
+      "x": 220.0,
+      "y": 300.0
+    }
+  ],
+  "player": "obj_001",
+  "width": 960
+}

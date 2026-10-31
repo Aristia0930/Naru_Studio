@@ -148,8 +148,10 @@ public:
 
     // DialogueHost
     void showMessage(const std::string& speaker, const std::string& text) override;
+    bool showChoices(const std::shared_ptr<ChoiceRequest>& request) override;
+    std::size_t selectedChoice() const { return selectedChoice_; }
     bool messageClosed() const override { return !message_.has_value(); }
-    void closeMessage() override { message_.reset(); }
+    void closeMessage() override { clearChoices(); message_.reset(); }
 
 private:
     struct RunningEvent;
@@ -182,6 +184,7 @@ private:
     Logger logger_;
     std::optional<Scene> scene_;
     std::optional<Message> message_;
+    std::size_t selectedChoice_ = 0;
 
     GameScripts* gameScripts_ = nullptr;
     // 전역 스크립트 훅이 쓰는 실행 컨텍스트 (이벤트와 같은 변수·로그·데이터베이스).

@@ -112,7 +112,7 @@ bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
         callHook(kHookSceneExit);
     }
     stopAll();
-    message_.reset();
+    closeMessage();
     contacts_.clear();
     tickContacts_.clear();
     autoStarted_.clear();
@@ -174,8 +174,24 @@ void GameWorld::update(double realSeconds, const InputState& input) {
     // 대사는 틱보다 먼저 닫는다. 이번 프레임에 새로 뜬 대사가 같은 키 입력으로 바로 넘어가지 않게 하고,
     // 대사를 넘긴 결정 키가 곧바로 앞의 객체를 다시 조사하지 않게 한다 (스크립트에도 "새로 누름"으로 보이지 않는다).
     bool actionPressed = input.wasPressed(InputAction::Confirm);
-    if (message_ && actionPressed) {
-        message_.reset();
+    const bool dialogueInput = message_.has_value();
+    if (choices()) {
+        if (input.wasPressed(InputAction::Up)) {
+            selectedChoice_ = (selectedChoice_ + choices()->options.size() - 1) % choices()->options.size();
+        } else if (input.wasPressed(InputAction::Down)) {
+            selectedChoice_ = (selectedChoice_ + 1) % choices()->options.size();
+        }
+        if (actionPressed) {
+            selectChoice(selectedChoice_);
+        } else if (input.wasPressed(InputAction::Cancel) && choices()->cancelChoice >= 0) {
+            selectChoice(static_cast<std::size_t>(choices()->cancelChoice));
+        }
+        for (auto action : {InputAction::Up, InputAction::Down, InputAction::Confirm, InputAction::Cancel}) {
+            tickInput_.consume(toKey(action));
+        }
+        actionPressed = false;
+    } else if (message_ && actionPressed) {
+        closeMessage();
         actionPressed = false;
         tickInput_.consume(toKey(InputAction::Confirm));
     }
@@ -191,7 +207,7 @@ void GameWorld::update(double realSeconds, const InputState& input) {
         // 끝난 반복 이벤트는 다음 틱에 다시 시작한다 (같은 틱 안에서 끝없이 돌지 않게).
         startAutoEvents();
         runBlocking(fixedStep_);
-        if (!busy() && defaultControl_) {
+        if (!dialogueInput && !busy() && defaultControl_) {
             controlPlayer(actionPressed, fixedStep_);
         }
         advanceRoutes(fixedStep_);
@@ -246,6 +262,12 @@ std::size_t GameWorld::runningEventCount() const {
 void GameWorld::showMessage(const std::string& speaker, const std::string& text) {
     // 대사 창은 하나다. 병렬 이벤트가 동시에 대사를 띄우면 나중 것이 앞의 대사를 덮는다.
     message_ = Message{speaker, text};
+}
+
+bool GameWorld::showChoices(const std::shared_ptr<ChoiceRequest>& request) {
+    if (!DialogueHost::showChoices(request)) return false;
+    selectedChoice_ = static_cast<std::size_t>(request->defaultChoice);
+    return true;
 }
 
 void GameWorld::callHook(const char* hook) {

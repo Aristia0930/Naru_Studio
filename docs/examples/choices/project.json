@@ -1,0 +1,17 @@
+{
+  "dataTypes": [],
+  "formatVersion": 1,
+  "globalScripts": [],
+  "name": "선택지 예제",
+  "scenes": [
+    "scene_001"
+  ],
+  "startScene": "scene_001",
+  "variables": [
+    {
+      "description": "쉬기를 고른 횟수",
+      "name": "rest_count",
+      "value": 0
+    }
+  ]
+}

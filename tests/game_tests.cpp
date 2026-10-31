@@ -528,6 +528,91 @@ TEST_CASE("a passable event-touch object that moves onto the player runs once") 
     CHECK(intVar(world, "boo") == 1);
 }
 
+TEST_CASE("선택지 처음 선택·상하 순환·취소 매핑과 입력 소비") {
+    EventCommand choose;
+    choose.type = EventCommandType::ShowChoices;
+    choose.text = "선택";
+    choose.choices = {{"첫째", {add("first", 1)}}, {"둘째", {add("second", 1)}}};
+    choose.defaultChoice = 1;
+    auto p = projectWith({object("auto", EventTrigger::Autorun, {choose, add("common", 1)})});
+    GameWorld world(p, noScripts());
+    CHECK(world.startGame(p.startSceneId));
+    step(world);
+    CHECK(world.choices() && world.selectedChoice() == 1 && world.busy());
+    InputState down;
+    down.press(InputAction::Down);
+    step(world, down);
+    CHECK(world.selectedChoice() == 0);
+    CHECK(!world.input().wasPressed(InputAction::Down));
+    InputState cancel;
+    cancel.press(InputAction::Cancel);
+    step(world, cancel);
+    CHECK(world.choices()); // 취소 불가
+    InputState up;
+    up.press(InputAction::Up);
+    step(world, up);
+    CHECK(world.selectedChoice() == 1);
+    step(world, confirm());
+    CHECK(!world.choices() && !world.message() && !world.busy());
+    CHECK(intVar(world, "second") == 1 && intVar(world, "first") == -1 && intVar(world, "common") == 1);
+    CHECK(!world.input().wasPressed(InputAction::Confirm));
+    p.scenes[0].objects[0].event.commands[0].cancelChoice = 0;
+    GameWorld cancelWorld(p, noScripts());
+    CHECK(cancelWorld.startGame(p.startSceneId));
+    step(cancelWorld);
+    step(cancelWorld, cancel);
+    CHECK(intVar(cancelWorld, "first") == 1 && intVar(cancelWorld, "second") == -1);
+}
+
+TEST_CASE("선택지 병렬 요청은 서로 덮지 않고 장면 이동은 기다리는 선택을 취소한다") {
+    EventCommand choose;
+    choose.type = EventCommandType::ShowChoices;
+    choose.text = "첫 선택";
+    choose.choices = {{"예", {add("a", 1)}}, {"아니요", {add("b", 1)}}};
+    auto other = choose;
+    other.text = "둘째 선택";
+    other.choices[0].commands = {add("c", 1)};
+    auto p = projectWith({object("a", EventTrigger::Parallel, {choose}), object("b", EventTrigger::Parallel, {other}),
+                          object("c", EventTrigger::Parallel, {say("선택 뒤 대사")})});
+    GameWorld world(p, noScripts());
+    CHECK(world.startGame(p.startSceneId));
+    step(world);
+    CHECK(world.choices() && world.message()->text == "첫 선택");
+    CHECK(world.selectChoice(1));
+    step(world);
+    CHECK(intVar(world, "b") == 1 && intVar(world, "a") == -1);
+    CHECK(world.choices() && world.message()->text == "둘째 선택");
+    CHECK(world.selectChoice(0));
+    step(world);
+    CHECK(intVar(world, "c") == 1 && !world.choices());
+    CHECK(world.message() && world.message()->text == "선택 뒤 대사");
+    CHECK(world.failedEventCount() == 0);
+    CHECK(world.enterScene(p.startSceneId));
+    step(world);
+    auto pending = world.choices();
+    CHECK(pending);
+    CHECK(world.enterScene(p.startSceneId));
+    CHECK(!world.choices() && !world.message() && pending->cancelled);
+}
+
+TEST_CASE("선택지를 결정한 프레임의 방향 입력으로 플레이어를 움직이지 않는다") {
+    EventCommand choose;
+    choose.type = EventCommandType::ShowChoices;
+    choose.choices = {{"끝", {}}};
+    auto p = projectWith({object("hero", EventTrigger::Action, {}), object("a", EventTrigger::Autorun, {choose})});
+    p.scenes[0].playerObjectId = "hero";
+    GameWorld world(p, noScripts());
+    CHECK(world.startGame(p.startSceneId));
+    step(world);
+    auto input = confirm();
+    input.press(InputAction::Right);
+    const double before = world.player()->x;
+    world.update(kStep * 3, input);
+    CHECK(world.player()->x == before);
+    step(world, input);
+    CHECK(world.player()->x > before);
+}
+
 TEST_MAIN()
 // ---------------------------------------------------------------- 이벤트 명령: 객체 이동·보이기/숨기기
 

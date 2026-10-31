@@ -245,6 +245,17 @@ json commandsToJson(const std::vector<EventCommand>& commands);
 json commandToJson(const EventCommand& c) {
     json j = {{"type", toKey(c.type)}};
     switch (c.type) {
+    case EventCommandType::ShowChoices: {
+        j["speaker"] = c.speaker;
+        j["text"] = c.text;
+        j["defaultChoice"] = c.defaultChoice;
+        j["cancelChoice"] = c.cancelChoice;
+        j["choices"] = json::array();
+        for (const auto& choice : c.choices) {
+            j["choices"].push_back({{"text", choice.text}, {"commands", commandsToJson(choice.commands)}});
+        }
+        break;
+    }
     case EventCommandType::Say:
         j["speaker"] = c.speaker;
         j["text"] = c.text;
@@ -372,12 +383,32 @@ EventCommand commandFromJson(const json& j, int depth) {
         c.thenCommands = commandsFromJson(getArray(j, "then"), depth + 1);
         c.elseCommands = commandsFromJson(getArray(j, "else"), depth + 1);
     }
+    if (c.type == EventCommandType::ShowChoices) {
+        const auto& choices = getArray(j, "choices");
+        if (choices.empty() || choices.size() > kMaxChoices) {
+            throw std::runtime_error("선택지는 1~6개여야 합니다");
+        }
+        for (const auto& choice : choices) {
+            requireObject(choice, "선택지");
+            auto text = requireString(choice, "text");
+            if (text.find_first_not_of(" \t\r\n") == std::string::npos || text.find_first_of("\r\n") != std::string::npos) {
+                throw std::runtime_error("선택지 글자는 비어 있지 않은 한 줄이어야 합니다");
+            }
+            c.choices.push_back({text, commandsFromJson(getArray(choice, "commands"), depth + 1)});
+        }
+        c.defaultChoice = getInt(j, "defaultChoice", 0);
+        c.cancelChoice = getInt(j, "cancelChoice", -1);
+        if (c.defaultChoice < 0 || c.defaultChoice >= static_cast<int>(choices.size()) ||
+            c.cancelChoice < -1 || c.cancelChoice >= static_cast<int>(choices.size())) {
+            throw std::runtime_error("처음 선택·취소 선택지 번호가 범위를 벗어났습니다");
+        }
+    }
     return c;
 }
 
 std::vector<EventCommand> commandsFromJson(const json& list, int depth) {
     if (depth > kMaxEventDepth) {
-        throw std::runtime_error("조건 분기 중첩이 너무 깊습니다");
+        throw std::runtime_error("조건 분기·선택지 중첩이 너무 깊습니다");
     }
     if (!list.is_array()) {
         throw std::runtime_error("이벤트 명령 목록은 배열이어야 합니다");
