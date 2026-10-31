@@ -19,7 +19,7 @@
       "event": {
         "commands": [
           {
-            "cancelChoice": -1,
+            "cancelChoice": 2,
             "choices": [
               {
                 "commands": [
