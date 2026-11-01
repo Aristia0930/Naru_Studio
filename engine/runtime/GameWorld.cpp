@@ -72,6 +72,7 @@ struct GameWorld::RunningEvent {
           ctx{world.variables_, logger, &world, std::nullopt, &world.project_.database, &world},
           runner(compileEvent(object.event.commands, world.scripts_)) {
         ctx.selfObjectId = object.id;
+        ctx.project = &world.project_;
         logger.addSink([&world, name = object.name](const LogEntry& entry) {
             LogEntry copy = entry;
             copy.message = name + " ▸ " + copy.message;
@@ -84,6 +85,7 @@ GameWorld::GameWorld(Project project, ScriptRunner scripts, double fixedStep)
     : project_(std::move(project)), scripts_(std::move(scripts)), fixedStep_(fixedStep),
       hookCtx_{variables_, logger_, this, std::nullopt, &project_.database, this} {
     variables_ = project_.initialVariables();
+    hookCtx_.project = &project_;
 }
 
 GameWorld::~GameWorld() {
@@ -134,6 +136,8 @@ bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
         }
     }
     callHook(kHookSceneEnter);
+    // on_game_start의 예약은 첫 장면 진입 때 함께 처리한다.
+    if (!hookCtx_.pendingCommonEvents.empty()) drainCommonEvents();
     startAutoEvents();
     return true;
 }
@@ -252,7 +256,7 @@ SceneObject* GameWorld::playerObject() {
 }
 
 bool GameWorld::blockingEventActive() const {
-    return blocking_ != nullptr || !blockingQueue_.empty();
+    return blocking_ != nullptr || !blockingQueue_.empty() || !commonQueue_.empty();
 }
 
 std::size_t GameWorld::runningEventCount() const {
@@ -270,6 +274,27 @@ bool GameWorld::showChoices(const std::shared_ptr<ChoiceRequest>& request) {
     return true;
 }
 
+void GameWorld::drainCommonEvents() {
+    for (const auto& id : hookCtx_.pendingCommonEvents) {
+        if (commonQueue_.size() >= 128) {
+            logger_.error("공통 이벤트 예약이 너무 많습니다 (최대 128). 훅에서 매 틱 예약하고 있는지 확인하세요");
+            ++failedEvents_;
+            break;
+        }
+        SceneObject source;
+        source.id = "@common:" + id;
+        source.name = "공통 이벤트 " + id;
+        EventCommand call;
+        call.type = EventCommandType::CallCommonEvent;
+        call.commonEvent = id;
+        source.event.commands.push_back(call);
+        auto running = makeEvent(source);
+        running->ctx.selfObjectId.clear();
+        commonQueue_.push_back(std::move(running));
+    }
+    hookCtx_.pendingCommonEvents.clear();
+}
+
 void GameWorld::callHook(const char* hook) {
     if (!gameScripts_ || disabledHooks_.count(hook)) {
         return;
@@ -284,6 +309,8 @@ void GameWorld::callHook(const char* hook) {
                       "을(를) 다시 부르지 않습니다");
         break;
     }
+    if (std::string(hook) == kHookSceneExit) hookCtx_.pendingCommonEvents.clear();
+    else if (scene_) drainCommonEvents();
 }
 
 void GameWorld::controlPlayer(bool actionPressed, double dt) {
@@ -602,6 +629,11 @@ bool GameWorld::queueBlocking(const SceneObject& object) {
 void GameWorld::runBlocking(double dt) {
     while (true) {
         if (!blocking_) {
+            if (!commonQueue_.empty()) {
+                blocking_ = std::move(commonQueue_.front());
+                commonQueue_.pop_front();
+                continue;
+            }
             if (blockingQueue_.empty()) {
                 return;
             }
@@ -653,6 +685,7 @@ void GameWorld::stopAll() {
     }
     parallel_.clear();
     blockingQueue_.clear();
+    commonQueue_.clear();
     routes_.clear();
 }
 

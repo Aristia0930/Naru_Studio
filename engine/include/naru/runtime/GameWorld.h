@@ -175,6 +175,7 @@ private:
     bool queueBlocking(const SceneObject& object);
     bool conditionsMet(const SceneObject& object) const;
     void startAutoEvents();
+    void drainCommonEvents();
     void advanceRoutes(double dt);
 
     Project project_;
@@ -196,6 +197,7 @@ private:
 
     std::unique_ptr<RunningEvent> blocking_;
     std::deque<std::string> blockingQueue_;
+    std::deque<std::unique_ptr<RunningEvent>> commonQueue_;
     std::vector<std::unique_ptr<RunningEvent>> parallel_;
 
     struct Route {

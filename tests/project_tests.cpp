@@ -449,3 +449,45 @@ TEST_CASE("잘못된 선택지 형식·범위·중첩은 파일 오류로 거부
 }
 
 TEST_MAIN()
+
+
+TEST_CASE("공통 이벤트·중첩 호출은 저장 재로드되고 예전 프로젝트의 빈 목록과 호환된다") {
+    TempDir dir;
+    auto created = ProjectIO::create(dir.path, "공통 이벤트 테스트");
+    CHECK(created.ok());
+    auto project = *created.project;
+    CHECK(project.commonEvents.empty());
+    EventCommand call;
+    call.type = EventCommandType::CallCommonEvent;
+    call.commonEvent = "recover";
+    EventCommand choices;
+    choices.type = EventCommandType::ShowChoices;
+    choices.choices = {{"회복", {call}}, {"나가기", {}}};
+    project.commonEvents = {{"recover", "체력 회복", {}}, {"inn", "여관", {EventTrigger::Action, {}, false, {choices}}}};
+    project.scenes[0].objects[0].event.commands = {call};
+    CHECK(ProjectIO::save(project, dir.path).empty());
+    auto loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok());
+    CHECK(loaded.project && loaded.project->commonEvents == project.commonEvents);
+    CHECK(loaded.project && loaded.project->scenes[0].objects[0].event.commands == std::vector<EventCommand>{call});
+}
+
+TEST_CASE("잘못된 공통 이벤트 목록·ID·명령 형식은 프로젝트 열기에서 거부한다") {
+    for (const auto& fragment : {
+        R"("commonEvents": 4)",
+        R"("commonEvents": [true])",
+        R"("commonEvents": [{"id":"../x","name":"x","commands":[]}])",
+        R"("commonEvents": [{"id":"a","name":" ","commands":[]}])",
+        R"("commonEvents": [{"id":"a","name":"A"},{"id":"a","name":"B"}])",
+        R"("commonEvents": [{"id":"a","name":"A","commands":{}}])",
+        R"("commonEvents": [{"id":"a","name":"A","commands":[{"type":"call_common_event","commonEvent":4}]}])",
+        R"("commonEvents": [{"id":"a","name":"A","commands":[{"type":"call_common_event","commonEvent":""}]}])"
+    }) {
+        TempDir dir;
+        CHECK(ProjectIO::create(dir.path, "bad").ok());
+        writeText(dir.path / "project.json", std::string(R"({"formatVersion":1,"name":"bad","scenes":["scene_001"],"startScene":"scene_001",)") + fragment + "}");
+        auto loaded = ProjectIO::load(dir.path);
+        CHECK(!loaded.ok());
+        CHECK(!loaded.errors.empty());
+    }
+}

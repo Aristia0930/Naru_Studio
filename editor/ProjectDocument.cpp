@@ -153,6 +153,11 @@ void ProjectDocument::setGlobalScripts(const std::vector<std::string>& scripts) 
     emit globalScriptsChanged();
 }
 
+void ProjectDocument::setCommonEvents(const std::vector<naru::CommonEvent>& events) {
+    project_.commonEvents = events;
+    emit commonEventsChanged();
+}
+
 void ProjectDocument::setVariables(const std::vector<naru::VariableDef>& variables) {
     project_.variables = variables;
     emit variablesChanged();

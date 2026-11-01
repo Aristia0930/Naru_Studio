@@ -144,3 +144,9 @@ SetGlobalScriptsCommand::SetGlobalScriptsCommand(ProjectDocument* doc, std::vect
 
 void SetGlobalScriptsCommand::redo() { doc_->setGlobalScripts(after_); }
 void SetGlobalScriptsCommand::undo() { doc_->setGlobalScripts(before_); }
+
+SetCommonEventsCommand::SetCommonEventsCommand(ProjectDocument* doc, std::vector<naru::CommonEvent> after)
+    : QUndoCommand(QStringLiteral("공통 이벤트 변경")), doc_(doc),
+      before_(doc->project().commonEvents), after_(std::move(after)) {}
+void SetCommonEventsCommand::redo() { doc_->setCommonEvents(after_); }
+void SetCommonEventsCommand::undo() { doc_->setCommonEvents(before_); }

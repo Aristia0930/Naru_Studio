@@ -2,6 +2,7 @@
 
 #include "naru/events/EventCompiler.h"
 #include "naru/runtime/Session.h"
+#include "naru/project/Project.h"
 
 #include <string>
 #include <vector>
@@ -327,4 +328,120 @@ TEST_CASE("장면 이동은 게임 밖(테스트 실행)에서 로그만 남긴�
     Session bad(Variables{});
     run(bad, {noScene});
     CHECK(bad.state() == SessionState::Failed);
+}
+
+
+TEST_CASE("공통 이벤트는 중첩 선택 뒤 복귀하고 F8로 함께 중지된다") {
+    EventCommand call;
+    call.type = EventCommandType::CallCommonEvent;
+    call.commonEvent = "outer";
+    EventCommand inner = call;
+    inner.commonEvent = "inner";
+    EventCommand choice;
+    choice.type = EventCommandType::ShowChoices;
+    choice.text = "회복할까요?";
+    choice.choices = {{"예", {setVar("hp", VariableOp::Set, std::int64_t{100})}}, {"아니오", {}}};
+    Project project;
+    project.commonEvents = {{"outer", "회복", {EventTrigger::Action, {}, false, {inner, logCmd("outer done")}}},
+                            {"inner", "질문", {EventTrigger::Action, {}, false, {choice}}}};
+    FakeDialogue dialogue;
+    Session session({}, 0.25, &dialogue);
+    session.setProject(&project);
+    run(session, {call, logCmd("caller done")});
+    CHECK(session.state() == SessionState::Running);
+    CHECK(dialogue.choices() != nullptr);
+    CHECK(!session.variables().get("hp"));
+    CHECK(dialogue.selectChoice(0));
+    session.advance(0.25);
+    CHECK(session.state() == SessionState::Completed);
+    CHECK(session.variables().get("hp") == Value{std::int64_t{100}});
+    auto lines = logs(session);
+    CHECK(lines.size() >= 2 && lines[lines.size()-2] == "outer done" && lines.back() == "caller done");
+    run(session, {call});
+    CHECK(dialogue.choices() != nullptr);
+    session.stop();
+    CHECK(!dialogue.choices() && !dialogue.open);
+    CHECK(session.state() == SessionState::Stopped);
+}
+
+TEST_CASE("공통 이벤트의 없는 ID·순환·중첩 오류는 호출 위치와 안쪽 위치를 보존한다") {
+    Project project;
+    EventCommand call;
+    call.type = EventCommandType::CallCommonEvent;
+    call.commonEvent = "a";
+    Session missing({});
+    missing.setProject(&project);
+    run(missing, {call});
+    CHECK(missing.state() == SessionState::Failed);
+    CHECK(missing.runner().failedCommandId() == "0");
+    EventCommand b = call;
+    b.commonEvent = "b";
+    project.commonEvents = {{"a", "A", {EventTrigger::Action, {}, false, {b}}},
+                            {"b", "B", {EventTrigger::Action, {}, false, {call}}}};
+    Session cycle({});
+    cycle.setProject(&project);
+    run(cycle, {call, logCmd("must not run")});
+    CHECK(cycle.state() == SessionState::Failed);
+    CHECK(cycle.runner().failureMessage().find("순환") != std::string::npos);
+    CHECK(cycle.runner().failureMessage().find("공통 이벤트 b [0]") != std::string::npos);
+    EventCommand bad = setVar("", VariableOp::Set, true);
+    project.commonEvents[1].event.commands = {logCmd("ok"), bad};
+    Session error({});
+    error.setProject(&project);
+    run(error, {call});
+    CHECK(error.runner().failureMessage().find("공통 이벤트 b [1]") != std::string::npos);
+    Session noProject({});
+    run(noProject, {call});
+    CHECK(noProject.state() == SessionState::Failed);
+}
+
+TEST_CASE("공통 이벤트 호출 깊이는 32이고 같은 이벤트의 순차 호출은 허용한다") {
+    Project project;
+    for (int i = 0; i < 33; ++i) {
+        EventCommand next;
+        next.type = EventCommandType::CallCommonEvent;
+        next.commonEvent = "e" + std::to_string(i + 1);
+        project.commonEvents.push_back({"e" + std::to_string(i), "event", {EventTrigger::Action, {}, false,
+            i < 32 ? std::vector<EventCommand>{next} : std::vector<EventCommand>{}}});
+    }
+    EventCommand call;
+    call.type = EventCommandType::CallCommonEvent;
+    call.commonEvent = "e0";
+    Session tooDeep({});
+    tooDeep.setProject(&project);
+    run(tooDeep, {call});
+    CHECK(tooDeep.state() == SessionState::Failed);
+    CHECK(tooDeep.runner().failureMessage().find("32") != std::string::npos);
+    project.commonEvents[31].event.commands = {setVar("count", VariableOp::Add, std::int64_t{1})};
+    Session allowed({});
+    allowed.setProject(&project);
+    run(allowed, {call, call});
+    CHECK(allowed.state() == SessionState::Completed);
+    CHECK(allowed.variables().get("count") == Value{std::int64_t{2}});
+}
+
+TEST_CASE("공통 이벤트 전체가 즉시 실행 한도를 공유하고 대기 뒤 틱에서 새 한도를 받는다") {
+    EventCommand add = setVar("count", VariableOp::Add, std::int64_t{1});
+    Project project;
+    project.commonEvents = {{"work", "작업", {EventTrigger::Action, {}, false, std::vector<EventCommand>(6000, add)}}};
+    EventCommand call;
+    call.type = EventCommandType::CallCommonEvent;
+    call.commonEvent = "work";
+    Session tooMany({});
+    tooMany.setProject(&project);
+    run(tooMany, {call, call});
+    CHECK(tooMany.state() == SessionState::Failed);
+    CHECK(tooMany.runner().failureMessage().find("무한 반복") != std::string::npos);
+    EventCommand wait;
+    wait.type = EventCommandType::Wait;
+    wait.seconds = 0.25;
+    project.commonEvents[0].event.commands.push_back(wait);
+    project.commonEvents[0].event.commands.insert(project.commonEvents[0].event.commands.end(), 6000, add);
+    Session spaced({}, 0.25);
+    spaced.setProject(&project);
+    run(spaced, {call});
+    CHECK(spaced.state() == SessionState::Running);
+    spaced.advance(0.5);
+    CHECK(spaced.state() == SessionState::Completed);
+    CHECK(spaced.variables().get("count") == Value{std::int64_t{12000}});
 }

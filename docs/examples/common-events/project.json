@@ -1,0 +1,54 @@
+{
+  "formatVersion": 1,
+  "name": "공통 이벤트 예제",
+  "startScene": "scene_001",
+  "scenes": [
+    "scene_001"
+  ],
+  "globalScripts": [],
+  "dataTypes": [],
+  "variables": [
+    {
+      "name": "hp",
+      "value": 10,
+      "description": "현재 체력"
+    }
+  ],
+  "commonEvents": [
+    {
+      "id": "recover",
+      "name": "체력 회복",
+      "commands": [
+        {
+          "type": "call_common_event",
+          "commonEvent": "heal"
+        },
+        {
+          "type": "say",
+          "speaker": "안내",
+          "text": "체력을 회복했습니다."
+        }
+      ]
+    },
+    {
+      "id": "heal",
+      "name": "회복 처리",
+      "commands": [
+        {
+          "type": "wait",
+          "seconds": 0.05
+        },
+        {
+          "type": "set_variable",
+          "variable": "hp",
+          "op": "set",
+          "value": 100
+        },
+        {
+          "type": "log",
+          "text": "공통 회복 완료"
+        }
+      ]
+    }
+  ]
+}

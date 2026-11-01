@@ -10,7 +10,7 @@ namespace naru {
 
 // 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
 enum class EventCommandType {
-    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene, ShowChoices
+    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene, ShowChoices, CallCommonEvent
 };
 enum class VariableOp { Set, Add, Subtract };
 enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
@@ -37,6 +37,7 @@ struct EventCommand {
     CompareOp compare = CompareOp::Equal; // IfVariable
     Value value;                    // SetVariable, IfVariable
     std::string script;             // CallScript: scripts/ 안의 파일 이름
+    std::string commonEvent;        // CallCommonEvent: 프로젝트 공통 이벤트 ID
     std::string function = "run";   // CallScript
     // MoveObject, SetVisible: 대상 객체 ID 또는 kTargetSelf·kTargetPlayer
     std::string target = "@self";

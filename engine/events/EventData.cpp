@@ -13,7 +13,7 @@ bool EventCommand::operator==(const EventCommand& o) const {
            speed == o.speed && waitForEnd == o.waitForEnd && show == o.show && scene == o.scene &&
            setPosition == o.setPosition && x == o.x && y == o.y && thenCommands == o.thenCommands &&
            elseCommands == o.elseCommands && choices == o.choices && defaultChoice == o.defaultChoice &&
-           cancelChoice == o.cancelChoice;
+           cancelChoice == o.cancelChoice && commonEvent == o.commonEvent;
 }
 
 bool ObjectEvent::operator==(const ObjectEvent& o) const {
@@ -42,7 +42,8 @@ const char* nameOf(const std::array<std::pair<E, const char*>, N>& table, E valu
     return "";
 }
 
-constexpr std::array<std::pair<EventCommandType, const char*>, 12> kTypes{{
+constexpr std::array<std::pair<EventCommandType, const char*>, 13> kTypes{{
+    {EventCommandType::CallCommonEvent, "call_common_event"},
     {EventCommandType::ShowChoices, "show_choices"},
     {EventCommandType::ChangeScene, "change_scene"},
     {EventCommandType::MoveObject, "move_object"},

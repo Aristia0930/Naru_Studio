@@ -245,6 +245,9 @@ json commandsToJson(const std::vector<EventCommand>& commands);
 json commandToJson(const EventCommand& c) {
     json j = {{"type", toKey(c.type)}};
     switch (c.type) {
+    case EventCommandType::CallCommonEvent:
+        j["commonEvent"] = c.commonEvent;
+        break;
     case EventCommandType::ShowChoices: {
         j["speaker"] = c.speaker;
         j["text"] = c.text;
@@ -355,6 +358,10 @@ EventCommand commandFromJson(const json& j, int depth) {
     }
     if (auto it = j.find("value"); it != j.end()) {
         c.value = valueFromJson(*it);
+    }
+    if (c.type == EventCommandType::CallCommonEvent) {
+        c.commonEvent = requireString(j, "commonEvent");
+        if (!isSafeId(c.commonEvent)) throw std::runtime_error("공통 이벤트 ID가 올바르지 않습니다");
     }
     c.script = getString(j, "script", std::string());
     c.function = getString(j, "function", std::string("run"));
@@ -808,6 +815,18 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
                 project.variables.push_back(std::move(def));
             }
         }
+        for (const auto& cj : getArray(root, "commonEvents")) {
+            requireObject(cj, "공통 이벤트");
+            CommonEvent event;
+            event.id = requireString(cj, "id");
+            event.name = requireString(cj, "name");
+            if (!isSafeId(event.id) || project.findCommonEvent(event.id))
+                throw std::runtime_error("공통 이벤트 ID가 올바르지 않거나 중복됩니다: " + event.id);
+            if (event.name.find_first_not_of(" \t\r\n") == std::string::npos)
+                throw std::runtime_error("공통 이벤트 이름이 비어 있습니다");
+            event.event.commands = commandsFromJson(getArray(cj, "commands"), 0);
+            project.commonEvents.push_back(std::move(event));
+        }
         std::set<std::string> objectIds;
         for (const auto& idJson : getArray(root, "scenes")) {
             if (!idJson.is_string()) {
@@ -949,6 +968,17 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
         variables.push_back(vj);
     }
     root["variables"] = variables;
+    root["commonEvents"] = json::array();
+    std::set<std::string> commonIds;
+    for (const auto& event : project.commonEvents) {
+        if (!isSafeId(event.id) || !commonIds.insert(event.id).second ||
+            event.name.find_first_not_of(" \t\r\n") == std::string::npos) {
+            errors.push_back({kProjectFile, "공통 이벤트 ID·이름이 올바르지 않거나 중복됩니다: " + event.id});
+            continue;
+        }
+        root["commonEvents"].push_back({{"id", event.id}, {"name", event.name},
+                                         {"commands", commandsToJson(event.event.commands)}});
+    }
     std::string error;
     if (!writeJson(dir / kProjectFile, root, error)) {
         errors.push_back({kProjectFile, error});

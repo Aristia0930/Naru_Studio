@@ -6,6 +6,11 @@
 
 namespace naru {
 
+const CommonEvent* Project::findCommonEvent(const std::string& id) const {
+    for (const auto& event : commonEvents) if (event.id == id) return &event;
+    return nullptr;
+}
+
 SceneObject* Scene::findObject(const std::string& objectId) {
     int i = indexOfObject(objectId);
     return i < 0 ? nullptr : &objects[static_cast<std::size_t>(i)];

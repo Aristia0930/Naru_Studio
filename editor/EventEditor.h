@@ -41,6 +41,7 @@ public:
     EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* python, QWidget* parent = nullptr);
     ~EventEditor() override;
 
+    void setCommonTarget(const QString& id);
     void setTarget(const QString& sceneId, const QString& objectId);
     void setLogSink(std::function<void(const naru::LogEntry&)> sink) { logSink_ = std::move(sink); }
     void setVariablesSink(std::function<void(const naru::Variables&)> sink) { variablesSink_ = std::move(sink); }
@@ -87,6 +88,10 @@ private:
     naru::python::PythonRuntime* python_;
     QString sceneId_;
     QString objectId_;
+    QString commonId_;
+    mutable naru::SceneObject commonTarget_;
+    QWidget* conditionPanel_ = nullptr;
+    QLabel* triggerLabel_ = nullptr;
 
     QLabel* title_;
     QComboBox* trigger_;
@@ -105,6 +110,7 @@ private:
     QPushButton* cancelChoiceButton_;
     bool loading_ = false;
 
+    naru::Project runProject_;
     naru::Database runDatabase_; // 테스트 실행 중 세션이 읽는 사본 (session_보다 먼저 선언해야 나중에 파괴된다)
     std::unique_ptr<naru::Session> session_;
     QTimer timer_;

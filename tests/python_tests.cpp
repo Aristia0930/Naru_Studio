@@ -447,3 +447,83 @@ int main() {
         return 2;
     }
 }
+
+
+TEST_CASE("ctx.run_event는 F6에서 함수 반환 뒤 실행하고 호출 다음 명령으로 돌아온다") {
+    Project project;
+    EventCommand wait;
+    wait.type = EventCommandType::Wait;
+    wait.seconds = 0.25;
+    EventCommand hp;
+    hp.type = EventCommandType::SetVariable;
+    hp.variable = "hp";
+    hp.value = std::int64_t{100};
+    project.commonEvents = {{"recover", "회복", {EventTrigger::Action, {}, false, {wait, hp}}}};
+    EventCommand scriptCall;
+    scriptCall.type = EventCommandType::CallScript;
+    scriptCall.script = "common_events.py";
+    scriptCall.variable = "returned";
+    EventCommand after = hp;
+    after.variable = "after";
+    ScriptRunner scripts = [](const std::string& file, const std::string& function, CommandContext& ctx) {
+        ScriptCallResult call;
+        auto result = g_runtime->runFile(script(file.c_str()), ctx, function, &call.returned);
+        if (!result.ok) call.error = result.summary();
+        return call;
+    };
+    Session session({}, 0.25);
+    session.setProject(&project);
+    session.start(compileEvent({scriptCall, after}, scripts));
+    CHECK(session.state() == SessionState::Running);
+    CHECK(session.variables().get("script_finished") == Value{true});
+    CHECK(session.variables().get("returned") == Value{std::int64_t{7}});
+    CHECK(!session.variables().get("hp") && !session.variables().get("after"));
+    session.advance(0.5);
+    CHECK(session.state() == SessionState::Completed);
+    CHECK(session.variables().get("hp") == Value{std::int64_t{100}});
+    CHECK(session.variables().get("after") == Value{std::int64_t{100}});
+    scriptCall.function = "fails";
+    Session failed({});
+    failed.setProject(&project);
+    failed.start(compileEvent({scriptCall}, scripts));
+    CHECK(failed.state() == SessionState::Failed);
+    CHECK(!failed.variables().get("hp"));
+    Fixture missing;
+    missing.ctx.project = &project;
+    auto result = g_runtime->runFile(script("common_events.py"), missing.ctx, "missing");
+    CHECK(!result.ok && result.error.type == "KeyError");
+    CHECK(result.error.line > 0 && !result.error.traceback.empty());
+    Fixture outside;
+    CHECK(!g_runtime->runFile(script("common_events.py"), outside.ctx).ok);
+    scriptCall.function = "recursive";
+    project.commonEvents.push_back({"recursive", "순환", {EventTrigger::Action, {}, false, {scriptCall}}});
+    Session cycle({});
+    cycle.setProject(&project);
+    cycle.start(compileEvent({scriptCall}, scripts));
+    CHECK(cycle.state() == SessionState::Failed);
+    CHECK(cycle.runner().failureMessage().find("순환") != std::string::npos);
+}
+
+TEST_CASE("전역 훅의 ctx.run_event 예약은 첫 장면과 장면 전환 후 실행된다") {
+    auto p = globalProject();
+    EventCommand add;
+    add.type = EventCommandType::SetVariable;
+    add.variable = "recoveries";
+    add.op = VariableOp::Add;
+    add.value = std::int64_t{1};
+    p.commonEvents = {{"recover", "회복", {EventTrigger::Action, {}, false, {add}}}};
+    Scene second;
+    second.id = "scene_002";
+    second.name = "다음";
+    p.scenes.push_back(second);
+    for (auto& scene : p.scenes) for (auto& obj : scene.objects) obj.event.commands.clear();
+    python::PythonGameScripts globals(*g_runtime, {script("common_events.py")});
+    GameWorld world(p, globalAwareRunner(globals));
+    world.setGameScripts(&globals);
+    CHECK(world.startGame("scene_001"));
+    world.update(1.0 / 60.0, {});
+    CHECK(world.variables().get("recoveries") == Value{std::int64_t{1}});
+    CHECK(world.enterScene("scene_002"));
+    world.update(1.0 / 60.0, {});
+    CHECK(world.variables().get("recoveries") == Value{std::int64_t{2}});
+}

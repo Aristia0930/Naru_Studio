@@ -48,4 +48,8 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
     ${CMAKE_CURRENT_SOURCE_DIR}/player_choices.py $<TARGET_FILE:naru_player>
     ${PROJECT_SOURCE_DIR}/docs/examples/choices)
   set_tests_properties(player_choices PROPERTIES TIMEOUT 45)
+  add_test(NAME player_common_events COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/player_common_events.py $<TARGET_FILE:naru_player>
+    ${PROJECT_SOURCE_DIR}/docs/examples/common-events)
+  set_tests_properties(player_common_events PROPERTIES TIMEOUT 45)
 endif()

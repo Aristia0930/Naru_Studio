@@ -45,6 +45,7 @@ int kindOf(const Value& v) {
 
 QString CommandDialog::typeLabel(EventCommandType type) {
     switch (type) {
+    case EventCommandType::CallCommonEvent: return QStringLiteral("공통 이벤트 호출");
     case EventCommandType::ShowChoices: return QStringLiteral("선택지 표시");
     case EventCommandType::Say: return QStringLiteral("대사 표시");
     case EventCommandType::Wait: return QStringLiteral("대기");
@@ -196,6 +197,24 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     };
 
     switch (command.type) {
+    case EventCommandType::CallCommonEvent: {
+        commonEvent_ = new QComboBox(this);
+        commonEvent_->setObjectName(QStringLiteral("commonEventTarget"));
+        if (project) for (const auto& event : project->commonEvents) {
+            commonEvent_->addItem(QStringLiteral("%1 (%2)").arg(QString::fromStdString(event.name),
+                                      QString::fromStdString(event.id)), QString::fromStdString(event.id));
+        }
+        int selected = commonEvent_->findData(QString::fromStdString(command.commonEvent));
+        if (selected < 0 && !command.commonEvent.empty()) {
+            commonEvent_->addItem(QStringLiteral("%1 (없는 이벤트)").arg(QString::fromStdString(command.commonEvent)),
+                                  QString::fromStdString(command.commonEvent));
+            selected = commonEvent_->count() - 1;
+        }
+        if (selected >= 0) commonEvent_->setCurrentIndex(selected);
+        form->addRow(QStringLiteral("공통 이벤트"), commonEvent_);
+        form->addRow(new QLabel(QStringLiteral("호출이 끝나면 다음 명령으로 돌아옵니다. 순환 호출은 오류로 중지합니다."), this));
+        break;
+    }
     case EventCommandType::ShowChoices: {
         speaker_ = new QLineEdit(QString::fromStdString(command.speaker), this);
         text_ = new QPlainTextEdit(QString::fromStdString(command.text), this);
@@ -544,6 +563,13 @@ bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* bo
 void CommandDialog::accept() {
     naru::EventCommand c = command_;
     switch (c.type) {
+    case EventCommandType::CallCommonEvent:
+        c.commonEvent = commonEvent_->currentData().toString().toStdString();
+        if (c.commonEvent.empty()) {
+            QMessageBox::warning(this, windowTitle(), QStringLiteral("공통 이벤트 탭에서 이벤트를 먼저 추가하세요."));
+            return;
+        }
+        break;
     case EventCommandType::ShowChoices: {
         c.speaker = speaker_->text().trimmed().toStdString();
         c.text = text_->toPlainText().toStdString();

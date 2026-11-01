@@ -21,6 +21,8 @@
 
 ## 2. 폴더와 저장소 역할
 
+2026-11-01 현재 진행은 [로드맵](docs/ROADMAP.md)과 [세션 기록](SESSION_STATE.md)을 우선한다. RPG도 가능한 2D 게임 제작툴의 세부 구현 작업과 게임 완성 검증 기준은 [상세 개발 계획](docs/DEVELOPMENT_PLAN.md)에 정리했다. 이 문서의 초기 구축·과거 상태와 최신 완료 상태를 혼동하지 않는다.
+
 - 게임 기획·대본·에셋: `C:\Users\kjk98\OneDrive\바탕 화면\game`
 - 제작툴 개발 기준: `C:\Users\kjk98\OneDrive\바탕 화면\game_tool`
 - 제작툴 저장소: `https://github.com/Aristia0930/Naru_Studio.git`

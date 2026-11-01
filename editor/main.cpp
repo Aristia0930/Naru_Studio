@@ -62,6 +62,8 @@ int main(int argc, char* argv[]) {
     QCommandLineOption eventOption(QStringLiteral("event"),
                                    QStringLiteral("시작 장면의 <objectId> 객체를 선택하고 이벤트 탭을 연다."),
                                    QStringLiteral("objectId"));
+    QCommandLineOption commonEventOption(QStringLiteral("common-event"),
+                                         QStringLiteral("공통 이벤트 <id>를 열어 촬영하거나 테스트한다."), QStringLiteral("id"));
     // 사용 설명서(docs/guide) 스크린샷 촬영용 옵션
     QCommandLineOption runEventOption(QStringLiteral("run-event"),
                                       QStringLiteral("--event로 연 이벤트를 바로 테스트 실행한다."));
@@ -85,7 +87,7 @@ int main(int argc, char* argv[]) {
                                               QStringLiteral("이벤트 실행 조건 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption lastOption(QStringLiteral("last"),
                                   QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
-    parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, runEventOption,
+    parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, commonEventOption, runEventOption,
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
                        globalScriptsOption, variablesDialogOption, conditionsDialogOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
@@ -168,6 +170,8 @@ int main(int argc, char* argv[]) {
             sample.direction = "up";
         }
         naru::Project project;
+        project.commonEvents = {{"recover", "체력 회복", {}}, {"reward", "보상 지급", {}}};
+        if (*type == naru::EventCommandType::CallCommonEvent) sample.commonEvent = "recover";
         project.database = db;
         project.variables = {{"visits", std::int64_t{0}, "마을에 온 횟수"},
                              {"enemy_hp", std::int64_t{0}, "싸우는 적의 체력"},
@@ -278,6 +282,9 @@ int main(int argc, char* argv[]) {
 
         MainWindow window(doc.get(), python.get());
         window.show();
+        if (parser.isSet(commonEventOption)) {
+            window.showCommonEvent(parser.value(commonEventOption), parser.isSet(runEventOption));
+        }
         if (parser.isSet(eventOption)) {
             window.showObjectEvent(parser.value(eventOption));
             if (parser.isSet(runEventOption)) {

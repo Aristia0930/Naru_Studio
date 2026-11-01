@@ -135,6 +135,16 @@ private:
     std::vector<naru::VariableDef> after_;
 };
 
+class SetCommonEventsCommand : public QUndoCommand {
+public:
+    SetCommonEventsCommand(ProjectDocument* doc, std::vector<naru::CommonEvent> after);
+    void redo() override;
+    void undo() override;
+private:
+    ProjectDocument* doc_;
+    std::vector<naru::CommonEvent> before_, after_;
+};
+
 // 전역 스크립트 목록(등록·해제·순서) 변경.
 class SetGlobalScriptsCommand : public QUndoCommand {
 public:

@@ -1,0 +1,70 @@
+{
+  "formatVersion": 1,
+  "id": "scene_001",
+  "name": "회복 샘",
+  "width": 960,
+  "height": 640,
+  "background": "#243344",
+  "player": "obj_001",
+  "objects": [
+    {
+      "id": "obj_001",
+      "name": "주인공",
+      "x": 220,
+      "y": 240,
+      "width": 48,
+      "height": 48,
+      "color": "#5FA8E8"
+    },
+    {
+      "id": "obj_002",
+      "name": "회복 샘",
+      "x": 220,
+      "y": 288,
+      "width": 48,
+      "height": 48,
+      "color": "#72C5A0",
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "show_choices",
+            "speaker": "안내",
+            "text": "어떤 방법으로 회복할까요?",
+            "defaultChoice": 0,
+            "cancelChoice": 2,
+            "choices": [
+              {
+                "text": "명령으로 호출",
+                "commands": [
+                  {
+                    "type": "call_common_event",
+                    "commonEvent": "recover"
+                  }
+                ]
+              },
+              {
+                "text": "Python으로 호출",
+                "commands": [
+                  {
+                    "type": "call_script",
+                    "script": "recover.py",
+                    "function": "run"
+                  }
+                ]
+              },
+              {
+                "text": "나가기",
+                "commands": []
+              }
+            ]
+          },
+          {
+            "type": "log",
+            "text": "호출 다음 명령으로 복귀"
+          }
+        ]
+      }
+    }
+  ]
+}

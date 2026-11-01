@@ -61,6 +61,10 @@ QString firstLine(const std::string& text) {
 
 QString describe(const EventCommand& c, const naru::Scene* scene, const naru::Project* project) {
     switch (c.type) {
+    case EventCommandType::CallCommonEvent: {
+        auto* event = project ? project->findCommonEvent(c.commonEvent) : nullptr;
+        return QStringLiteral("공통 이벤트 호출: %1 (%2)").arg(event ? q(event->name) : QStringLiteral("없는 이벤트"), q(c.commonEvent));
+    }
     case EventCommandType::ShowChoices:
         return QStringLiteral("선택지: %1 (%2개)").arg(firstLine(c.text)).arg(c.choices.size());
     case EventCommandType::Say:
@@ -141,7 +145,7 @@ std::optional<EventCommandType> chooseType(QWidget* parent) {
     for (auto type : {EventCommandType::Say, EventCommandType::ShowChoices, EventCommandType::Wait, EventCommandType::SetVariable,
                       EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::MoveObject,
                       EventCommandType::SetVisible, EventCommandType::ChangeScene, EventCommandType::CallScript,
-                      EventCommandType::Log,
+                      EventCommandType::CallCommonEvent, EventCommandType::Log,
                       EventCommandType::Comment}) {
         menu.addAction(CommandDialog::typeLabel(type))->setData(static_cast<int>(type));
     }
@@ -245,7 +249,8 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
 
     auto* header = new QHBoxLayout;
     header->addWidget(title_, 1);
-    header->addWidget(new QLabel(QStringLiteral("실행 조건"), this));
+    triggerLabel_ = new QLabel(QStringLiteral("실행 조건"), this);
+    header->addWidget(triggerLabel_);
     header->addWidget(trigger_);
 
     auto* conditionRow = new QHBoxLayout;
@@ -264,7 +269,9 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
 
     auto* layout = new QVBoxLayout(this);
     layout->addLayout(header);
-    layout->addLayout(conditionRow);
+    conditionPanel_ = new QWidget(this);
+    conditionPanel_->setLayout(conditionRow);
+    layout->addWidget(conditionPanel_);
     layout->addWidget(repeatWarning_);
     layout->addWidget(tree_, 1);
     layout->addLayout(buttons);
@@ -314,6 +321,7 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
         }
     });
 
+    connect(doc_, &ProjectDocument::commonEventsChanged, this, [this] { rebuild(); });
     timer_.setInterval(16);
     connect(&timer_, &QTimer::timeout, this, &EventEditor::tick);
     rebuild();
@@ -324,12 +332,28 @@ EventEditor::~EventEditor() {
     session_.reset();
 }
 
+void EventEditor::setCommonTarget(const QString& id) {
+    if (commonId_ == id) return;
+    stopTest();
+    commonId_ = id;
+    sceneId_.clear();
+    objectId_.clear();
+    trigger_->hide();
+    triggerLabel_->hide();
+    conditionPanel_->hide();
+    rebuild();
+}
+
 void EventEditor::setTarget(const QString& sceneId, const QString& objectId) {
     if (sceneId == sceneId_ && objectId == objectId_) {
         return;
     }
     // 다른 객체로 바꾸면 실행 중이던 테스트를 멈춘다 (실행 위치 표시가 맞지 않게 되므로).
     stopTest();
+    commonId_.clear();
+    trigger_->show();
+    triggerLabel_->show();
+    conditionPanel_->show();
     sceneId_ = sceneId;
     objectId_ = objectId;
     rebuild();
@@ -340,6 +364,15 @@ const naru::Scene* EventEditor::scene() const {
 }
 
 const naru::SceneObject* EventEditor::target() const {
+    if (!commonId_.isEmpty()) {
+        auto* event = doc_->project().findCommonEvent(commonId_.toStdString());
+        if (!event) return nullptr;
+        commonTarget_ = {};
+        commonTarget_.id = event->id;
+        commonTarget_.name = event->name;
+        commonTarget_.event = event->event;
+        return &commonTarget_;
+    }
     const naru::Scene* s = scene();
     return s ? s->findObject(objectId_.toStdString()) : nullptr;
 }
@@ -515,7 +548,13 @@ bool EventEditor::editEvent(const std::function<bool(naru::ObjectEvent&)>& chang
     if (!change(after.event) || after == *current) {
         return false;
     }
-    doc_->undoStack()->push(new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after));
+    if (!commonId_.isEmpty()) {
+        auto events = doc_->project().commonEvents;
+        for (auto& event : events) if (event.id == commonId_.toStdString()) event.event = after.event;
+        doc_->undoStack()->push(new SetCommonEventsCommand(doc_, std::move(events)));
+    } else {
+        doc_->undoStack()->push(new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after));
+    }
     return true;
 }
 
@@ -697,9 +736,11 @@ void EventEditor::startTest() {
     };
 
     // 실행 중 편집해도 테스트가 영향을 받지 않도록 데이터베이스 사본을 쓴다.
-    runDatabase_ = doc_->project().database;
+    runProject_ = doc_->project();
+    runDatabase_ = runProject_.database;
     session_ = std::make_unique<naru::Session>(doc_->project().initialVariables(), 1.0 / 60.0, this);
     session_->setDatabase(&runDatabase_);
+    session_->setProject(&runProject_);
     session_->logger().addSink([this](const naru::LogEntry& entry) {
         if (logSink_) {
             logSink_(entry);
@@ -712,6 +753,7 @@ void EventEditor::startTest() {
     }
     runButton_->setEnabled(false);
     stopButton_->setEnabled(true);
+    if (!commonId_.isEmpty()) session_->setCommonEventOrigin(commonId_.toStdString());
     session_->start(naru::compileEvent(object->event.commands, runner));
     if (session_->state() != naru::SessionState::Running) {
         finishTest();

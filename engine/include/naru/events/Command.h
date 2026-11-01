@@ -13,6 +13,7 @@ class Logger;
 class Variables;
 class GameWorld;
 struct Database;
+struct Project;
 
 enum class CommandStatus { Pending, Running, Waiting, Completed, Failed, Cancelled };
 
@@ -77,6 +78,12 @@ struct CommandContext {
     GameWorld* game = nullptr;
     // 이 이벤트가 붙은 객체 ID ("@self" 대상). 객체 이벤트가 아니면 비어 있다.
     std::string selfObjectId{};
+    const Project* project = nullptr;
+    std::vector<std::string> commonEventStack{};
+    // Python 호출은 함수 반환 후 이 순서대로 실행한다.
+    std::vector<std::string> pendingCommonEvents{};
+    // 한 번의 start/update에서 중첩 호출 전체가 같은 즉시 명령 한도를 사용한다.
+    std::shared_ptr<std::size_t> immediateBudget{};
 };
 
 // 이벤트 명령 하나. start()에서 즉시 끝나면 Completed를, 시간이 필요하면 Waiting을 반환하고

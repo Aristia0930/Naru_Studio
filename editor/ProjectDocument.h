@@ -36,6 +36,7 @@ public:
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
     void setDatabase(const naru::Database& database);
     void setGlobalScripts(const std::vector<std::string>& scripts);
+    void setCommonEvents(const std::vector<naru::CommonEvent>& events);
     void setVariables(const std::vector<naru::VariableDef>& variables);
 
     // scripts/ 안의 .py 파일 이름 (이름순).
@@ -43,6 +44,7 @@ public:
     bool isGlobalScript(const QString& fileName) const;
 
 signals:
+    void commonEventsChanged();
     void globalScriptsChanged();
     void variablesChanged();
     void databaseChanged();

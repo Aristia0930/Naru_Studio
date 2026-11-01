@@ -3,6 +3,7 @@
 #include "DatabaseEditor.h"
 #include "CommandDialog.h"
 #include "EventEditor.h"
+#include "CommonEventsEditor.h"
 #include "GlobalScriptsDialog.h"
 #include "Inspector.h"
 #include "ProjectDocument.h"
@@ -60,7 +61,7 @@ constexpr int kFileRole = Qt::UserRole + 3;
 constexpr int kLineRole = Qt::UserRole + 4;
 
 // 닫을 수 없는 기본 탭 수 (장면·이벤트·데이터베이스). 스크립트 탭은 이 뒤에 열린다.
-constexpr int kFixedTabs = 3;
+constexpr int kFixedTabs = 4;
 
 enum ItemKind { SceneItem = 1, ObjectItem = 2 };
 
@@ -94,7 +95,9 @@ MainWindow::MainWindow(ProjectDocument* doc, naru::python::PythonRuntime* python
     tabs_->addTab(eventEditor_, QStringLiteral("이벤트"));
     databaseEditor_ = new DatabaseEditor(doc_, this);
     tabs_->addTab(databaseEditor_, QStringLiteral("데이터베이스"));
-    // 장면·이벤트·데이터베이스 탭은 닫을 수 없다. 스크립트 탭은 그 뒤에 열린다.
+    commonEventsEditor_ = new CommonEventsEditor(doc_, python_, this);
+    tabs_->addTab(commonEventsEditor_, QStringLiteral("공통 이벤트"));
+    // 장면·이벤트·데이터베이스·공통 이벤트 탭은 닫을 수 없다. 스크립트 탭은 그 뒤에 열린다.
     for (int i = 0; i < kFixedTabs; ++i) {
         tabs_->tabBar()->setTabButton(i, QTabBar::RightSide, nullptr);
         tabs_->tabBar()->setTabButton(i, QTabBar::LeftSide, nullptr);
@@ -106,6 +109,8 @@ MainWindow::MainWindow(ProjectDocument* doc, naru::python::PythonRuntime* python
     createActions();
 
     eventEditor_->setLogSink([this](const naru::LogEntry& entry) { appendLog(entry); });
+    commonEventsEditor_->editor()->setLogSink([this](const naru::LogEntry& entry) { appendLog(entry); });
+    commonEventsEditor_->editor()->setVariablesSink([this](const naru::Variables& v) { showVariables(v); });
     eventEditor_->setVariablesSink([this](const naru::Variables& v) { showVariables(v); });
 
     connect(sceneView_, &SceneView::selectionChangedTo, this, &MainWindow::onCanvasSelection);
@@ -277,11 +282,13 @@ void MainWindow::createActions() {
     run->setToolTip(QStringLiteral("열린 스크립트 탭을, 장면 탭에서는 scripts/main.py를 실행합니다 (F5)"));
 
     auto* eventTest = make(QStringLiteral("이벤트 테스트 실행"), QKeySequence(Qt::Key_F6), [this] {
-        openEventTab();
-        eventEditor_->startTest();
+        startEventTest();
     });
     auto* eventStop = make(QStringLiteral("이벤트 테스트 중지"), QKeySequence(Qt::Key_F8),
-                           [this] { eventEditor_->stopTest(); });
+                           [this] {
+                               eventEditor_->stopTest();
+                               commonEventsEditor_->editor()->stopTest();
+                           });
     auto* eventOpen = make(QStringLiteral("선택한 객체의 이벤트 편집"), QKeySequence(Qt::Key_Return),
                            &MainWindow::openEventTab);
     eventOpen->setShortcutContext(Qt::WidgetWithChildrenShortcut);
@@ -505,7 +512,19 @@ void MainWindow::showDatabase(const QString& typeKey, const QString& recordId, b
     }
 }
 
+void MainWindow::showCommonEvent(const QString& id, bool run) {
+    tabs_->setCurrentWidget(commonEventsEditor_);
+    commonEventsEditor_->selectEvent(id);
+    if (run) commonEventsEditor_->editor()->startTest();
+}
+
 void MainWindow::startEventTest() {
+    if (tabs_->currentWidget() == commonEventsEditor_) {
+        eventEditor_->stopTest();
+        commonEventsEditor_->editor()->startTest();
+        return;
+    }
+    commonEventsEditor_->editor()->stopTest();
     openEventTab();
     eventEditor_->startTest();
 }
@@ -1046,6 +1065,53 @@ bool MainWindow::runSelfTest() {
         const naru::Scene* s = doc_->project().findScene(currentSceneId_.toStdString());
         return s ? s->objects.size() : std::size_t{0};
     };
+
+    // 공통 이벤트 편집·Undo·실행용 사본·저장·재로드를 실제 위젯에서 검사한다.
+    {
+        auto original = doc_->project().commonEvents;
+        auto id = commonEventsEditor_->addEvent(QStringLiteral("테스트 회복"));
+        auto* common = commonEventsEditor_->editor();
+        check(!id.isEmpty() && doc_->project().findCommonEvent(id.toStdString()), "공통 이벤트 추가");
+        naru::EventCommand message;
+        message.type = naru::EventCommandType::Say;
+        message.text = "공통 이벤트 대기";
+        naru::EventCommand log;
+        log.type = naru::EventCommandType::Log;
+        log.text = "공통 이벤트 원본 실행";
+        check(common->insertCommand("", 0, message) && common->insertCommand("", 1, log), "공통 이벤트 명령 편집");
+        commonEventsEditor_->renameEvent(QStringLiteral("회복 이름 변경"));
+        check(doc_->project().findCommonEvent(id.toStdString())->name == "회복 이름 변경", "공통 이벤트 이름 변경은 ID 유지");
+        doc_->undoStack()->undo();
+        check(doc_->project().findCommonEvent(id.toStdString())->name == "테스트 회복", "공통 이벤트 이름 Undo");
+        auto second = commonEventsEditor_->addEvent(QStringLiteral("다른 이벤트"));
+        commonEventsEditor_->moveEvent(-1);
+        check(doc_->project().commonEvents.front().id == second.toStdString(), "공통 이벤트 순서 변경");
+        commonEventsEditor_->selectEvent(id);
+        showCommonEvent(id);
+        startEventTest();
+        check(common->isRunning() && !common->messageClosed(), "공통 이벤트 F6 대사 대기");
+        log.text = "편집 후 새 내용";
+        common->replaceCommand("", 1, log);
+        common->advanceDialogue();
+        QElapsedTimer waited;
+        waited.start();
+        while (common->isRunning() && waited.elapsed() < 2000) QCoreApplication::processEvents(QEventLoop::AllEvents, 20);
+        check(!common->isRunning() && logMessages_.contains(QStringLiteral("공통 이벤트 원본 실행")) &&
+                  !logMessages_.contains(QStringLiteral("편집 후 새 내용")), "F6는 편집 데이터와 분리된 사본 실행");
+        common->startTest();
+        common->stopTest();
+        check(!common->isRunning() && common->messageClosed(), "공통 이벤트 F8 중지");
+        commonEventsEditor_->removeEvent();
+        check(!doc_->project().findCommonEvent(id.toStdString()), "공통 이벤트 삭제");
+        doc_->undoStack()->undo();
+        check(doc_->project().findCommonEvent(id.toStdString()) != nullptr, "공통 이벤트 삭제 Undo");
+        check(saveAll(), "공통 이벤트 저장");
+        QString commonError;
+        auto loaded = ProjectDocument::open(doc_->directory(), &commonError);
+        check(loaded && loaded->project().commonEvents == doc_->project().commonEvents, "공통 이벤트 저장 후 재열기");
+        doc_->undoStack()->push(new SetCommonEventsCommand(doc_, original));
+        tabs_->setCurrentIndex(0);
+    }
 
     check(!currentSceneId_.isEmpty(), "프로젝트를 열면 시작 장면이 표시된다");
     std::size_t before = objectCount();

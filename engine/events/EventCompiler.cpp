@@ -4,6 +4,8 @@
 #include "naru/core/Value.h"
 #include "naru/data/Database.h"
 #include "naru/events/BuiltinCommands.h"
+#include "naru/events/EventRunner.h"
+#include <algorithm>
 #include "naru/runtime/GameWorld.h"
 
 #include <cstdio>
@@ -408,12 +410,106 @@ private:
     bool shown_ = false;
 };
 
+class CommonEventCommand : public Command {
+public:
+    CommonEventCommand(std::string id, std::string eventId, ScriptRunner scripts)
+        : Command(std::move(id)), eventId_(std::move(eventId)), scripts_(std::move(scripts)) {}
+    CommandStatus start(CommandContext& ctx) override {
+        const auto* event = ctx.project ? ctx.project->findCommonEvent(eventId_) : nullptr;
+        if (!event) {
+            setError("공통 이벤트가 없습니다: " + eventId_);
+            return CommandStatus::Failed;
+        }
+        if (ctx.commonEventStack.size() >= 32 ||
+            std::find(ctx.commonEventStack.begin(), ctx.commonEventStack.end(), eventId_) != ctx.commonEventStack.end()) {
+            setError("공통 이벤트 순환 호출 또는 호출 깊이 초과 (최대 32): " + eventId_);
+            return CommandStatus::Failed;
+        }
+        child_ = std::make_unique<CommandContext>(ctx);
+        child_->jump.reset();
+        child_->pendingCommonEvents.clear();
+        child_->commonEventStack.push_back(eventId_);
+        runner_ = EventRunner(compileEvent(event->event.commands, scripts_));
+        runner_.start(*child_);
+        return result();
+    }
+    CommandStatus update(CommandContext& ctx, double dt) override {
+        child_->immediateBudget = ctx.immediateBudget;
+        runner_.update(*child_, dt);
+        return result();
+    }
+    void cancel(CommandContext&) override { if (child_) runner_.cancel(*child_); }
+private:
+    CommandStatus result() {
+        if (runner_.status() == CommandStatus::Failed) {
+            setError("공통 이벤트 " + eventId_ + " [" + runner_.failedCommandId() + "]: " + runner_.failureMessage());
+            return CommandStatus::Failed;
+        }
+        return runner_.finished() ? runner_.status() : CommandStatus::Waiting;
+    }
+    std::string eventId_;
+    ScriptRunner scripts_;
+    std::unique_ptr<CommandContext> child_;
+    EventRunner runner_;
+};
+
+// Python 함수가 끝난 뒤 예약된 공통 이벤트를 실행하고 다음 명령으로 돌아간다.
+class ScriptCommand : public Command {
+public:
+    ScriptCommand(std::string id, EventCommand data, ScriptRunner scripts)
+        : Command(std::move(id)), data_(std::move(data)), scripts_(std::move(scripts)) {}
+    CommandStatus start(CommandContext& ctx) override {
+        if (!scripts_ || data_.script.empty()) {
+            setError("호출할 스크립트 또는 실행기가 없습니다");
+            return CommandStatus::Failed;
+        }
+        child_ = std::make_unique<CommandContext>(ctx);
+        child_->jump.reset();
+        child_->pendingCommonEvents.clear();
+        auto result = scripts_(data_.script, data_.function.empty() ? "run" : data_.function, *child_);
+        if (!result.error.empty()) { setError(result.error); return CommandStatus::Failed; }
+        if (!data_.variable.empty()) ctx.variables.set(data_.variable, std::move(result.returned));
+        std::vector<EventCommand> calls;
+        for (const auto& eventId : child_->pendingCommonEvents) {
+            EventCommand call;
+            call.type = EventCommandType::CallCommonEvent;
+            call.commonEvent = eventId;
+            calls.push_back(std::move(call));
+        }
+        child_->pendingCommonEvents.clear();
+        runner_ = EventRunner(compileEvent(calls, scripts_));
+        runner_.start(*child_);
+        return status();
+    }
+    CommandStatus update(CommandContext& ctx, double dt) override {
+        child_->immediateBudget = ctx.immediateBudget;
+        runner_.update(*child_, dt);
+        return status();
+    }
+    void cancel(CommandContext&) override { if (child_) runner_.cancel(*child_); }
+private:
+    CommandStatus status() {
+        if (runner_.status() == CommandStatus::Failed) {
+            setError(runner_.failureMessage());
+            return CommandStatus::Failed;
+        }
+        return runner_.finished() ? runner_.status() : CommandStatus::Waiting;
+    }
+    EventCommand data_;
+    ScriptRunner scripts_;
+    std::unique_ptr<CommandContext> child_;
+    EventRunner runner_;
+};
+
 void emit(const std::vector<EventCommand>& list, const std::string& prefix,
           std::vector<std::unique_ptr<Command>>& out, const ScriptRunner& runScript) {
     for (std::size_t i = 0; i < list.size(); ++i) {
         const EventCommand& c = list[i];
         std::string id = commandId(prefix, i);
         switch (c.type) {
+        case EventCommandType::CallCommonEvent:
+            out.push_back(std::make_unique<CommonEventCommand>(id, c.commonEvent, runScript));
+            break;
         case EventCommandType::ShowChoices: {
             auto choice = std::make_unique<ChoicesCommand>(id, c);
             auto* selection = choice.get();
@@ -441,29 +537,9 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
         case EventCommandType::Log:
             out.push_back(std::make_unique<LogCommand>(id, c.text));
             break;
-        case EventCommandType::CallScript: {
-            std::string script = c.script;
-            std::string function = c.function.empty() ? std::string("run") : c.function;
-            std::string resultVariable = c.variable;
-            out.push_back(std::make_unique<CallCommand>(
-                id, [runScript, script, function, resultVariable](CommandContext& ctx) -> std::string {
-                    if (script.empty()) {
-                        return "호출할 스크립트를 지정하지 않았습니다";
-                    }
-                    if (!runScript) {
-                        return "스크립트 실행기가 연결되지 않았습니다";
-                    }
-                    ScriptCallResult result = runScript(script, function, ctx);
-                    if (!result.error.empty()) {
-                        return result.error;
-                    }
-                    if (!resultVariable.empty()) {
-                        ctx.variables.set(resultVariable, std::move(result.returned));
-                    }
-                    return {};
-                }));
+        case EventCommandType::CallScript:
+            out.push_back(std::make_unique<ScriptCommand>(id, c, runScript));
             break;
-        }
         case EventCommandType::IfVariable: {
             auto branch = std::make_unique<BranchCommand>(id, c.variable, c.compare, c.value);
             BranchCommand* branchPtr = branch.get();

@@ -6,13 +6,17 @@ RPG Maker의 데이터베이스·맵·이벤트·전투 등 제작 기능을 출
 
 ## 지금 시작할 곳
 
+DB를 중심으로 스킬·Python·이미지·음원·프레임 이펙트를 연결하고 투명화 도구를 추가하는 방법은 [DB·에셋·스킬 연결 계획](docs/DATABASE_ASSETS_PLAN.md)에 있습니다.
+
+현재 작업 순서는 [로드맵](docs/ROADMAP.md), 실제 2D 게임 완성을 위한 추가 목록·구현 방법·검증 기준은 [상세 개발 계획](docs/DEVELOPMENT_PLAN.md)에 있습니다. 최신 결과는 [세션 기록](SESSION_STATE.md)을 따릅니다.
+
 1. **[다음 세션 구축 안내](NARU_NEXT_STEPS.md)** — 확정한 목표, 완료/미완료, 설치 준비, 소스 구조, 단계별 구현과 검증 기준.
 2. [세션 기록](SESSION_STATE.md), [작업 안내](AGENTS.md).
 3. [기능·UI 설계 초안](TOOL_FOUNDATION.md). 최상단의 최신 C++/Qt/Python 갱신을 우선합니다.
 
 ## 현재 상태
 
-**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 10종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. 이미지·음원, 배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
+**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 11종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. **공통 이벤트** 탭에서 여러 장면이 함께 쓸 명령을 편집하고 이벤트 명령 또는 Python `ctx.run_event`로 호출합니다. 이미지·음원, 배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 | 위치 | 내용 |
 |---|---|

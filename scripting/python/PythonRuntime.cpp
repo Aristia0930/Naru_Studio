@@ -146,6 +146,9 @@ class Context:
     def busy(self):
         """대사나 플레이어를 멈추는 이벤트가 진행 중인가 (게임 밖이면 False)"""
         return _naru.game_busy()
+    def run_event(self, event_id):
+        """공통 이벤트를 함수 반환 뒤 호출 순서대로 실행한다 (반환값 None)."""
+        return _naru.run_event(event_id)
     def log(self, message):
         _naru.log(str(message), 0)
     def warning(self, message):
@@ -849,7 +852,27 @@ PyObject* naruSceneObjectIds(PyObject*, PyObject*) {
     return stringList(ids);
 }
 
+PyObject* naruRunEvent(PyObject*, PyObject* args) {
+    const char* id = nullptr;
+    if (!PyArg_ParseTuple(args, "s", &id)) return nullptr;
+    if (!g_ctx || !g_ctx->project) {
+        PyErr_SetString(PyExc_RuntimeError, "공통 이벤트는 게임 또는 F6 이벤트 테스트 실행 중에 호출하세요");
+        return nullptr;
+    }
+    if (!g_ctx->project->findCommonEvent(id)) {
+        PyErr_SetString(PyExc_KeyError, id);
+        return nullptr;
+    }
+    if (g_ctx->pendingCommonEvents.size() >= 128) {
+        PyErr_SetString(PyExc_RuntimeError, "한 함수에서 공통 이벤트를 128개 넘게 예약할 수 없습니다");
+        return nullptr;
+    }
+    g_ctx->pendingCommonEvents.emplace_back(id);
+    Py_RETURN_NONE;
+}
+
 PyMethodDef kMethods[] = {
+    {"run_event", naruRunEvent, METH_VARARGS, "run_event(id)"},
     {"log", naruLog, METH_VARARGS, "log(message, level)"},
     {"get_var", naruGetVar, METH_VARARGS, "get_var(name, default=None)"},
     {"set_var", naruSetVar, METH_VARARGS, "set_var(name, value)"},

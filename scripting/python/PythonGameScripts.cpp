@@ -56,10 +56,12 @@ HookStatus PythonGameScripts::call(const std::string& hook, CommandContext& ctx)
         if (failed_.count({path, hook})) {
             continue;
         }
+        const auto reserved = ctx.pendingCommonEvents.size();
         switch (python_.callModuleFunction(path, hook, ctx)) {
         case CallStatus::Ok: ran = true; break;
         case CallStatus::Missing: break;
         case CallStatus::Failed:
+            ctx.pendingCommonEvents.resize(reserved);
             failed_.insert({path, hook});
             failed = true;
             break;

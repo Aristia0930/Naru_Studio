@@ -919,3 +919,45 @@ TEST_CASE("병렬 처리는 반복을 켜면 끝날 때마다 다시 실행되�
     }
     CHECK(intVar(world, "drop") == 4);
 }
+
+
+TEST_CASE("공통 이벤트는 호출 객체를 이동하고 장면 이동은 호출자까지 중지한다") {
+    EventCommand call;
+    call.type = EventCommandType::CallCommonEvent;
+    call.commonEvent = "move";
+    EventCommand move;
+    move.type = EventCommandType::MoveObject;
+    move.target = kTargetSelf;
+    move.direction = "right";
+    move.distance = 40;
+    move.speed = 120;
+    auto p = projectWith({object("npc", EventTrigger::Autorun, {call, add("after", 1)})});
+    p.commonEvents = {{"move", "이동", {EventTrigger::Action, {}, false, {move, say("도착")}}}};
+    GameWorld world(p, noScripts());
+    CHECK(world.startGame(p.startSceneId));
+    step(world);
+    CHECK(world.busy());
+    CHECK(!world.variables().get("after"));
+    for (int i = 0; i < 35; ++i) step(world);
+    CHECK(world.object("npc")->x == 40);
+    CHECK(!world.messageClosed());
+    world.closeMessage();
+    step(world);
+    CHECK(intVar(world, "after") == 1);
+    CHECK(p.scenes[0].objects[0].x == 0);
+    EventCommand change;
+    change.type = EventCommandType::ChangeScene;
+    change.scene = "scene_002";
+    p.commonEvents[0].event.commands = {change, add("inner_after", 1)};
+    Scene second;
+    second.id = "scene_002";
+    second.name = "다음";
+    p.scenes.push_back(second);
+    GameWorld changing(p, noScripts());
+    CHECK(changing.startGame(p.startSceneId));
+    step(changing);
+    CHECK(changing.scene()->id == "scene_002");
+    CHECK(!changing.variables().get("after"));
+    CHECK(!changing.variables().get("inner_after"));
+    CHECK(changing.runningEventCount() == 0);
+}

@@ -64,6 +64,7 @@ private:
     QDoubleSpinBox* speed_ = nullptr;
     QCheckBox* waitForEnd_ = nullptr;
     QComboBox* show_ = nullptr;
+    QComboBox* commonEvent_ = nullptr;
     QComboBox* scene_ = nullptr;
     QCheckBox* setPosition_ = nullptr;
     QDoubleSpinBox* x_ = nullptr;

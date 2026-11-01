@@ -55,6 +55,13 @@ struct VariableDef {
     bool operator==(const VariableDef&) const = default;
 };
 
+struct CommonEvent {
+    std::string id;
+    std::string name;
+    ObjectEvent event; // 명령만 사용한다. 자동 실행 조건은 호출하는 쪽에서 정한다.
+    bool operator==(const CommonEvent&) const = default;
+};
+
 // 편집 문서로서의 프로젝트. 폴더 위치는 ProjectIO가 다루며 여기에는 저장하지 않는다.
 struct Project {
     int formatVersion = 1;
@@ -66,6 +73,9 @@ struct Project {
     std::vector<std::string> globalScripts;
     // 공용 변수·스위치 정의 (편집 화면에 보이는 순서).
     std::vector<VariableDef> variables;
+    std::vector<CommonEvent> commonEvents;
+
+    const CommonEvent* findCommonEvent(const std::string& id) const;
 
     Scene* findScene(const std::string& sceneId);
     const Scene* findScene(const std::string& sceneId) const;
