@@ -73,6 +73,11 @@ private:
     void newScript();
     void editGlobalScripts();
     void editVariables();
+    void editInputSettings();
+    bool syncInputSettings(QString* error);
+    void refreshInputSettingsEditor();
+    std::string inputDiskSource_;
+    bool refreshingInputSettings_ = false;
     void toggleGlobalScript(const QString& fileName);
     bool checkGlobalScripts();
     ScriptEditor* openScript(const QString& path);

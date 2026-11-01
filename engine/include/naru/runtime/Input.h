@@ -1,6 +1,8 @@
 #pragma once
 
 #include <map>
+#include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -54,14 +56,40 @@ public:
     std::vector<std::string> actions() const;
     // 이 키(실제 눌린 키 이름)를 쓰는 동작들.
     std::vector<std::string> actionsForKey(const std::string& keyName) const;
+    bool actionHeld(const std::string& action, const std::set<std::string>& physicalKeys) const;
 
     // 배치된 키 이름이 실제 키 이름과 맞는가 (별칭 포함).
     static bool keyMatches(const std::string& bound, const std::string& keyName);
     // 동작 이름 규칙: 영문 소문자로 시작, 영문 소문자·숫자·_ (최대 32자).
     static bool isValidActionName(const std::string& action);
+    static const std::vector<std::string>& keyNames();
+    static std::optional<std::string> canonicalKeyName(const std::string& key);
+    static std::optional<std::string> canonicalBinding(const std::string& binding);
+    static std::vector<std::string> bindingKeys(const std::string& binding);
 
 private:
     std::map<std::string, std::vector<std::string>> bindings_;
+    std::map<std::string, std::vector<std::vector<std::string>>> compiledBindings_;
 };
+
+// 화면과 전용 Python 설정 파일이 함께 편집하는 기본 설정. 실행 중 상태와 분리한다.
+struct InputSettings {
+    bool defaultControl = true;
+    double playerSpeed = 240.0;
+    std::map<std::string, std::vector<std::string>> bindings;
+    InputSettings();
+    bool operator==(const InputSettings&) const = default;
+};
+
+struct InputSettingsResult {
+    std::optional<InputSettings> settings;
+    std::string error;
+    int line = 0;
+};
+
+// 전용 파일의 리터럴 대입만 읽는다. Python 코드를 실행하지 않는다.
+InputSettingsResult parseInputSettings(const std::string& source);
+// 기존 파일에서 설정값 영역만 고쳐 다른 줄의 주석을 보존한다.
+std::string inputSettingsSource(const InputSettings& settings, const std::string& previous = {});
 
 } // namespace naru

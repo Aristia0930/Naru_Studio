@@ -5,6 +5,22 @@
 
 표시: **읽기** = 값을 볼 수 있음 · **쓰기** = 대입해서 바꿀 수 있음 · *게임 밖* = 에디터의 F5 스크립트 실행, F6 이벤트 테스트
 
+새 스크립트 작성/이벤트 연결은 [작성 안내](guide/SCRIPTING.md), 현재 명령 13종의 입력·대기·중지 규칙은 [이벤트 안내](guide/EVENTS.md)에서 따라 할 수 있습니다.
+
+## 0. 화면과 동기화되는 기본 입력 설정
+
+새 프로젝트의 `scripts/input_settings.py`와 **게임 → 키 설정**은 같은 원본을 편집합니다. 값은 `project.json`에 중복 저장하지 않으며 `inputSettingsScript`에 실제 파일 이름을 기록합니다. 우선순위로 다른 쪽을 덮어쓰는 설정이 아닙니다.
+
+| 변수 | 기본값·규칙 |
+|---|---|
+| `DEFAULT_CONTROL_ENABLED` | `True`. False면 엔진 기본 이동/조사 OFF. 대사·선택지 입력과 Python에서 입력 읽기는 유지 |
+| `PLAYER_SPEED` | `240.0` px/초, 0~100000. 게임 시작 때 `ctx.player.speed`의 초기값 |
+| `KEY_BINDINGS` | 기본 동작 6개→키 목록. `[]`는 OFF, 사용자 동작 추가 가능. 동작 128개·키 64개까지, 별칭·중복·이름 검증 |
+
+기본 동작은 아래 입력 표와 같고 새 프로젝트 설정에는 `dash: ["Shift"]` 예제도 있습니다. `game.py`의 `DASH_ENABLED = False`를 True로 켜야 달리기 동작을 덧붙입니다. 전용 파일에서는 세 변수의 리터럴 대입·주석만 지원하며 함수/import/계산식은 오류로 거부합니다. 자세한 동기화·외부 파일 충돌·기존 프로젝트 이행은 [키 설정 안내](guide/INPUT_SETTINGS.md)에 있습니다.
+
+실행 중 `ctx.input.bind`, `ctx.player.speed`, `ctx.player.default_control`은 실행 사본을 변경하고 설정 파일에는 쓰지 않습니다. 설정 변경은 저장 후 다음 게임 실행부터 적용합니다. F5/F6의 ctx.input/player가 생기는 기능은 아닙니다.
+
 ---
 
 ## 1. ctx는 언제 무엇을 가지나
@@ -68,9 +84,9 @@ def run(ctx):
 | `name` | str | 읽기 | | 객체 이름 |
 | `x`, `y` | float | 읽기·쓰기 | 장면 편집 위치 | 왼쪽 위 좌표(픽셀). **대입은 충돌 없이 순간 이동**합니다 |
 | `width`, `height` | float | 읽기 | 장면 편집 크기 | 충돌·조사 판정 크기 |
-| `speed` | float | 읽기·쓰기 | **240** (픽셀/초), 0 이상 | 기본 조작 이동 속도. 대각선은 √2로 나눔 |
+| `speed` | float | 읽기·쓰기 | 공유 설정 `PLAYER_SPEED` (없으면 **240**, px/초) | 기본 조작 이동 속도. 대각선은 √2로 나눔 |
 | `facing` | str | 읽기·쓰기 | `"down"` | `"down"` `"up"` `"left"` `"right"`. 조사 방향 |
-| `default_control` | bool | 읽기·쓰기 | `True` | 엔진 기본 조작(방향 입력 이동 + 결정 키 조사). `False`면 엔진이 플레이어를 움직이지 않음 |
+| `default_control` | bool | 읽기·쓰기 | 공유 설정 `DEFAULT_CONTROL_ENABLED` (없으면 True) | 엔진 기본 조작(방향 입력 이동 + 결정 키 조사). False면 엔진이 플레이어를 움직이지 않음 |
 
 | 함수 | 반환 | 설명 |
 |---|---|---|
@@ -105,9 +121,11 @@ def run(ctx):
 | `actions()` | list[str] | 모든 동작 이름 (가나다/알파벳 순) |
 
 - 없는 동작을 물으면 `False`나 빈 목록을 돌려줍니다 (오류 아님).
+- 동시 입력: `bind("special_action", ["Shift + E", "F"])`는 Shift와 E를 함께 누르거나 F를 누르기입니다. 목록은 OR, 문자열의 `+`는 AND이며 기본 설정 `KEY_BINDINGS`에서도 같습니다. 조합은 서로 겹치지 않는 키 최대 4개, 누른 순서 무관·추가 키 허용입니다. `Keypad +`는 한 키이고 `Ctrl + Keypad +`도 지원합니다. 잘못된 조합은 `ValueError`이며 기존 배치를 보존합니다. `keys()`는 정식 이름·수식 키 우선 순서로 정리한 문자열을 반환합니다.
+- 조합의 `pressed()`는 동작 전체가 꺼짐→켜짐인 첫 프레임, `held()`는 모두 누른 동안입니다. 한 키를 떼고 다시 누르면 재실행하지만 다른 대체 키가 계속 눌려 있으면 새 `pressed()`가 생기지 않습니다. 구성 키에 연결된 다른 동작도 동시에 실행할 수 있습니다. 순차 콤보·입력 시간 제한은 게임 코드에서 처리합니다. [화면 사용법·예제](guide/INPUT_SETTINGS.md#6-여러-키를-동시에-눌러-실행하기).
 - 대사를 넘기는 데 쓴 결정 키는 그 프레임의 `pressed("confirm")`에 나타나지 않습니다.
 - 선택지가 떠 있던 프레임의 `pressed("up")`, `pressed("down")`, `pressed("confirm")`, `pressed("cancel")`은 선택지 입력에 사용되어 스크립트에는 나타나지 않습니다. `held()`는 유지됩니다. 선택을 결정한 프레임에도 엔진 기본 이동·조사는 실행하지 않습니다. 선택지는 이벤트 명령 **선택지 표시**로 만듭니다 (기본 1번째 선택, 취소 불가).
-- 키 배치는 게임을 실행하는 동안 유지되고, 다시 실행하면 아래 기본값으로 돌아갑니다. 그래서 보통 `on_game_start`에서 바꿉니다.
+- 기본 키·속도·조작 ON/OFF는 [키 설정 화면과 Python 전용 파일](guide/INPUT_SETTINGS.md)이 같은 값을 편집합니다. 게임 재실행 때 이 저장값을 읽습니다. `ctx.input.bind` 같은 게임 중 변경은 실행 사본만 바꾸고 원본 파일에는 쓰지 않습니다.
 
 **기본 동작과 키 배치**
 
@@ -115,7 +133,7 @@ def run(ctx):
 |---|---|---|
 | `up` `down` `left` `right` | `Up`/`W`, `Down`/`S`, `Left`/`A`, `Right`/`D` | 플레이어 이동 (기본 조작) |
 | `confirm` | `Z`, `Return`, `Space`, `Keypad Enter` | 조사, 대사 넘기기 |
-| `cancel` | `X`, `Escape` | (아직 쓰는 곳 없음) |
+| `cancel` | `X`, `Escape` | 선택지 취소 (취소 불가이면 닫히지 않음) |
 
 **동작 이름 규칙**: 영문 소문자로 시작, 영문 소문자·숫자·`_`, 32자 이하. 어기면 `ValueError`.
 
@@ -126,7 +144,7 @@ def run(ctx):
 | 글자·숫자 | `A`~`Z`, `0`~`9` |
 | 방향 | `Up` `Down` `Left` `Right` |
 | 자주 쓰는 키 | `Space`, `Return`, `Escape`, `Tab`, `Backspace`, `Delete`, `Insert`, `Home`, `End`, `PageUp`, `PageDown` |
-| 기능 키 | `F1`~`F12` |
+| 기능 키 | `F1`~`F24` |
 | 수식 키 | `Left Shift` `Right Shift` `Left Ctrl` `Right Ctrl` `Left Alt` `Right Alt` |
 | 키패드 | `Keypad 0`~`Keypad 9`, `Keypad Enter` |
 | **별칭** | `Enter` = `Return`, `Esc` = `Escape`, `Shift` = 왼쪽·오른쪽 Shift, `Ctrl`, `Alt`도 같은 방식 |
@@ -234,7 +252,7 @@ def on_update(ctx):
 
 ## 9. 아직 스크립트로 못 하는 것
 
-- 객체 숨기기/보이기, 크기 바꾸기, 실행 중 객체 만들기/지우기, 객체의 이벤트·실행 조건 바꾸기
+- 객체 크기 바꾸기, 실행 중 객체 만들기/지우기, 객체의 이벤트·실행 조건 바꾸기
 - 스크립트에서 대사를 띄우고 기다리기, 대기 (`async def` — 지금은 명확한 오류로 거부)
 - 대기형 Python에서 이벤트 결과를 직접 기다리기 (`async` 지원은 아직 없음)
 - 데이터베이스 값 바꾸기 (읽기 전용)

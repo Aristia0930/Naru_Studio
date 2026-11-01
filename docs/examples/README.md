@@ -10,6 +10,9 @@
 
 | 파일 | 하는 일 | 연결 방법 |
 |---|---|---|
+| [key_combinations.py](key_combinations.py) | Shift+E 동시 입력 또는 F로 한 번씩 로그 실행 | `special_action`에 `Shift + E`와 `F` 배치 후 전역 등록. [동시 입력 안내](../guide/INPUT_SETTINGS.md#6-여러-키를-동시에-눌러-실행하기) |
+| [key_move_face.py](key_move_face.py) | 8을 새로 누르면 위로 48px 즉시 이동한 뒤 오른쪽 보기 | 키 설정에서 `step_up_face_right`→`8` 추가 후 전역 등록. [연결 순서](../guide/INPUT_SETTINGS.md#5-8을-눌러-위로-이동한-뒤-오른쪽-보기) |
+| [reward.py](reward.py) | 환영 보상을 게임 변수로 한 번만 지급하고 참/거짓 반환 | 객체 이벤트: 스크립트 호출 `reward.py · give` → 반환값 변수 `rewarded`, [연결 설명](../guide/SCRIPTING.md#2-객체-이벤트에-python-함수-연결) |
 | [chase.py](chase.py) | 객체가 플레이어 쪽으로 다가온다 (실행 조건 "이벤트 접촉"과 함께 쓰면 붙잡힐 때 이벤트 실행) | 전역 스크립트로 사용 |
 | [patrol.py](patrol.py) | 객체가 두 지점 사이를 왔다 갔다 한다 | 전역 스크립트로 사용 |
 | [push.py](push.py) | 부딪힌 상자를 바라보는 방향으로 한 칸 민다, 움직였는지 반환 | 상자 이벤트: "플레이어 접촉" + 스크립트 호출 `push.py · push()` |

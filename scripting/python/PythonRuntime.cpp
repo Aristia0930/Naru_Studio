@@ -528,7 +528,14 @@ PyObject* naruInputBind(PyObject*, PyObject* args) {
     }
     std::vector<std::string> keys;
     for (Py_ssize_t i = 0; i < PyList_Size(list); ++i) {
-        keys.push_back(utf8(PyList_GetItem(list, i)));
+        auto text = utf8(PyList_GetItem(list, i));
+        auto binding = InputMap::canonicalBinding(text);
+        // +를 쓰지 않는 기존 확장 SDL 키 이름은 유지한다.
+        if (!binding && text.find('+') != std::string::npos) {
+            PyErr_SetString(PyExc_ValueError, "동시 키 조합은 서로 다른 키 2~4개를 +로 연결하세요 (예: Shift + E)");
+            return nullptr;
+        }
+        keys.push_back(binding.value_or(text));
     }
     game->inputMap().bind(action, std::move(keys));
     Py_RETURN_NONE;

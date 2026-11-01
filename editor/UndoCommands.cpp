@@ -142,6 +142,19 @@ SetGlobalScriptsCommand::SetGlobalScriptsCommand(ProjectDocument* doc, std::vect
     setText(QStringLiteral("전역 스크립트 변경"));
 }
 
+SetInputSettingsCommand::SetInputSettingsCommand(ProjectDocument* doc, std::string script, std::string source, bool merge)
+    : QUndoCommand(QStringLiteral("키 설정·Python 변경")), doc_(doc),
+      beforeScript_(doc->project().inputSettingsScript), beforeSource_(doc->project().inputSource),
+      afterScript_(std::move(script)), afterSource_(std::move(source)), merge_(merge) {}
+void SetInputSettingsCommand::redo() { doc_->setInputSettings(afterScript_, afterSource_); }
+void SetInputSettingsCommand::undo() { doc_->setInputSettings(beforeScript_, beforeSource_); }
+bool SetInputSettingsCommand::mergeWith(const QUndoCommand* other) {
+    auto* input = dynamic_cast<const SetInputSettingsCommand*>(other);
+    if (!input || !merge_ || !input->merge_ || doc_ != input->doc_ || afterScript_ != input->afterScript_) return false;
+    afterSource_ = input->afterSource_;
+    return true;
+}
+
 void SetGlobalScriptsCommand::redo() { doc_->setGlobalScripts(after_); }
 void SetGlobalScriptsCommand::undo() { doc_->setGlobalScripts(before_); }
 

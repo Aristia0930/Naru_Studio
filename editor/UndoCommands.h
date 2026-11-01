@@ -146,6 +146,20 @@ private:
 };
 
 // 전역 스크립트 목록(등록·해제·순서) 변경.
+class SetInputSettingsCommand : public QUndoCommand {
+public:
+    SetInputSettingsCommand(ProjectDocument* doc, std::string script, std::string source, bool merge = false);
+    void redo() override;
+    void undo() override;
+    int id() const override { return merge_ ? 5000 : -1; }
+    bool mergeWith(const QUndoCommand* command) override;
+private:
+    ProjectDocument* doc_;
+    std::string beforeScript_, beforeSource_, afterScript_, afterSource_;
+    bool merge_;
+};
+
+// 전역 스크립트 목록(등록·해제·순서) 변경.
 class SetGlobalScriptsCommand : public QUndoCommand {
 public:
     SetGlobalScriptsCommand(ProjectDocument* doc, std::vector<std::string> after);

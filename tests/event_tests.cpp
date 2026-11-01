@@ -5,6 +5,9 @@
 #include "naru/project/Project.h"
 
 #include <string>
+#include <filesystem>
+#include <fstream>
+#include <iterator>
 #include <vector>
 
 using namespace naru;
@@ -285,6 +288,20 @@ TEST_CASE("값 비교와 연산 규칙") {
 }
 
 TEST_MAIN()
+
+TEST_CASE("공개 이벤트 명령마다 사용 설명서에 저장 이름과 사용법이 있다") {
+    std::ifstream input(std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_EVENT_GUIDE_DOC)), std::ios::binary);
+    CHECK(input.good());
+    const std::string guide{std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>()};
+    int count = 0;
+    for (int index = 0; index < 256; ++index) {
+        const std::string key = toKey(static_cast<EventCommandType>(index));
+        if (key.empty()) break;
+        CHECK(guide.find("`" + key + "`") != std::string::npos);
+        ++count;
+    }
+    CHECK(count >= 13);
+}
 
 TEST_CASE("객체 이동·보이기/숨기기는 게임 밖(테스트 실행)에서 로그만 남긴다") {
     EventCommand move;

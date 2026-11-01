@@ -42,6 +42,7 @@ struct ScriptedInput {
     std::string action;
     int from;
     int to;
+    bool physical = false;
 };
 
 struct Options {
@@ -92,7 +93,7 @@ void writeStartupError(const std::string& message) {
     writeLog(e);
 }
 
-std::optional<ScriptedInput> parseHold(const std::string& text) {
+std::optional<ScriptedInput> parseHold(const std::string& text, bool physical = false) {
     std::size_t colon = text.find(':');
     std::size_t dash = text.find('-', colon == std::string::npos ? 0 : colon);
     if (colon == std::string::npos || dash == std::string::npos) {
@@ -101,10 +102,10 @@ std::optional<ScriptedInput> parseHold(const std::string& text) {
     std::string name = text.substr(0, colon);
     int from = std::atoi(text.substr(colon + 1, dash - colon - 1).c_str());
     int to = std::atoi(text.substr(dash + 1).c_str());
-    if (!InputMap::isValidActionName(name) || from < 0 || to < from) {
+    if ((physical ? !InputMap::canonicalKeyName(name).has_value() : !InputMap::isValidActionName(name)) || from < 0 || to < from) {
         return std::nullopt;
     }
-    return ScriptedInput{name, from, to};
+    return ScriptedInput{name, from, to, physical};
 }
 std::optional<Options> parseArgs(int argc, char** argv) {
     Options o;
@@ -117,12 +118,12 @@ std::optional<Options> parseArgs(int argc, char** argv) {
             }
             return std::string(argv[++i]);
         };
-        if (arg == "--hold") {
+        if (arg == "--hold" || arg == "--hold-key") {
             auto value = next();
             if (!value) {
                 return std::nullopt;
             }
-            std::optional<ScriptedInput> held = parseHold(*value);
+            std::optional<ScriptedInput> held = parseHold(*value, arg == "--hold-key");
             if (!held) {
                 writeStartupError("--hold 형식: <동작>:<시작>-<끝> (예: right:0-60): " + *value);
                 return std::nullopt;
@@ -487,9 +488,11 @@ int main(int argc, char** argv) {
             }
         }
         std::set<std::string> scriptedHeld;
+        auto physicalKeys = heldKeys;
         for (const ScriptedInput& s : options->scripted) {
             if (static_cast<int>(frame) >= s.from && static_cast<int>(frame) <= s.to) {
-                scriptedHeld.insert(s.action);
+                if (s.physical) physicalKeys.insert(*InputMap::canonicalKeyName(s.action));
+                else scriptedHeld.insert(s.action);
             }
         }
         // 자동 검사: 대사가 뜬 지 0.5초가 지나면 결정 키를 한 프레임 누른 것으로 친다.
@@ -502,11 +505,7 @@ int main(int argc, char** argv) {
         }
         for (const std::string& action : actions) {
             bool held = scriptedHeld.count(action) > 0;
-            for (const std::string& key : world.inputMap().keys(action)) {
-                for (const std::string& pressed : heldKeys) {
-                    held = held || InputMap::keyMatches(key, pressed);
-                }
-            }
+            held = held || world.inputMap().actionHeld(action, physicalKeys);
             input.set(action, held);
         }
         Uint64 now = SDL_GetTicksNS();

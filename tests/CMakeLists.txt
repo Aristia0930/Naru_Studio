@@ -1,9 +1,13 @@
 add_executable(naru_engine_tests engine_tests.cpp)
 target_link_libraries(naru_engine_tests PRIVATE naru_engine)
 add_test(NAME engine COMMAND naru_engine_tests)
+add_executable(naru_input_tests input_tests.cpp)
+target_link_libraries(naru_input_tests PRIVATE naru_engine)
+add_test(NAME input COMMAND naru_input_tests)
 
 add_executable(naru_event_tests event_tests.cpp)
 target_link_libraries(naru_event_tests PRIVATE naru_engine)
+target_compile_definitions(naru_event_tests PRIVATE NARU_EVENT_GUIDE_DOC="${PROJECT_SOURCE_DIR}/docs/guide/EVENTS.md")
 add_test(NAME events COMMAND naru_event_tests)
 
 add_executable(naru_database_tests database_tests.cpp)
@@ -52,4 +56,7 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
     ${CMAKE_CURRENT_SOURCE_DIR}/player_common_events.py $<TARGET_FILE:naru_player>
     ${PROJECT_SOURCE_DIR}/docs/examples/common-events)
   set_tests_properties(player_common_events PROPERTIES TIMEOUT 45)
+  add_test(NAME player_input_settings COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/player_input_settings.py $<TARGET_FILE:naru_player>)
+  set_tests_properties(player_input_settings PROPERTIES TIMEOUT 45)
 endif()

@@ -614,6 +614,28 @@ TEST_CASE("선택지를 결정한 프레임의 방향 입력으로 플레이어�
 }
 
 TEST_MAIN()
+
+TEST_CASE("게임은 공유 입력 설정의 속도·키·기본 조작 ON/OFF를 복사해 시작한다") {
+    auto p = projectWith({object("hero", EventTrigger::Action, {})});
+    p.scenes[0].playerObjectId = "hero";
+    p.inputSettings.playerSpeed = 60;
+    p.inputSettings.bindings["right"] = {"L"};
+    GameWorld world(p, noScripts());
+    CHECK(world.startGame(p.startSceneId));
+    CHECK(world.playerSpeed() == 60);
+    CHECK((world.inputMap().keys("right") == std::vector<std::string>{"L"}));
+    InputState input;
+    input.press("right");
+    step(world, input);
+    CHECK(world.player()->x == 1);
+    p.inputSettings.defaultControl = false;
+    GameWorld off(p, noScripts());
+    CHECK(off.startGame(p.startSceneId));
+    step(off, input);
+    CHECK(off.player()->x == 0);
+    CHECK(!off.defaultControl());
+    CHECK(p.scenes[0].objects[0].x == 0);
+}
 // ---------------------------------------------------------------- 이벤트 명령: 객체 이동·보이기/숨기기
 
 namespace {

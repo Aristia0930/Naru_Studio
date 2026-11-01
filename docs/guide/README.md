@@ -6,6 +6,10 @@
 
 ## 목차
 
+- [키 설정 · Python과 양방향 동기화](INPUT_SETTINGS.md)
+- [이벤트 명령 13종 사용법](EVENTS.md)
+- [Python 작성·이벤트/전역 스크립트 연결](SCRIPTING.md)
+
 1. [기본 개념](#1-기본-개념)
 2. [프로젝트 만들기와 열기](#2-프로젝트-만들기와-열기)
 3. [장면 편집](#3-장면-편집)
@@ -362,7 +366,7 @@ def run(ctx):
 
 ### 전역 스크립트
 
-**전역 스크립트**는 장면·이벤트와 상관없이 **게임 전체에서 실행**되는 스크립트입니다. RPG Maker의 플러그인처럼 여러 개를 등록하고 순서를 정할 수 있습니다. 새 프로젝트에는 예제 `game.py`가 등록되어 있습니다 (Shift를 누르면 빨리 달리기).
+**전역 스크립트**는 장면·이벤트와 상관없이 **게임 전체에서 실행**되는 스크립트입니다. RPG Maker의 플러그인처럼 여러 개를 등록하고 순서를 정할 수 있습니다. 새 프로젝트에는 예제 `game.py`가 등록되어 있습니다 (달리기 예제는 `DASH_ENABLED = False`로 꺼져 있으며 True로 켭니다).
 
 **등록하기**: 메뉴 **스크립트 → 전역 스크립트…** 에서 체크하고 **위로/아래로**로 순서를 정합니다. 또는 스크립트 목록에서 **오른쪽 클릭 → 전역 스크립트로 사용**. 등록된 파일은 목록에 **굵게 `[전역 1]`** 로 표시됩니다. 등록 변경도 Ctrl+Z로 되돌릴 수 있습니다.
 
@@ -378,24 +382,22 @@ def run(ctx):
 | `on_update(ctx)` | 매 프레임 (1/60초마다), 엔진 기본 조작보다 먼저 |
 
 ```python
-# scripts/game.py — 전역 스크립트
-WALK_SPEED = 240
-DASH_SPEED = 420
-combo = 0                                   # 게임 실행 중 유지되는 파이썬 전역 변수
+# scripts/game.py — 전역 스크립트의 간단한 연결 예
+combo = 0
 
 def on_game_start(ctx):
-    ctx.input.bind("dash", ["Shift"])       # 새 동작 "dash"를 Shift에 연결
+    ctx.log("게임 시작")
 
-def on_update(ctx):
-    # 기본 조작(이동·조사)은 엔진이 하고, Shift를 누르는 동안만 빨라지게 덧붙인다
-    if ctx.player:
-        ctx.player.speed = DASH_SPEED if ctx.input.held("dash") else WALK_SPEED
+def on_scene_enter(ctx):
+    ctx.log(f"장면: {ctx.scene.name}")
 
-def add_combo(ctx):                         # 이벤트의 "스크립트 호출: game.py · add_combo()"
+def add_combo(ctx):  # 이벤트의 스크립트 호출: game.py / add_combo
     global combo
     combo += 1
-    return combo                            # 반환값 → 변수로 받으면 조건 분기에 쓸 수 있다
+    return combo
 ```
+
+키·기본 속도는 [전용 설정 파일/키 설정 화면](INPUT_SETTINGS.md)에서 함께 편집합니다. 새 프로젝트 `game.py`에는 별도로 켤 수 있는 달리기 예제가 있으며 기본은 OFF입니다. `ctx.input.bind`나 `ctx.player.speed`를 함수에서 바꾸는 코드는 실행 중 동작 변경이며 기본 설정 파일을 수정하지 않습니다.
 
 **다른 객체 움직이기**: 인스펙터 맨 위의 **ID**(예: `obj_002`)로 객체를 가져와 움직입니다. 충돌 규칙은 플레이어와 같고, 움직이다 플레이어에게 닿으면 그 객체의 **이벤트 접촉** 이벤트가 실행됩니다.
 
@@ -463,7 +465,7 @@ def on_update(ctx):
 - 이벤트의 로그·오류는 제작툴 아래 **로그** 패널에 `[게임]`을 붙여 표시됩니다. 스크립트 오류 줄을 더블클릭하면 해당 파일·행으로 이동합니다.
 - 실행 중에 바뀐 위치·변수는 편집 데이터에 남지 않습니다.
 
-- 이동 속도(기본 초당 240px)·키 배치·기본 조작 켜기/끄기는 [전역 스크립트](#전역-스크립트)에서 바꿉니다. 전역 스크립트의 로그·오류도 로그 패널에 나옵니다.
+- 이동 속도·키 배치·기본 조작 ON/OFF는 [게임 → 키 설정과 Python 전용 파일](INPUT_SETTINGS.md)에서 함께 바꿉니다. 실행 중 임시 변경은 전역 스크립트로 할 수 있습니다. 전역 스크립트의 로그·오류도 로그 패널에 나옵니다.
 
 > 대사 글꼴은 Windows의 맑은 고딕을 사용합니다. 키 배치를 바꾸는 설정 화면(코딩 없이)은 아직 없습니다.
 
@@ -511,10 +513,22 @@ Python에서는 `ctx.run_event("recover")`처럼 **ID를 따옴표 안에 넣어
 
 [공통 이벤트 예제](../examples/common-events/README.md)를 복사해 열면 **명령으로 호출 / Python으로 호출**을 같은 회복 처리에 연결한 예를 볼 수 있습니다.
 
+## 키 설정과 Python 코드
+
+**게임 → 키 설정...**에서 동작별 키·이동 속도·기본 이동/조사 ON/OFF를 바꿉니다. 화면과 오른쪽 Python 변수는 즉시 서로 반영되며, 새 프로젝트의 `scripts/input_settings.py`가 같은 원본입니다. 확인 후 Ctrl+S로 저장하고 게임을 재실행합니다. 수정한 Python 설정은 스크립트 탭에서도 반영됩니다.
+
+![키 설정 화면과 Python 변수 동기화](images/24-input-settings.png)
+
+동작을 선택한 뒤 **동시 키 조합 추가...**에서 2~4개를 체크하면 `Shift + E` 같은 조합을 만듭니다. `KEY_BINDINGS`의 `["Shift + E", "F"]`는 Shift와 E를 함께 누르거나 F를 누르기입니다. [동시 입력 규칙과 예제](INPUT_SETTINGS.md#6-여러-키를-동시에-눌러-실행하기)를 보세요.
+
+![동시에 누를 키 조합](images/25-input-combination.png)
+
+`DEFAULT_CONTROL_ENABLED = True/False`로 기본 조작을 켜고 끄며, `KEY_BINDINGS`의 빈 키 목록 `[]`로 개별 동작을 끕니다. 기본값 240px/초는 `PLAYER_SPEED`입니다. 설정 파일은 지정된 변수와 리터럴 값만 쓰며 실제 함수는 `game.py` 같은 파일에 작성합니다. [동기화·저장·오류·기존 프로젝트 안내](INPUT_SETTINGS.md)를 보세요.
+
 ## 9. 아직 안 되는 것
 
 - 객체 이미지·음원 가져오기 (지금은 색 사각형). 데이터베이스의 이미지 속성도 이것과 함께 추가 예정
-- 게임 화면: 클릭으로 조사, 키 설정 화면(지금은 전역 스크립트의 `ctx.input.bind`로)
+- 게임 화면: 클릭으로 조사, 이용자 개인 설정 메뉴·게임패드
 - 스크립트에서 대사 띄우고 기다리기(`async`), 이동 경로를 여러 단계로 정하기(위로 2칸 → 오른쪽 3칸 같은 이동 루트)
 - 이미지·소리·화면 연출 명령 (장면 이동 때 페이드 등)
 - 데이터베이스: 목록/묶음 속성, 표(스프레드시트) 보기, 실행 중 값 변경, 항목 ID 바꾸기
@@ -551,6 +565,8 @@ $p = "build\windows-msvc\test_projects\guide\내 RPG"   # 비어 있는 새 위�
 & $exe --command-dialog show_choices --screenshot "$img\19-command-choices.png"
 & $exe docs/examples/common-events --common-event recover --run-event --smoke-test 1500 --screenshot "$img\22-common-events.png"
 & $exe --command-dialog call_common_event --screenshot "$img\23-command-common-event.png"
+& $exe --input-settings-dialog --screenshot "$img\24-input-settings.png"
+& $exe --input-combination-dialog --screenshot "$img\25-input-combination.png"
 # 선택지 예제는 개인 프로젝트를 바꾸지 않고 그대로 촬영할 수 있습니다.
 & $exe docs/examples/choices --event obj_002 --run-event --smoke-test 1500 --screenshot "$img\20-choices-preview.png"
 & build\windows-msvc\bin\NaruPlayer.exe docs/examples/choices --frames 12 --hold confirm:2-2 --screenshot "$img\21-choices-game.png"

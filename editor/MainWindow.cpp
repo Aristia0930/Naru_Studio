@@ -11,12 +11,17 @@
 #include "ScriptEditor.h"
 #include "UndoCommands.h"
 #include "VariablesDialog.h"
+#include "InputSettingsDialog.h"
 
 #include "naru/events/BuiltinCommands.h"
 #include "naru/python/PythonRuntime.h"
 #include "naru/runtime/Session.h"
 
 #include <QAction>
+#include <QApplication>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
+#include <QDialogButtonBox>
 #include <QComboBox>
 #include <QCloseEvent>
 #include <QDesktopServices>
@@ -86,6 +91,8 @@ QString q(const std::string& s) {
 
 MainWindow::MainWindow(ProjectDocument* doc, naru::python::PythonRuntime* python, QWidget* parent)
     : QMainWindow(parent), doc_(doc), python_(python) {
+    inputDiskSource_ = doc_->project().inputSource;
+    connect(doc_, &ProjectDocument::inputSettingsChanged, this, &MainWindow::refreshInputSettingsEditor);
     tabs_ = new QTabWidget(this);
     tabs_->setTabsClosable(true);
     tabs_->setDocumentMode(true);
@@ -335,6 +342,9 @@ void MainWindow::createActions() {
     game->addAction(stopGameAction_);
     game->addSeparator();
     game->addAction(variables);
+    auto* inputSettings = make(QStringLiteral("키 설정..."), {}, &MainWindow::editInputSettings);
+    inputSettings->setObjectName(QStringLiteral("editInputSettings"));
+    game->addAction(inputSettings);
 
     auto* events = menuBar()->addMenu(QStringLiteral("이벤트(&V)"));
     events->addAction(eventOpen);
@@ -612,6 +622,79 @@ void MainWindow::rebuildScriptList() {
     }
 }
 
+void MainWindow::refreshInputSettingsEditor() {
+    if (!tabs_) return;
+    refreshingInputSettings_ = true;
+    const auto& project = doc_->project();
+    for (int i = kFixedTabs; i < tabs_->count(); ++i) {
+        auto* editor = qobject_cast<ScriptEditor*>(tabs_->widget(i));
+        if (!editor || QFileInfo(editor->path()).fileName().toStdString() != project.inputSettingsScript) continue;
+        auto source = q(project.inputSource);
+        if (editor->toPlainText() != source) {
+            auto position = editor->textCursor().position();
+            editor->setPlainText(source);
+            auto cursor = editor->textCursor();
+            cursor.setPosition(std::min(position, static_cast<int>(source.size())));
+            editor->setTextCursor(cursor);
+            editor->document()->setModified(true);
+        }
+    }
+    refreshingInputSettings_ = false;
+}
+
+bool MainWindow::syncInputSettings(QString* error) {
+    const auto& project = doc_->project();
+    if (project.inputSettingsScript.empty()) return true;
+    for (int i = kFixedTabs; i < tabs_->count(); ++i) {
+        auto* editor = qobject_cast<ScriptEditor*>(tabs_->widget(i));
+        if (!editor || QFileInfo(editor->path()).fileName().toStdString() != project.inputSettingsScript) continue;
+        auto parsed = naru::parseInputSettings(editor->toPlainText().toStdString());
+        if (!parsed.settings) {
+            if (error) *error = QStringLiteral("%1:%2: %3").arg(q(project.inputSettingsScript)).arg(parsed.line).arg(q(parsed.error));
+            return false;
+        }
+    }
+    QFile input(QDir(doc_->scriptsDirectory()).filePath(q(project.inputSettingsScript)));
+    if (!input.exists() && inputDiskSource_.empty()) return true; // 첫 화면 설정, 아직 저장 전
+    if (!input.open(QIODevice::ReadOnly)) {
+        if (error) *error = QStringLiteral("입력 설정 파일을 읽을 수 없습니다: %1").arg(input.errorString());
+        return false;
+    }
+    auto disk = QString::fromUtf8(input.readAll()).toStdString();
+    if (disk == inputDiskSource_) return true;
+    if (project.inputSource != inputDiskSource_ && project.inputSource != disk) {
+        if (error) *error = QStringLiteral("입력 설정이 화면과 외부 파일 양쪽에서 바뀌었습니다. 외부 내용을 확인한 뒤 한쪽 변경을 취소하고 다시 저장하세요.");
+        return false;
+    }
+    auto parsed = naru::parseInputSettings(disk);
+    if (!parsed.settings) {
+        if (error) *error = QStringLiteral("%1:%2: %3").arg(q(project.inputSettingsScript)).arg(parsed.line).arg(q(parsed.error));
+        return false;
+    }
+    if (disk != project.inputSource) doc_->undoStack()->push(new SetInputSettingsCommand(doc_, project.inputSettingsScript, disk));
+    inputDiskSource_ = disk;
+    return true;
+}
+
+void MainWindow::editInputSettings() {
+    QString error;
+    if (!syncInputSettings(&error)) {
+        QMessageBox::warning(this, QStringLiteral("키 설정"), error);
+        return;
+    }
+    InputSettingsDialog dialog(doc_->project().inputSource, this);
+    if (dialog.exec() != QDialog::Accepted) return;
+    auto script = doc_->project().inputSettingsScript;
+    if (script.empty()) {
+        script = "input_settings.py";
+        int index = 2;
+        while (QFileInfo::exists(QDir(doc_->scriptsDirectory()).filePath(q(script))))
+            script = "input_settings_" + std::to_string(index++) + ".py";
+    }
+    if (script != doc_->project().inputSettingsScript || dialog.source() != doc_->project().inputSource)
+        doc_->undoStack()->push(new SetInputSettingsCommand(doc_, script, dialog.source()));
+}
+
 void MainWindow::editVariables() {
     VariablesDialog dialog(doc_->project().variables, this);
     if (dialog.exec() != QDialog::Accepted) {
@@ -715,7 +798,20 @@ ScriptEditor* MainWindow::openScript(const QString& path) {
         }
         updateTitle();
     });
+    connect(editor, &QPlainTextEdit::textChanged, this, [this, editor] {
+        const auto& project = doc_->project();
+        if (refreshingInputSettings_ || QFileInfo(editor->path()).fileName().toStdString() != project.inputSettingsScript) return;
+        auto source = editor->toPlainText().toStdString();
+        auto parsed = naru::parseInputSettings(source);
+        if (!parsed.settings) {
+            statusBar()->showMessage(QStringLiteral("키 설정 %1행: %2").arg(parsed.line).arg(q(parsed.error)));
+            return;
+        }
+        if (source != project.inputSource)
+            doc_->undoStack()->push(new SetInputSettingsCommand(doc_, project.inputSettingsScript, source, true));
+    });
     tabs_->setCurrentIndex(index);
+    refreshInputSettingsEditor();
     return editor;
 }
 
@@ -736,6 +832,24 @@ void MainWindow::closeTab(int index) {
             return;
         }
         QString error;
+        if (answer == QMessageBox::Discard && QFileInfo(editor->path()).fileName().toStdString() == doc_->project().inputSettingsScript) {
+            QFile input(editor->path());
+            if (!input.open(QIODevice::ReadOnly)) {
+                QMessageBox::warning(this, QStringLiteral("키 설정 복원 실패"), input.errorString());
+                return;
+            }
+            auto source = QString::fromUtf8(input.readAll()).toStdString();
+            auto parsed = naru::parseInputSettings(source);
+            if (!parsed.settings) {
+                QMessageBox::warning(this, QStringLiteral("키 설정 복원 실패"), q(parsed.error));
+                return;
+            }
+            doc_->undoStack()->push(new SetInputSettingsCommand(doc_, doc_->project().inputSettingsScript, source));
+            inputDiskSource_ = source;
+        }
+        if (answer == QMessageBox::Save && QFileInfo(editor->path()).fileName().toStdString() == doc_->project().inputSettingsScript) {
+            if (!saveAll()) return;
+        }
         if (answer == QMessageBox::Save && !editor->save(&error)) {
             QMessageBox::warning(this, windowTitle(), error);
             return;
@@ -748,6 +862,10 @@ void MainWindow::closeTab(int index) {
 
 bool MainWindow::saveAll() {
     QString error;
+    if (!syncInputSettings(&error)) {
+        QMessageBox::warning(this, QStringLiteral("키 설정 저장 실패"), error);
+        return false;
+    }
     if (doc_->isModified() && !doc_->save(&error)) {
         QMessageBox::warning(this, QStringLiteral("저장 실패"), error);
         return false;
@@ -759,6 +877,8 @@ bool MainWindow::saveAll() {
             return false;
         }
     }
+    inputDiskSource_ = doc_->project().inputSource;
+    rebuildScriptList();
     statusBar()->showMessage(QStringLiteral("저장했습니다"), 3000);
     updateTitle();
     return true;
@@ -768,6 +888,15 @@ void MainWindow::checkSyntax() {
     ScriptEditor* editor = currentScript();
     if (!editor) {
         statusBar()->showMessage(QStringLiteral("문법 검사할 스크립트 탭을 여세요"), 3000);
+        return;
+    }
+    if (QFileInfo(editor->path()).fileName().toStdString() == doc_->project().inputSettingsScript) {
+        auto result = naru::parseInputSettings(editor->toPlainText().toStdString());
+        if (result.settings) appendLog({naru::LogLevel::Info, "키 설정 문법·값 검사 통과", {}, {}});
+        else {
+            appendLog({naru::LogLevel::Error, result.error, {editor->path().toStdString(), result.line, {}}, {}});
+            editor->goToLine(result.line);
+        }
         return;
     }
     QString error;
@@ -790,6 +919,10 @@ void MainWindow::checkSyntax() {
 }
 
 void MainWindow::runScript() {
+    if (auto* editor = currentScript(); editor && QFileInfo(editor->path()).fileName().toStdString() == doc_->project().inputSettingsScript) {
+        if (saveAll()) appendLog({naru::LogLevel::Info, "키 설정을 저장했습니다. 설정 파일은 자동으로 읽으며 게임 재시작 후 반영됩니다.", {}, {}});
+        return;
+    }
     // 스크립트 탭이면 그 파일, 장면 탭이면 scripts/main.py를 실행한다.
     QString path;
     if (ScriptEditor* editor = currentScript()) {
@@ -1065,6 +1198,98 @@ bool MainWindow::runSelfTest() {
         const naru::Scene* s = doc_->project().findScene(currentSceneId_.toStdString());
         return s ? s->objects.size() : std::size_t{0};
     };
+
+    // 화면↔Python, 스크립트 탭↔프로젝트, Undo·저장·외부 파일 변경을 함께 검사한다.
+    {
+        const auto originalScript = doc_->project().inputSettingsScript;
+        const auto originalSource = doc_->project().inputSource;
+        InputSettingsDialog dialog(originalSource, this);
+        auto* enabled = dialog.findChild<QCheckBox*>(QStringLiteral("inputDefaultControl"));
+        auto* speed = dialog.findChild<QDoubleSpinBox*>(QStringLiteral("inputPlayerSpeed"));
+        auto* code = dialog.findChild<QPlainTextEdit*>(QStringLiteral("inputSettingsSource"));
+        check(dialog.valid() && enabled && speed && code, "키 설정 화면 생성");
+        auto* addCombination = dialog.findChild<QPushButton*>(QStringLiteral("inputAddCombination"));
+        QTimer::singleShot(0, this, [] {
+            auto* modal = QApplication::activeModalWidget();
+            if (!modal) return;
+            auto* list = modal->findChild<QListWidget*>(QStringLiteral("combinationKeys"));
+            auto* buttons = modal->findChild<QDialogButtonBox*>(QStringLiteral("combinationButtons"));
+            if (!list || !buttons) return;
+            for (int i = 0; i < list->count(); ++i)
+                if (list->item(i)->text() == QStringLiteral("Shift") || list->item(i)->text() == QStringLiteral("E"))
+                    list->item(i)->setCheckState(Qt::Checked);
+            buttons->button(QDialogButtonBox::Ok)->click();
+        });
+        addCombination->click();
+        check(dialog.source().find("Shift + E") != std::string::npos, "동시 키 선택 창 실제 체크·확인으로 Python 설정 갱신");
+        auto* actions = dialog.findChild<QListWidget*>(QStringLiteral("inputActions"));
+        auto selectedAction = actions->currentItem()->data(Qt::UserRole).toString().toStdString();
+        check(dialog.settings().bindings.at(selectedAction).back() == "Shift + E", "화면 조합이 원본 설정 모델과 일치");
+        enabled->setChecked(false);
+        speed->setValue(180);
+        auto fromUi = naru::parseInputSettings(dialog.source());
+        check(fromUi.settings && !fromUi.settings->defaultControl && fromUi.settings->playerSpeed == 180,
+              "화면 ON/OFF·속도 변경이 Python 변수에 동기화");
+        auto settings = dialog.settings();
+        settings.defaultControl = true;
+        settings.playerSpeed = 90;
+        settings.bindings["right"] = {"L"};
+        settings.bindings["cancel"].clear();
+        code->setPlainText(q(naru::inputSettingsSource(settings, dialog.source())));
+        check(enabled->isChecked() && speed->value() == 90 && dialog.settings().bindings.at("cancel").empty(),
+              "Python 변수 변경이 화면 ON/OFF·속도·키에 동기화");
+        auto good = dialog.source();
+        code->setPlainText(q(good + "import os\n"));
+        check(!dialog.valid() && !dialog.findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Ok)->isEnabled(),
+              "설정 파일에 실행 코드를 넣으면 적용 차단");
+        code->setPlainText(q(good));
+        doc_->undoStack()->push(new SetInputSettingsCommand(doc_, originalScript, good));
+        QString path = QDir(doc_->scriptsDirectory()).filePath(q(originalScript));
+        auto* editor = openScript(path);
+        check(editor && editor->toPlainText().toStdString() == good, "이미 열린 Python 설정 탭에도 같은 값 반영");
+        settings.playerSpeed = 120;
+        editor->setPlainText(q(naru::inputSettingsSource(settings, good)));
+        check(doc_->project().inputSettings.playerSpeed == 120, "스크립트 탭 편집도 프로젝트 설정에 동기화");
+        doc_->undoStack()->undo();
+        check(doc_->project().inputSettings.playerSpeed == 90 && editor->toPlainText().toStdString() == good,
+              "키 설정 Undo는 화면 모델과 Python 내용을 함께 복구");
+        QString error;
+        editor->setPlainText(q(good + "invalid\n"));
+        check(!syncInputSettings(&error) && !error.isEmpty(), "잘못된 설정 초안은 저장·실행 전에 거부");
+        editor->setPlainText(q(good));
+        check(saveAll(), "동기화한 키 설정 저장");
+        auto loaded = ProjectDocument::open(doc_->directory(), &error);
+        check(loaded && loaded->project().inputSettings == doc_->project().inputSettings, "키 설정 재열기 일치");
+        settings.playerSpeed = 75;
+        auto external = naru::inputSettingsSource(settings, good);
+        QFile file(path);
+        file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        file.write(QByteArray::fromStdString(external));
+        file.close();
+        check(syncInputSettings(&error) && doc_->project().inputSettings.playerSpeed == 75 &&
+              editor->toPlainText().toStdString() == external, "외부 Python 설정 변경도 화면에 반영");
+        settings.playerSpeed = 80;
+        editor->setPlainText(q(naru::inputSettingsSource(settings, external)));
+        editor->document()->setModified(true);
+        settings.playerSpeed = 85;
+        file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        file.write(QByteArray::fromStdString(naru::inputSettingsSource(settings, external)));
+        file.close();
+        check(!syncInputSettings(&error), "화면과 외부 파일이 동시에 바뀌면 덮어쓰기 차단");
+        file.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        file.write(QByteArray::fromStdString(external));
+        file.close();
+        QTimer::singleShot(0, this, [] {
+            if (auto* box = qobject_cast<QMessageBox*>(QApplication::activeModalWidget()))
+                if (auto* discard = box->button(QMessageBox::Discard)) discard->click();
+        });
+        closeTab(tabs_->indexOf(editor));
+        check(tabs_->indexOf(editor) < 0 && doc_->project().inputSource == external &&
+                  doc_->project().inputSettings.playerSpeed == 75, "설정 탭 변경 버리기는 연결된 화면 값도 저장본으로 복구");
+        doc_->undoStack()->push(new SetInputSettingsCommand(doc_, originalScript, originalSource));
+        check(saveAll(), "입력 테스트 후 원래 설정 복원");
+        tabs_->setCurrentIndex(0);
+    }
 
     // 공통 이벤트 편집·Undo·실행용 사본·저장·재로드를 실제 위젯에서 검사한다.
     {
@@ -1390,14 +1615,14 @@ bool MainWindow::runSelfTest() {
         QString conflictPath = QDir(doc_->scriptsDirectory()).filePath(QStringLiteral("selftest_conflict.py"));
         QFile conflict(conflictPath);
         conflict.open(QIODevice::WriteOnly);
-        conflict.write("WALK_SPEED = 1\n_private = 2\n");
+        conflict.write("DASH_ENABLED = True\n_private = 2\n");
         conflict.close();
         toggleGlobalScript(QStringLiteral("selftest_conflict.py"));
         logMessages_.clear();
         bool conflictFound = !checkGlobalScripts();
         bool mentioned = false;
         for (const QString& m : logMessages_) {
-            mentioned = mentioned || (m.contains(QStringLiteral("WALK_SPEED")) && !m.contains(QStringLiteral("_private")));
+            mentioned = mentioned || (m.contains(QStringLiteral("DASH_ENABLED")) && !m.contains(QStringLiteral("_private")));
         }
         doc_->undoStack()->undo();
         QFile::remove(conflictPath);

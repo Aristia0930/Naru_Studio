@@ -163,6 +163,15 @@ void ProjectDocument::setVariables(const std::vector<naru::VariableDef>& variabl
     emit variablesChanged();
 }
 
+void ProjectDocument::setInputSettings(const std::string& script, const std::string& source) {
+    auto parsed = naru::parseInputSettings(source);
+    if (!script.empty() && !parsed.settings) return;
+    project_.inputSettingsScript = script;
+    project_.inputSource = source;
+    project_.inputSettings = script.empty() ? naru::InputSettings{} : *parsed.settings;
+    emit inputSettingsChanged();
+}
+
 QStringList ProjectDocument::scriptFiles() const {
     return QDir(scriptsDirectory()).entryList({QStringLiteral("*.py")}, QDir::Files, QDir::Name);
 }

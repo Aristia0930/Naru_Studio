@@ -32,25 +32,35 @@ constexpr const char* kSampleGlobalScript =
     "# 이벤트의 \"스크립트 호출\"로 이 파일의 함수를 부르면 실행 중인 이 모듈에서 실행되어 아래 전역 변수를 함께 쓴다.\n"
     "# 다른 스크립트에서는 import game 으로 쓸 수 있다.\n"
     "\n"
-    "WALK_SPEED = 240\n"
-    "DASH_SPEED = 420\n"
+    "# 기본 키·속도·조작 ON/OFF는 input_settings.py 또는 게임 → 키 설정에서 바꾼다.\n"
+    "DASH_ENABLED = False  # True로 바꾸면 아래 달리기 예제를 켠다\n"
+    "DASH_MULTIPLIER = 1.75\n"
+    "_walk_speed = 240\n"
     "combo = 0  # 게임 실행 중 유지되는 파이썬 전역 변수\n"
     "\n"
     "\n"
     "def on_game_start(ctx):\n"
-    "    # 새 동작 \"dash\"를 Shift 키에 연결한다 (키 배치도 이렇게 바꿀 수 있다)\n"
-    "    ctx.input.bind(\"dash\", [\"Shift\"])\n"
+    "    # KEY_BINDINGS의 dash 설정을 그대로 사용한다 (여기서 기본 키를 다시 덮어쓰지 않음).\n"
     "    ctx.log(\"게임 시작 (전역 스크립트)\")\n"
     "\n"
     "\n"
     "def on_scene_enter(ctx):\n"
+    "    global _walk_speed\n"
+    "    if ctx.player:\n"
+    "        _walk_speed = ctx.player.speed\n"
     "    ctx.log(f\"장면 진입: {ctx.scene.name}\")\n"
     "\n"
     "\n"
     "def on_update(ctx):\n"
     "    # 기본 조작(방향키 이동·조사)은 엔진이 하고, Shift를 누르는 동안만 빨라지게 덧붙인다\n"
-    "    if ctx.player:\n"
-    "        ctx.player.speed = DASH_SPEED if ctx.input.held(\"dash\") else WALK_SPEED\n"
+    "    if DASH_ENABLED and ctx.player:\n"
+    "        ctx.player.speed = _walk_speed * DASH_MULTIPLIER if ctx.input.held(\"dash\") else _walk_speed\n"
+    "\n"
+    "\n"
+    "def on_scene_exit(ctx):\n"
+    "    # 달리기 중 장면을 옮겨도 다음 장면의 기본 속도가 누적되지 않게 돌려놓는다.\n"
+    "    if DASH_ENABLED and ctx.player:\n"
+    "        ctx.player.speed = _walk_speed\n"
     "\n"
     "\n"
     "def add_combo(ctx):\n"
@@ -178,7 +188,7 @@ bool readJson(const fs::path& file, json& out, std::string& error) {
 }
 
 // 임시 파일에 쓴 뒤 교체해서, 저장 도중 실패해도 기존 파일이 깨지지 않게 한다.
-bool writeJson(const fs::path& file, const json& value, std::string& error) {
+bool writeText(const fs::path& file, const std::string& text, std::string& error) {
     fs::path temp = file;
     temp += ".tmp";
     {
@@ -187,7 +197,7 @@ bool writeJson(const fs::path& file, const json& value, std::string& error) {
             error = "파일을 쓸 수 없습니다";
             return false;
         }
-        out << value.dump(2) << '\n';
+        out << text;
         if (!out) {
             error = "파일 쓰기 실패";
             return false;
@@ -201,6 +211,10 @@ bool writeJson(const fs::path& file, const json& value, std::string& error) {
         return false;
     }
     return true;
+}
+
+bool writeJson(const fs::path& file, const json& value, std::string& error) {
+    return writeText(file, value.dump(2) + "\n", error);
 }
 
 // 악의적이거나 손상된 파일이 끝없이 중첩되어 스택을 넘치지 않게 한다.
@@ -706,6 +720,9 @@ ProjectLoadResult ProjectIO::create(const fs::path& dir, const std::string& name
     addObject("주인공", 320, 400, "#e0a040");
     project.scenes.front().playerObjectId = project.scenes.front().objects.back().id;
     project.globalScripts = {"game.py"};
+    project.inputSettingsScript = "input_settings.py";
+    project.inputSettings.bindings["dash"] = {"Shift"};
+    project.inputSource = inputSettingsSource(project.inputSettings);
     project.variables.push_back({"box_opened", std::int64_t{0}, "상자를 연 횟수 (상자 이벤트에서 1씩 더함)"});
     addObject("상자", 640, 400, "#8a6a40");
 
@@ -780,6 +797,18 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
     try {
         project.name = getString(root, "name", "이름 없는 프로젝트");
         project.startSceneId = getString(root, "startScene", std::string());
+        project.inputSettingsScript = getString(root, "inputSettingsScript", std::string());
+        if (!project.inputSettingsScript.empty()) {
+            if (!isValidScriptName(project.inputSettingsScript)) throw std::runtime_error("입력 설정 파일 이름이 올바르지 않습니다");
+            std::ifstream input(scriptsDirectory(dir) / fromUtf8(project.inputSettingsScript), std::ios::binary);
+            if (!input) throw std::runtime_error("입력 설정 파일을 읽을 수 없습니다: scripts/" + project.inputSettingsScript);
+            project.inputSource.assign(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
+            auto parsed = parseInputSettings(project.inputSource);
+            if (!parsed.settings) {
+                result.errors.push_back({"scripts/" + project.inputSettingsScript,
+                    std::to_string(parsed.line) + "행: " + parsed.error});
+            } else project.inputSettings = *parsed.settings;
+        }
         for (const auto& scriptJson : getArray(root, "globalScripts")) {
             if (!scriptJson.is_string()) {
                 throw std::runtime_error("'globalScripts'에는 스크립트 파일 이름 문자열만 넣을 수 있습니다");
@@ -915,8 +944,24 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
 
 std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path& dir) {
     std::vector<ProjectError> errors;
+    if (!project.inputSettingsScript.empty()) {
+        auto parsed = parseInputSettings(project.inputSource);
+        if (!isValidScriptName(project.inputSettingsScript) || !parsed.settings || *parsed.settings != project.inputSettings) {
+            errors.push_back({"scripts/" + project.inputSettingsScript,
+                "입력 설정 파일이 올바르지 않거나 화면 설정과 다릅니다: " + parsed.error});
+            return errors;
+        }
+    }
     std::error_code ec;
     fs::create_directories(scenesDirectory(dir), ec);
+    if (!project.inputSettingsScript.empty()) {
+        fs::create_directories(scriptsDirectory(dir), ec);
+        std::string error;
+        if (!writeText(scriptsDirectory(dir) / fromUtf8(project.inputSettingsScript), project.inputSource, error)) {
+            errors.push_back({"scripts/" + project.inputSettingsScript, error});
+            return errors;
+        }
+    }
 
     json sceneIds = json::array();
     std::set<fs::path> written;
@@ -968,6 +1013,7 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
         variables.push_back(vj);
     }
     root["variables"] = variables;
+    if (!project.inputSettingsScript.empty()) root["inputSettingsScript"] = project.inputSettingsScript;
     root["commonEvents"] = json::array();
     std::set<std::string> commonIds;
     for (const auto& event : project.commonEvents) {

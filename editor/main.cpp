@@ -6,6 +6,7 @@
 #include "StartDialog.h"
 #include "EventConditionsDialog.h"
 #include "VariablesDialog.h"
+#include "InputSettingsDialog.h"
 
 #include "naru/python/PythonRuntime.h"
 
@@ -83,13 +84,17 @@ int main(int argc, char* argv[]) {
                                          QStringLiteral("속성 정의 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption variablesDialogOption(QStringLiteral("variables-dialog"),
                                              QStringLiteral("변수·스위치 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
+    QCommandLineOption inputSettingsOption(QStringLiteral("input-settings-dialog"),
+        QStringLiteral("동기화 키 설정 창을 --screenshot으로 촬영한다."));
+    QCommandLineOption combinationOption(QStringLiteral("input-combination-dialog"),
+        QStringLiteral("동시 키 조합 창을 --screenshot으로 촬영한다."));
     QCommandLineOption conditionsDialogOption(QStringLiteral("conditions-dialog"),
                                               QStringLiteral("이벤트 실행 조건 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption lastOption(QStringLiteral("last"),
                                   QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
     parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, commonEventOption, runEventOption,
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
-                       globalScriptsOption, variablesDialogOption, conditionsDialogOption, lastOption});
+                       globalScriptsOption, variablesDialogOption, inputSettingsOption, combinationOption, conditionsDialogOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
 
@@ -186,6 +191,16 @@ int main(int argc, char* argv[]) {
         project.scenes.push_back(inside);
         CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &project,
                              &project.scenes[0]);
+        return captureDialog(dialog);
+    }
+    if (parser.isSet(inputSettingsOption)) {
+        naru::InputSettings settings;
+        settings.bindings["special_action"] = {"Shift + E"};
+        InputSettingsDialog dialog(naru::inputSettingsSource(settings));
+        return captureDialog(dialog);
+    }
+    if (parser.isSet(combinationOption)) {
+        KeyCombinationDialog dialog({"Shift", "E"});
         return captureDialog(dialog);
     }
     if (parser.isSet(variablesDialogOption)) {

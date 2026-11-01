@@ -10,6 +10,7 @@ add_library(naru_engine STATIC
   project/ProjectIO.cpp
   runtime/GameWorld.cpp
   runtime/Input.cpp
+  runtime/InputSettings.cpp
   runtime/Session.cpp
 )
 

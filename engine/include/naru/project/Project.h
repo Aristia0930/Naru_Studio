@@ -3,6 +3,7 @@
 #include "naru/core/Value.h"
 #include "naru/data/Database.h"
 #include "naru/events/EventData.h"
+#include "naru/runtime/Input.h"
 
 #include <string>
 #include <vector>
@@ -74,6 +75,10 @@ struct Project {
     // 공용 변수·스위치 정의 (편집 화면에 보이는 순서).
     std::vector<VariableDef> variables;
     std::vector<CommonEvent> commonEvents;
+    // 빈 이름은 이전 프로젝트의 엔진 기본값. 값의 원본은 scripts/ 안의 이 파일 하나다.
+    std::string inputSettingsScript;
+    InputSettings inputSettings;
+    std::string inputSource;
 
     const CommonEvent* findCommonEvent(const std::string& id) const;
 

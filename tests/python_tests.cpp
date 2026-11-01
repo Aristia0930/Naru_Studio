@@ -389,7 +389,7 @@ TEST_CASE("ctx.scene.change는 도착 위치와 방향을 받는다") {
 
 TEST_CASE("docs/examples의 예제는 문법 오류가 없고 함께 전역 등록해도 이름이 겹치지 않는다") {
     std::vector<std::string> paths;
-    for (const char* name : {"chase.py", "patrol.py", "push.py", "door.py"}) {
+    for (const char* name : {"chase.py", "patrol.py", "push.py", "door.py", "key_combinations.py", "key_move_face.py", "reward.py"}) {
         std::string path = std::string(NARU_EXAMPLES_DIR) + "/" + name;
         auto syntax = g_runtime->checkSyntax(path);
         if (!syntax.ok) {
@@ -446,6 +446,59 @@ int main() {
         std::printf("Python 초기화 실패: %s\n", e.what());
         return 2;
     }
+}
+
+TEST_CASE("Python bind도 같은 동시 키 조합을 사용하고 잘못된 조합이면 기존 설정을 보존한다") {
+    GameWorld world(globalProject(), {});
+    CHECK(world.startGame("scene_001"));
+    auto& ctx = f_ctxOf(world);
+    CHECK(g_runtime->runFile(script("input_combinations.py"), ctx).ok);
+    CHECK(world.inputMap().actionHeld("special", {"Right Shift", "E"}));
+    CHECK(!world.inputMap().actionHeld("special", {"E"}));
+    auto before = world.inputMap().keys("special");
+    auto bad = g_runtime->runFile(script("input_combinations.py"), ctx, "invalid");
+    CHECK(!bad.ok && bad.error.type == "ValueError");
+    CHECK(world.inputMap().keys("special") == before);
+}
+
+TEST_CASE("문서의 보상 스크립트 예제는 이벤트 변수와 반환값을 사용해 한 번만 지급한다") {
+    auto file = std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_EXAMPLES_DIR)) / "reward.py";
+    auto utf8 = file.u8string();
+    Fixture f;
+    Value returned;
+    CHECK(g_runtime->runFile(std::string(utf8.begin(), utf8.end()), f.ctx, "give", &returned).ok);
+    CHECK(returned == Value{true});
+    CHECK(f.variables.get("gold") == Value{std::int64_t{100}});
+    CHECK(g_runtime->runFile(std::string(utf8.begin(), utf8.end()), f.ctx, "give", &returned).ok);
+    CHECK(returned == Value{false});
+    CHECK(f.variables.get("gold") == Value{std::int64_t{100}});
+}
+
+TEST_CASE("8 키 전역 예제는 새 입력 때 위로 이동한 후 오른쪽을 보며 유지 입력은 반복하지 않는다") {
+    auto file = std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_EXAMPLES_DIR)) / "key_move_face.py";
+    auto utf8 = file.u8string();
+    python::PythonGameScripts globals(*g_runtime, {std::string(utf8.begin(), utf8.end())});
+    auto p = globalProject();
+    for (auto& scene : p.scenes) for (auto& object : scene.objects) object.event.commands.clear();
+    p.scenes[0].objects[0].x = 200;
+    p.scenes[0].objects[0].y = 200;
+    p.inputSettings.bindings["step_up_face_right"] = {"8", "Keypad 8"};
+    GameWorld world(p, globalAwareRunner(globals));
+    world.setGameScripts(&globals);
+    CHECK(world.startGame("scene_001"));
+    InputState input;
+    input.press("step_up_face_right");
+    world.update(1.0 / 60.0, input);
+    CHECK(world.player()->x == 200 && world.player()->y == 152);
+    CHECK(world.facing() == Facing::Right);
+    input.endFrame();
+    world.update(1.0 / 60.0, input);
+    CHECK(world.player()->y == 152);
+    input.release("step_up_face_right");
+    input.press("step_up_face_right");
+    world.update(1.0 / 60.0, input);
+    CHECK(world.player()->y == 104 && world.facing() == Facing::Right);
+    CHECK(world.failedEventCount() == 0);
 }
 
 

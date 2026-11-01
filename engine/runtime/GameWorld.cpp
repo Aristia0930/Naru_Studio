@@ -86,6 +86,9 @@ GameWorld::GameWorld(Project project, ScriptRunner scripts, double fixedStep)
       hookCtx_{variables_, logger_, this, std::nullopt, &project_.database, this} {
     variables_ = project_.initialVariables();
     hookCtx_.project = &project_;
+    defaultControl_ = project_.inputSettings.defaultControl;
+    playerSpeed_ = project_.inputSettings.playerSpeed;
+    for (const auto& [action, keys] : project_.inputSettings.bindings) inputMap_.bind(action, keys);
 }
 
 GameWorld::~GameWorld() {

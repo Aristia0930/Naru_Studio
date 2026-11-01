@@ -52,6 +52,7 @@ TEST_CASE("새 프로젝트는 폴더 구조·기본 장면·예제 스크립트
     CHECK(fs::is_regular_file(dir.path / "scenes" / "scene_001.json"));
     CHECK(fs::is_regular_file(dir.path / "scripts" / "main.py"));
     CHECK(fs::is_regular_file(dir.path / "scripts" / "game.py"));
+    CHECK(fs::is_regular_file(dir.path / "scripts" / "input_settings.py"));
     CHECK((created.project->globalScripts == std::vector<std::string>{"game.py"}));
     CHECK(fs::is_directory(dir.path / "assets"));
     CHECK(created.project->startSceneId == "scene_001");
@@ -449,6 +450,44 @@ TEST_CASE("잘못된 선택지 형식·범위·중첩은 파일 오류로 거부
 }
 
 TEST_MAIN()
+
+TEST_CASE("Python 입력 설정이 유일한 원본이며 코드 변경과 저장 재로드가 일치한다") {
+    TempDir dir;
+    auto created = ProjectIO::create(dir.path, "입력");
+    CHECK(created.ok());
+    auto project = *created.project;
+    CHECK(project.inputSettingsScript == "input_settings.py");
+    CHECK(parseInputSettings(project.inputSource).settings == std::optional<InputSettings>{project.inputSettings});
+    project.inputSettings.bindings["right"] = {"L"};
+    project.inputSettings.bindings["special"] = {"Shift + E", "Ctrl + Keypad +"};
+    project.inputSettings.defaultControl = false;
+    project.inputSettings.playerSpeed = 500;
+    project.inputSource = inputSettingsSource(project.inputSettings, project.inputSource);
+    CHECK(ProjectIO::save(project, dir.path).empty());
+    auto loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok() && loaded.project->inputSettings == project.inputSettings);
+    auto source = project.inputSource;
+    auto at = source.find("PLAYER_SPEED = 500.0");
+    CHECK(at != std::string::npos);
+    source.replace(at, 20, "PLAYER_SPEED = 600.0");
+    writeText(dir.path / "scripts/input_settings.py", source);
+    loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok() && loaded.project->inputSettings.playerSpeed == 600);
+    writeText(dir.path / "scripts/input_settings.py", source + "import os\n");
+    CHECK(!ProjectIO::load(dir.path).ok());
+}
+
+TEST_CASE("입력 설정 없는 이전 프로젝트는 기본값으로 열리고 위험한 설정 경로는 거부한다") {
+    TempDir dir;
+    CHECK(ProjectIO::create(dir.path, "호환").ok());
+    writeText(dir.path / "project.json", R"({"formatVersion":1,"name":"old","startScene":"scene_001","scenes":["scene_001"]})");
+    auto old = ProjectIO::load(dir.path);
+    CHECK(old.ok());
+    CHECK(old.project->inputSettingsScript.empty());
+    CHECK(old.project->inputSettings == InputSettings{});
+    writeText(dir.path / "project.json", R"({"formatVersion":1,"name":"bad","startScene":"scene_001","scenes":["scene_001"],"inputSettingsScript":"../outside.py"})");
+    CHECK(!ProjectIO::load(dir.path).ok());
+}
 
 
 TEST_CASE("공통 이벤트·중첩 호출은 저장 재로드되고 예전 프로젝트의 빈 목록과 호환된다") {
