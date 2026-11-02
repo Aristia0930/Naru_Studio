@@ -1,12 +1,27 @@
 #include "naru/events/EventRunner.h"
 
 #include "naru/core/Log.h"
+#include "naru/runtime/GameWorld.h"
 
 #include <utility>
 
 namespace naru {
 
 namespace {
+LogSource eventSource(const CommandContext& ctx, const std::string& id) {
+    LogSource source{"", 0, id};
+    if (ctx.game && ctx.game->scene()) source.sceneId = ctx.game->scene()->id;
+    source.objectId = ctx.selfObjectId;
+    if (!ctx.commonEventStack.empty()) source.commonEventId = ctx.commonEventStack.back();
+    return source;
+}
+
+std::string callPath(const CommandContext& ctx) {
+    std::string path = ctx.selfObjectId;
+    for (const auto& id : ctx.commonEventStack) path += " → " + id;
+    return path;
+}
+
 struct BudgetScope {
     CommandContext& ctx;
     bool owns;
@@ -94,7 +109,7 @@ void EventRunner::advance(CommandContext& ctx, CommandStatus result) {
         failedCommandId_ = cmd.id();
         failureMessage_ = cmd.error();
         status_ = CommandStatus::Failed;
-        ctx.logger.error("명령 실패: " + failureMessage_, {"", 0, failedCommandId_});
+        ctx.logger.log({LogLevel::Error, "명령 실패: " + failureMessage_, eventSource(ctx, failedCommandId_), callPath(ctx)});
         break;
     }
     case CommandStatus::Cancelled:
@@ -117,7 +132,7 @@ void EventRunner::runUntilBlocked(CommandContext& ctx) {
             failedCommandId_ = commands_[index_]->id();
             failureMessage_ = "대기 없이 실행되는 명령이 너무 많습니다 (무한 반복 의심)";
             status_ = CommandStatus::Failed;
-            ctx.logger.error(failureMessage_, {"", 0, failedCommandId_});
+            ctx.logger.log({LogLevel::Error, failureMessage_, eventSource(ctx, failedCommandId_), callPath(ctx)});
             return;
         }
         --*ctx.immediateBudget;

@@ -73,8 +73,10 @@ struct GameWorld::RunningEvent {
           runner(compileEvent(object.event.commands, world.scripts_)) {
         ctx.selfObjectId = object.id;
         ctx.project = &world.project_;
-        logger.addSink([&world, name = object.name](const LogEntry& entry) {
+        logger.addSink([&world, name = object.name, id = object.id, scene = world.scene_->id](const LogEntry& entry) {
             LogEntry copy = entry;
+            if (copy.source.sceneId.empty()) copy.source.sceneId = scene;
+            if (copy.source.objectId.empty()) copy.source.objectId = id;
             copy.message = name + " ▸ " + copy.message;
             world.logger_.log(std::move(copy));
         });
@@ -670,7 +672,7 @@ bool GameWorld::tickEvent(RunningEvent& event, double dt) {
         return true;
     case CommandStatus::Failed:
         ++failedEvents_;
-        logger_.error("이벤트 실패: " + event.objectName + " (" + event.objectId + ")",
+        event.logger.error("이벤트 실패: " + event.objectName + " (" + event.objectId + ")",
                       {"", 0, event.runner.failedCommandId()});
         return true;
     default:

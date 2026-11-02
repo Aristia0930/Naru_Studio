@@ -92,11 +92,15 @@ int main(int argc, char* argv[]) {
                                               QStringLiteral("이벤트 실행 조건 창을 예시 값으로 띄워 --screenshot으로 저장하고 종료한다."));
     QCommandLineOption lastOption(QStringLiteral("last"),
                                   QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
-    parser.addOptions({newOption, smokeOption, screenshotOption, selfTestOption, eventOption, commonEventOption, runEventOption,
+    QCommandLineOption runGameOption(QStringLiteral("run-game"), QStringLiteral("게임을 실행하고 실행 변수 패널을 보여 준다 (촬영용)."));
+    QCommandLineOption gameLogDirectoryOption(QStringLiteral("game-log-directory"), QStringLiteral("자동 검사/촬영용 게임 로그 폴더"), QStringLiteral("directory"));
+    parser.addOptions({gameLogDirectoryOption, runGameOption, newOption, smokeOption, screenshotOption, selfTestOption, eventOption, commonEventOption, runEventOption,
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
                        globalScriptsOption, variablesDialogOption, inputSettingsOption, combinationOption, conditionsDialogOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     parser.process(app);
+    if (parser.isSet(gameLogDirectoryOption)) app.setProperty("gameLogDirectory", parser.value(gameLogDirectoryOption));
+    else if (parser.isSet(selfTestOption)) app.setProperty("gameLogDirectory", QDir(parser.value(newOption)).absoluteFilePath(QStringLiteral("test-logs")));
 
     // 창 하나를 띄우고 잠시 뒤 PNG로 저장한 다음 종료한다.
     auto captureDialog = [&](QDialog& dialog) {
@@ -297,6 +301,7 @@ int main(int argc, char* argv[]) {
 
         MainWindow window(doc.get(), python.get());
         window.show();
+        if (parser.isSet(runGameOption)) window.runGame();
         if (parser.isSet(commonEventOption)) {
             window.showCommonEvent(parser.value(commonEventOption), parser.isSet(runEventOption));
         }

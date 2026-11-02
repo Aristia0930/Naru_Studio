@@ -518,6 +518,14 @@ void EventEditor::highlightCommand(const std::string& id) {
     }
 }
 
+bool EventEditor::selectCommand(const std::string& id) {
+    auto* item = findCommandItem(id);
+    if (!item) return false;
+    tree_->setCurrentItem(item);
+    tree_->scrollToItem(item);
+    return true;
+}
+
 // ---------------------------------------------------------------- 편집
 
 void EventEditor::editConditions() {
@@ -741,9 +749,13 @@ void EventEditor::startTest() {
     session_ = std::make_unique<naru::Session>(doc_->project().initialVariables(), 1.0 / 60.0, this);
     session_->setDatabase(&runDatabase_);
     session_->setProject(&runProject_);
-    session_->logger().addSink([this](const naru::LogEntry& entry) {
+    session_->logger().addSink([this, scene = sceneId_, object = objectId_, common = commonId_](const naru::LogEntry& entry) {
         if (logSink_) {
-            logSink_(entry);
+            auto copy = entry;
+            if (copy.source.sceneId.empty()) copy.source.sceneId = scene.toStdString();
+            if (copy.source.objectId.empty()) copy.source.objectId = object.toStdString();
+            if (copy.source.commonEventId.empty()) copy.source.commonEventId = common.toStdString();
+            logSink_(copy);
         }
     });
     session_->logger().info("이벤트 테스트 시작: " + object->name);

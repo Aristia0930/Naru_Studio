@@ -2,6 +2,7 @@
 
 #include "naru/core/Log.h"
 #include "naru/core/Value.h"
+#include "naru/project/Project.h"
 
 #include <QByteArray>
 #include <QMainWindow>
@@ -120,6 +121,8 @@ private:
 
     QProcess* game_ = nullptr;
     QByteArray gameOutput_;
+    QString gameLogPath_;
+    naru::Project gameProject_;
     int lastGameExitCode_ = -1;
 
     QString currentSceneId_;

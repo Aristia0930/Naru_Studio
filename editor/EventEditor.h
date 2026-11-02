@@ -59,6 +59,7 @@ public:
     void stopTest();
     bool isRunning() const { return session_ != nullptr; }
     void advanceDialogue();
+    bool selectCommand(const std::string& id);
 
     // DialogueHost
     void showMessage(const std::string& speaker, const std::string& text) override;

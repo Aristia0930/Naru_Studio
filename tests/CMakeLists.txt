@@ -59,4 +59,8 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
   add_test(NAME player_input_settings COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/player_input_settings.py $<TARGET_FILE:naru_player>)
   set_tests_properties(player_input_settings PROPERTIES TIMEOUT 45)
+  add_test(NAME player_debug COMMAND ${Python3_EXECUTABLE}
+    ${CMAKE_CURRENT_SOURCE_DIR}/player_debug.py $<TARGET_FILE:naru_player>
+    ${PROJECT_SOURCE_DIR}/docs/examples/common-events)
+  set_tests_properties(player_debug PROPERTIES TIMEOUT 45)
 endif()

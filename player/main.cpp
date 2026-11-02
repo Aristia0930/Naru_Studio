@@ -6,7 +6,8 @@
 //                          [--hold <동작>:<시작 프레임>-<끝 프레임>]... (동작 이름: up down left right confirm cancel,
 //                          또는 전역 스크립트가 만든 동작)
 //
-// 로그는 표준 출력에 한 줄씩 "NARU\t수준\t명령ID\t파일\t행\t메시지\t부가정보" 형식으로 쓴다 (제작툴이 읽는다).
+// 로그는 표준 출력에 "NARU\t수준\t명령ID\t파일\t행\t메시지\t부가정보\t장면\t객체\t공통이벤트"로 쓴다.
+// --debug-state는 별도 NARU_STATE JSON 줄로 변수 스냅샷을 전달하고 --log-file은 로그만 UTF-8로 저장한다.
 // 종료 코드: 0 정상, 1 시작 실패, 3 이벤트 오류가 있었음.
 
 #include "naru/project/ProjectIO.h"
@@ -22,6 +23,8 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
 #include <cstdio>
+#include <fstream>
+#include <nlohmann/json.hpp>
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -53,7 +56,11 @@ struct Options {
     bool autoConfirm = false;
     std::vector<ScriptedInput> scripted;
     std::string screenshot;
+    std::string logFile;
+    bool debugState = false;
 };
+
+std::ofstream fileLog;
 
 fs::path pathFromUtf8(const std::string& text) {
     return fs::path(std::u8string(text.begin(), text.end()));
@@ -67,7 +74,9 @@ std::string utf8(const fs::path& path) {
 std::string escapeField(const std::string& text) {
     std::string out;
     for (char c : text) {
-        if (c == '\t') {
+        if (c == '\\') {
+            out += "\\\\";
+        } else if (c == '\t') {
             out += "\\t";
         } else if (c == '\n') {
             out += "\\n";
@@ -81,7 +90,20 @@ std::string escapeField(const std::string& text) {
 void writeLog(const LogEntry& e) {
     std::string line = "NARU\t" + std::string(toString(e.level)) + "\t" + escapeField(e.source.commandId) + "\t" +
                        escapeField(e.source.file) + "\t" + std::to_string(e.source.line) + "\t" +
-                       escapeField(e.message) + "\t" + escapeField(e.detail) + "\n";
+                       escapeField(e.message) + "\t" + escapeField(e.detail) + "\t" +
+                       escapeField(e.source.sceneId) + "\t" + escapeField(e.source.objectId) + "\t" +
+                       escapeField(e.source.commonEventId) + "\n";
+    std::fwrite(line.data(), 1, line.size(), stdout);
+    std::fflush(stdout);
+    if (fileLog) { fileLog << line; fileLog.flush(); }
+}
+
+void writeState(GameWorld& world) {
+    nlohmann::json values = nlohmann::json::object();
+    for (const auto& [name, value] : world.variables().all()) {
+        values[name] = {{"value", toDisplayString(value)}, {"type", value.index()}};
+    }
+    const std::string line = "NARU_STATE\t" + values.dump(-1, ' ', false, nlohmann::json::error_handler_t::replace) + "\n";
     std::fwrite(line.data(), 1, line.size(), stdout);
     std::fflush(stdout);
 }
@@ -111,6 +133,8 @@ std::optional<Options> parseArgs(int argc, char** argv) {
     Options o;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
+        if (arg == "--debug-state") { o.debugState = true; continue; }
+        if (arg == "--log-file" && i + 1 < argc) { o.logFile = argv[++i]; continue; }
         auto next = [&]() -> std::optional<std::string> {
             if (i + 1 >= argc) {
                 writeStartupError(arg + " 다음에 값이 필요합니다");
@@ -383,6 +407,11 @@ int main(int argc, char** argv) {
     if (!options) {
         return 1;
     }
+    if (!options->logFile.empty()) {
+        fileLog.open(pathFromUtf8(options->logFile), std::ios::binary | std::ios::trunc);
+        if (!fileLog) { writeStartupError("로그 파일을 열 수 없습니다: " + options->logFile); return 1; }
+        writeLog({LogLevel::Info, "파일 로그: " + options->logFile, {}, {}});
+    }
 
     ProjectLoadResult loaded = ProjectIO::load(options->projectDir);
     if (!loaded.ok()) {
@@ -431,6 +460,7 @@ int main(int argc, char** argv) {
     if (!world.startGame(sceneId)) {
         return 1;
     }
+    if (options->debugState) writeState(world);
     const Scene& scene = *world.scene();
 
     if (!SDL_Init(SDL_INIT_VIDEO)) {
@@ -474,6 +504,7 @@ int main(int argc, char** argv) {
     Uint64 messageSince = 0;
     std::string shownMessage;
     Uint64 last = SDL_GetTicksNS();
+    Uint64 lastState = last;
     const bool fixedFrames = options->frames > 0;
 
     while (running) {
@@ -512,6 +543,10 @@ int main(int argc, char** argv) {
         double dt = fixedFrames ? 1.0 / 60.0 : static_cast<double>(now - last) / 1e9;
         last = now;
         world.update(dt, input);
+        if (options->debugState && (fixedFrames ? frame % 12 == 0 : now - lastState >= 200000000)) {
+            writeState(world);
+            lastState = now;
+        }
         input.endFrame();
         std::string messageKey = world.message() ? world.message()->speaker + "\n" + world.message()->text : "";
         if (messageKey != shownMessage) {
@@ -553,5 +588,6 @@ int main(int argc, char** argv) {
     SDL_DestroyWindow(window);
     SDL_Quit();
     world.logger().info("게임 종료");
+    if (options->debugState) writeState(world);
     return world.failedEventCount() > 0 ? 3 : 0;
 }

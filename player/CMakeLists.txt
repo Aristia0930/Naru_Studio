@@ -2,6 +2,7 @@ find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3-shared)
 find_package(SDL3_ttf 3.2 REQUIRED CONFIG)
 
 add_executable(naru_player main.cpp)
+target_include_directories(naru_player SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/third_party)
 
 set_target_properties(naru_player PROPERTIES
   OUTPUT_NAME NaruPlayer

@@ -251,7 +251,7 @@ RPG Maker의 "페이지 조건"과 같은 기능입니다. 예를 들어 "열쇠
 - 지금 실행 중인 명령이 **노란색**으로 표시됩니다.
 - 대사는 아래 미리보기 창에 나오며 **다음 ▶**(또는 Enter)으로 넘깁니다.
 - **■ 중지 (F8)** 로 언제든 멈출 수 있습니다.
-- 끝나면 오른쪽 **실행 결과 변수** 탭에서 변수 값을 확인할 수 있습니다.
+- 끝나면 오른쪽 **실행 변수** 탭에서 변수 값을 확인할 수 있습니다. 게임 실행 중이면 게임의 현재 값을 우선 표시합니다.
 - 오류가 나면 해당 명령이 **빨간색**으로 선택되고 로그에 이유가 나옵니다. 예: `변수 'name': 문자열에 정수을(를) 뺄 수 없습니다`
 - 테스트 실행은 매번 [변수·스위치](#변수스위치)에 적은 **처음 값**으로 시작합니다 (목록에 없는 변수는 비어 있음). 그래서 예제 상자는 항상 "처음 열었다" 쪽으로 갑니다.
 - 테스트 실행은 [실행 조건](#실행-조건과-반복)을 보지 않고 명령을 한 번 실행합니다. 조건이 처음 값으로는 맞지 않으면 로그에 경고가 나옵니다.
@@ -525,6 +525,14 @@ Python에서는 `ctx.run_event("recover")`처럼 **ID를 따옴표 안에 넣어
 
 `DEFAULT_CONTROL_ENABLED = True/False`로 기본 조작을 켜고 끄며, `KEY_BINDINGS`의 빈 키 목록 `[]`로 개별 동작을 끕니다. 기본값 240px/초는 `PLAYER_SPEED`입니다. 설정 파일은 지정된 변수와 리터럴 값만 쓰며 실제 함수는 `game.py` 같은 파일에 작성합니다. [동기화·저장·오류·기존 프로젝트 안내](INPUT_SETTINGS.md)를 보세요.
 
+## 게임 실행 중 확인 도구
+
+Ctrl+R로 게임을 시작하면 **실행 변수** 패널에 현재 변수·스위치를 약 0.2초마다 표시합니다. **게임 → 실행 변수 보기**로 다시 열 수 있으며 게임 종료 후 마지막 수신 값을 남깁니다. 읽기 전용이며 편집한 처음 값은 바꾸지 않습니다.
+
+로그의 **명령 실패**를 더블클릭하면 해당 객체 또는 공통 이벤트의 명령으로 이동합니다. Python 오류는 파일·행으로 이동합니다. **게임 → 게임 로그 폴더 열기**에서 실행마다 저장한 파일을 확인합니다. [사용법·F6 차이·오류 재현 예제](DEBUGGING.md)를 보세요.
+
+![게임 실행 변수 확인](images/26-runtime-debug.png)
+
 ## 9. 아직 안 되는 것
 
 - 객체 이미지·음원 가져오기 (지금은 색 사각형). 데이터베이스의 이미지 속성도 이것과 함께 추가 예정
@@ -567,6 +575,7 @@ $p = "build\windows-msvc\test_projects\guide\내 RPG"   # 비어 있는 새 위�
 & $exe --command-dialog call_common_event --screenshot "$img\23-command-common-event.png"
 & $exe --input-settings-dialog --screenshot "$img\24-input-settings.png"
 & $exe --input-combination-dialog --screenshot "$img\25-input-combination.png"
+& $exe docs/examples/common-events --run-game --game-log-directory build/guide-logs --smoke-test 1800 --screenshot "$img\26-runtime-debug.png"
 # 선택지 예제는 개인 프로젝트를 바꾸지 않고 그대로 촬영할 수 있습니다.
 & $exe docs/examples/choices --event obj_002 --run-event --smoke-test 1500 --screenshot "$img\20-choices-preview.png"
 & build\windows-msvc\bin\NaruPlayer.exe docs/examples/choices --frames 12 --hold confirm:2-2 --screenshot "$img\21-choices-game.png"

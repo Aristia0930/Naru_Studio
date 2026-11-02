@@ -18,6 +18,10 @@
 #include "naru/runtime/Session.h"
 
 #include <QAction>
+#include <QDateTime>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QStandardPaths>
 #include <QApplication>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
@@ -64,6 +68,9 @@ constexpr int kSceneRole = Qt::UserRole + 1;
 constexpr int kObjectRole = Qt::UserRole + 2;
 constexpr int kFileRole = Qt::UserRole + 3;
 constexpr int kLineRole = Qt::UserRole + 4;
+constexpr int kCommandRole = Qt::UserRole + 5;
+constexpr int kCommonRole = Qt::UserRole + 6;
+constexpr int kEventSnapshotRole = Qt::UserRole + 7;
 
 // 닫을 수 없는 기본 탭 수 (장면·이벤트·데이터베이스). 스크립트 탭은 이 뒤에 열린다.
 constexpr int kFixedTabs = 4;
@@ -221,7 +228,7 @@ void MainWindow::createDocks() {
     variablesTable_->horizontalHeader()->setStretchLastSection(true);
     variablesTable_->verticalHeader()->hide();
     variablesTable_->setEditTriggers(QAbstractItemView::NoEditTriggers);
-    auto* varDock = new QDockWidget(QStringLiteral("실행 결과 변수"), this);
+    auto* varDock = new QDockWidget(QStringLiteral("실행 변수 (F5/F6 결과)"), this);
     varDock->setObjectName(QStringLiteral("variablesDock"));
     varDock->setWidget(variablesTable_);
     addDockWidget(Qt::RightDockWidgetArea, varDock);
@@ -345,6 +352,16 @@ void MainWindow::createActions() {
     auto* inputSettings = make(QStringLiteral("키 설정..."), {}, &MainWindow::editInputSettings);
     inputSettings->setObjectName(QStringLiteral("editInputSettings"));
     game->addAction(inputSettings);
+    game->addSeparator();
+    game->addAction(make(QStringLiteral("실행 변수 보기"), {}, [this] {
+        auto* dock = findChild<QDockWidget*>(QStringLiteral("variablesDock"));
+        dock->show(); dock->raise();
+    }));
+    game->addAction(make(QStringLiteral("게임 로그 폴더 열기"), {}, [this] {
+        QString dir = qApp->property("gameLogDirectory").toString();
+        if (dir.isEmpty()) dir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/logs");
+        if (QDir().mkpath(dir)) QDesktopServices::openUrl(QUrl::fromLocalFile(dir));
+    }));
 
     auto* events = menuBar()->addMenu(QStringLiteral("이벤트(&V)"));
     events->addAction(eventOpen);
@@ -997,8 +1014,22 @@ bool MainWindow::runGame(bool fromCurrentScene, const QStringList& extraArgs) {
         args << QStringLiteral("--scene") << currentSceneId_;
     }
     args << extraArgs;
+    QString logDir = qApp->property("gameLogDirectory").toString();
+    if (logDir.isEmpty()) logDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/logs");
+    if (!QDir().mkpath(logDir)) {
+        QMessageBox::warning(this, QStringLiteral("파일 로그"), QStringLiteral("로그 폴더를 만들 수 없습니다: ") + logDir);
+        return false;
+    }
+    gameLogPath_ = QDir(logDir).filePath(QStringLiteral("game-%1.log").arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss-zzz"))));
+    args << QStringLiteral("--debug-state") << QStringLiteral("--log-file") << gameLogPath_;
+    variablesTable_->setRowCount(0);
+    auto* variableDock = findChild<QDockWidget*>(QStringLiteral("variablesDock"));
+    variableDock->setWindowTitle(QStringLiteral("실행 변수 — 게임 시작 중"));
+    variableDock->show();
+    variableDock->raise();
 
     game_ = new QProcess(this);
+    gameProject_ = doc_->project();
     gameOutput_.clear();
     lastGameExitCode_ = -1;
     connect(game_, &QProcess::readyReadStandardOutput, this, &MainWindow::readGameOutput);
@@ -1012,6 +1043,7 @@ bool MainWindow::runGame(bool fromCurrentScene, const QStringList& extraArgs) {
         }
         game_->deleteLater();
         game_ = nullptr;
+        findChild<QDockWidget*>(QStringLiteral("variablesDock"))->setWindowTitle(QStringLiteral("실행 변수 — 종료 시 마지막 수신 값"));
         updateGameActions();
     });
     connect(game_, &QProcess::errorOccurred, this, [this](QProcess::ProcessError error) {
@@ -1020,6 +1052,7 @@ bool MainWindow::runGame(bool fromCurrentScene, const QStringList& extraArgs) {
                        {}, ""});
             game_->deleteLater();
             game_ = nullptr;
+            findChild<QDockWidget*>(QStringLiteral("variablesDock"))->setWindowTitle(QStringLiteral("실행 변수 — 게임 시작 실패"));
             updateGameActions();
         }
     });
@@ -1048,8 +1081,18 @@ void MainWindow::readGameOutput() {
         return;
     }
     gameOutput_ += game_->readAllStandardOutput();
-    auto unescape = [](QString text) {
-        return text.replace(QStringLiteral("\\n"), QStringLiteral("\n")).replace(QStringLiteral("\\t"), QStringLiteral("\t"));
+    auto unescape = [](const QString& text) {
+        QString decoded;
+        for (qsizetype i = 0; i < text.size(); ++i) {
+            if (text[i] == '\\' && i + 1 < text.size()) {
+                const auto next = text[++i];
+                if (next == 'n') decoded += '\n';
+                else if (next == 't') decoded += '\t';
+                else if (next == '\\') decoded += '\\';
+                else { decoded += '\\'; decoded += next; }
+            } else decoded += text[i];
+        }
+        return decoded;
     };
     qsizetype end;
     while ((end = gameOutput_.indexOf('\n')) >= 0) {
@@ -1062,7 +1105,22 @@ void MainWindow::readGameOutput() {
         if (line.isEmpty()) {
             continue;
         }
-        // player 로그 형식: NARU\t수준\t명령ID\t파일\t행\t메시지\t부가정보
+        if (line.startsWith(QStringLiteral("NARU_STATE\t"))) {
+            QJsonParseError error;
+            auto state = QJsonDocument::fromJson(line.mid(11).toUtf8(), &error);
+            if (error.error != QJsonParseError::NoError || !state.isObject()) continue;
+            const auto values = state.object();
+            variablesTable_->setRowCount(0);
+            for (auto it = values.begin(); it != values.end(); ++it) {
+                int row = variablesTable_->rowCount();
+                variablesTable_->insertRow(row);
+                variablesTable_->setItem(row, 0, new QTableWidgetItem(it.key()));
+                variablesTable_->setItem(row, 1, new QTableWidgetItem(it.value().toObject().value(QStringLiteral("value")).toString()));
+            }
+            findChild<QDockWidget*>(QStringLiteral("variablesDock"))->setWindowTitle(QStringLiteral("실행 변수 — 게임 실행 중 (약 0.2초마다)"));
+            continue;
+        }
+        // 뒤의 장면·객체·공통 이벤트 필드로 실제 편집 위치를 찾는다.
         QStringList f = line.split('\t');
         naru::LogEntry entry;
         if (f.size() >= 7 && f[0] == QStringLiteral("NARU")) {
@@ -1074,6 +1132,11 @@ void MainWindow::readGameOutput() {
             entry.source.line = f[4].toInt();
             entry.message = unescape(f[5]).toStdString();
             entry.detail = unescape(f[6]).toStdString();
+            if (f.size() >= 10) {
+                entry.source.sceneId = unescape(f[7]).toStdString();
+                entry.source.objectId = unescape(f[8]).toStdString();
+                entry.source.commonEventId = unescape(f[9]).toStdString();
+            }
         } else {
             entry.message = line.toStdString();
         }
@@ -1109,6 +1172,19 @@ void MainWindow::appendLog(const naru::LogEntry& entry) {
     item->setText(2, location);
     item->setData(0, kFileRole, q(entry.source.file));
     item->setData(0, kLineRole, entry.source.line);
+    item->setData(0, kCommandRole, q(entry.source.commandId));
+    item->setData(0, kSceneRole, q(entry.source.sceneId));
+    item->setData(0, kObjectRole, q(entry.source.objectId));
+    item->setData(0, kCommonRole, q(entry.source.commonEventId));
+    if (!entry.source.commandId.empty() && q(entry.message).startsWith(QStringLiteral("[게임] "))) {
+        const naru::ObjectEvent* event = nullptr;
+        if (!entry.source.commonEventId.empty()) {
+            if (const auto* common = gameProject_.findCommonEvent(entry.source.commonEventId)) event = &common->event;
+        } else if (const auto* scene = gameProject_.findScene(entry.source.sceneId)) {
+            if (const auto* object = scene->findObject(entry.source.objectId)) event = &object->event;
+        }
+        if (event) item->setData(0, kEventSnapshotRole, QVariant::fromValue(*event));
+    }
     if (!entry.detail.empty()) {
         item->setToolTip(1, q(entry.detail));
     }
@@ -1124,6 +1200,8 @@ void MainWindow::appendLog(const naru::LogEntry& entry) {
 }
 
 void MainWindow::showVariables(const naru::Variables& variables) {
+    if (game_) return;
+    findChild<QDockWidget*>(QStringLiteral("variablesDock"))->setWindowTitle(QStringLiteral("실행 변수 — F5/F6 결과"));
     variablesTable_->setRowCount(0);
     for (const auto& [name, value] : variables.all()) {
         int row = variablesTable_->rowCount();
@@ -1134,6 +1212,40 @@ void MainWindow::showVariables(const naru::Variables& variables) {
 }
 
 void MainWindow::jumpToLog(QTreeWidgetItem* item) {
+    const auto command = item->data(0, kCommandRole).toString();
+    const auto common = item->data(0, kCommonRole).toString();
+    const auto sceneId = item->data(0, kSceneRole).toString();
+    const auto objectId = item->data(0, kObjectRole).toString();
+    const auto snapshot = item->data(0, kEventSnapshotRole);
+    if (snapshot.isValid()) {
+        const naru::ObjectEvent* current = nullptr;
+        if (!common.isEmpty()) {
+            if (const auto* event = doc_->project().findCommonEvent(common.toStdString())) current = &event->event;
+        } else if (const auto* scene = doc_->project().findScene(sceneId.toStdString())) {
+            if (const auto* object = scene->findObject(objectId.toStdString())) current = &object->event;
+        }
+        if (!current || *current != snapshot.value<naru::ObjectEvent>()) {
+            statusBar()->showMessage(QStringLiteral("실행 후 이벤트가 변경되었습니다. 게임을 다시 실행하고 새 로그를 확인하세요."), 6000);
+            return;
+        }
+    }
+    if (!command.isEmpty()) {
+        EventEditor* target = nullptr;
+        if (!common.isEmpty() && doc_->project().findCommonEvent(common.toStdString())) {
+            showCommonEvent(common);
+            target = commonEventsEditor_->editor();
+        } else if (common.isEmpty()) {
+            const auto* scene = doc_->project().findScene(sceneId.toStdString());
+            if (scene && scene->findObject(objectId.toStdString())) {
+                showScene(sceneId);
+                setSelectionTarget(sceneId, objectId);
+                openEventTab();
+                target = eventEditor_;
+            }
+        }
+        if (target && target->selectCommand(command.toStdString())) return;
+        statusBar()->showMessage(QStringLiteral("실행 후 이벤트가 변경되었거나 로그의 명령 위치가 없습니다."), 5000);
+    }
     QString file = item->data(0, kFileRole).toString();
     int line = item->data(0, kLineRole).toInt();
     if (file.isEmpty() || !QFileInfo::exists(file)) {
@@ -1653,6 +1765,33 @@ bool MainWindow::runSelfTest() {
         check(started && !game_ && lastGameExitCode_ == 0 && sceneLogged, "게임 실행 (NaruPlayer, 로그 수신)");
         check(chestOpened, "게임에서 플레이어 이동 → 상자 앞 결정 키 → 조사 이벤트 실행");
         check(globalStarted && globalSceneHook, "전역 스크립트 on_game_start · on_scene_enter 실행");
+        bool gameVariable = false;
+        for (int row = 0; row < variablesTable_->rowCount(); ++row)
+            gameVariable = gameVariable || variablesTable_->item(row, 0)->text() == QStringLiteral("box_opened");
+        check(gameVariable && QFileInfo(gameLogPath_).size() > 0, "실제 게임 변수 수신·종료 후 유지·파일 로그 생성");
+        naru::LogEntry link{naru::LogLevel::Error, "[게임] 위치 이동 검사", {"", 0, "0"}, {}};
+        link.source.sceneId = currentSceneId_.toStdString();
+        link.source.objectId = "obj_002";
+        appendLog(link);
+        jumpToLog(log_->topLevelItem(log_->topLevelItemCount() - 1));
+        check(tabs_->currentWidget() == eventEditor_ && eventEditor_->selectCommand("0"), "객체 이벤트 로그 더블클릭 위치 이동");
+        auto* oldLog = log_->topLevelItem(log_->topLevelItemCount() - 1);
+        if (const auto* object = doc_->project().findScene(currentSceneId_.toStdString())->findObject("obj_002")) {
+            auto command = object->event.commands.front();
+            command.text += " (편집 후)";
+            eventEditor_->replaceCommand("", 0, command);
+            tabs_->setCurrentIndex(0);
+            jumpToLog(oldLog);
+            check(tabs_->currentIndex() == 0 &&
+                  statusBar()->currentMessage().contains(QStringLiteral("변경되었습니다")), "실행 후 바뀐 이벤트에 옛 로그로 이동하지 않음");
+            doc_->undoStack()->undo();
+        }
+        if (!doc_->project().commonEvents.empty()) {
+            link.source.commonEventId = doc_->project().commonEvents.front().id;
+            appendLog(link);
+            jumpToLog(log_->topLevelItem(log_->topLevelItemCount() - 1));
+            check(tabs_->currentWidget() == commonEventsEditor_, "공통 이벤트 로그 위치 이동");
+        }
         if (!sceneLogged || !chestOpened || !globalStarted || lastGameExitCode_ != 0) {
             std::printf("  started=%d running=%d exit=%d\n", started, game_ != nullptr, lastGameExitCode_);
             for (const QString& m : logMessages_) {

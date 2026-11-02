@@ -15,6 +15,10 @@ struct LogSource {
     std::string file;
     int line = 0;
     std::string commandId;
+    // 편집 화면의 명령 위치를 찾기 위한 실행 원본. 공통 이벤트 내부는 commonEventId를 우선한다.
+    std::string sceneId;
+    std::string objectId;
+    std::string commonEventId;
 };
 
 struct LogEntry {
