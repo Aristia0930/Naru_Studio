@@ -6,6 +6,7 @@ add_library(naru_engine STATIC
   events/BuiltinCommands.cpp
   events/EventCompiler.cpp
   events/EventData.cpp
+  project/Asset.cpp
   project/Project.cpp
   project/ProjectIO.cpp
   runtime/GameWorld.cpp

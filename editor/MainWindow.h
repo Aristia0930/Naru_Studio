@@ -51,6 +51,7 @@ public:
     // extraArgs는 자동 검사·촬영용 player 옵션.
     bool runGame(bool fromCurrentScene = false, const QStringList& extraArgs = {});
     void stopGame();
+    void showAssets();
 
 private:
     void createActions();

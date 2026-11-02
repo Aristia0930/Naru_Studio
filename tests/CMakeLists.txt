@@ -64,3 +64,17 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
     ${PROJECT_SOURCE_DIR}/docs/examples/common-events)
   set_tests_properties(player_debug PROPERTIES TIMEOUT 45)
 endif()
+
+if(NARU_BUILD_EDITOR)
+  find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets)
+  find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3-shared)
+  qt_add_executable(naru_asset_editor_tests
+    asset_editor_tests.cpp
+    ../editor/AssetBrowser.cpp ../editor/AssetBrowser.h
+    ../editor/ProjectDocument.cpp ../editor/ProjectDocument.h)
+  target_include_directories(naru_asset_editor_tests PRIVATE ../editor)
+  set_target_properties(naru_asset_editor_tests PROPERTIES AUTOMOC ON)
+  target_link_libraries(naru_asset_editor_tests PRIVATE naru_engine Qt6::Widgets SDL3::SDL3)
+  add_dependencies(naru_asset_editor_tests naru_editor)
+  add_test(NAME asset_editor COMMAND naru_asset_editor_tests)
+endif()

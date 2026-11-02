@@ -27,7 +27,7 @@ struct ProjectLoadResult {
 //   scenes/<id>.json    장면과 배치 객체
 //   data/<key>.json     데이터베이스: 데이터 종류 하나의 속성 정의와 항목
 //   scripts/            Python 게임 스크립트
-//   assets/             이미지·음원 (가져오기 기능은 이후 단계)
+//   assets/             이미지·WAV·글꼴 (project.json의 assets 목록, ID·상대 경로)
 class ProjectIO {
 public:
     static constexpr int kFormatVersion = 1;

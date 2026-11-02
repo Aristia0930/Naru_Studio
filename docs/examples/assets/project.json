@@ -1,0 +1,30 @@
+{
+  "formatVersion": 1,
+  "name": "에셋 목록 예제",
+  "startScene": "scene_001",
+  "scenes": [
+    "scene_001"
+  ],
+  "dataTypes": [],
+  "globalScripts": [],
+  "variables": [],
+  "commonEvents": [],
+  "assets": [
+    {
+      "id": "asset_image",
+      "name": "반투명 그림 예제",
+      "kind": "image",
+      "path": "assets/sample.png",
+      "sourceName": "sample.png",
+      "sha256": "405cbbef8b7ca051ee69a8f4631326ad8fb71f5bc89fdad5665c24acbdc051c1"
+    },
+    {
+      "id": "asset_audio",
+      "name": "미리듣기 예제",
+      "kind": "audio",
+      "path": "assets/tone.wav",
+      "sourceName": "tone.wav",
+      "sha256": "d44bc5482e75952dbed0e27e1dfca9344370cac5070840dee0272a5b0fb3c349"
+    }
+  ]
+}

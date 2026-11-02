@@ -98,6 +98,8 @@ int main(int argc, char* argv[]) {
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
                        globalScriptsOption, variablesDialogOption, inputSettingsOption, combinationOption, conditionsDialogOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
+    QCommandLineOption assetsOption(QStringLiteral("assets"), QStringLiteral("에셋 목록 패널 표시 (촬영용)."));
+    parser.addOption(assetsOption);
     parser.process(app);
     if (parser.isSet(gameLogDirectoryOption)) app.setProperty("gameLogDirectory", parser.value(gameLogDirectoryOption));
     else if (parser.isSet(selfTestOption)) app.setProperty("gameLogDirectory", QDir(parser.value(newOption)).absoluteFilePath(QStringLiteral("test-logs")));
@@ -301,6 +303,7 @@ int main(int argc, char* argv[]) {
 
         MainWindow window(doc.get(), python.get());
         window.show();
+        if (parser.isSet(assetsOption)) window.showAssets();
         if (parser.isSet(runGameOption)) window.runGame();
         if (parser.isSet(commonEventOption)) {
             window.showCommonEvent(parser.value(commonEventOption), parser.isSet(runEventOption));

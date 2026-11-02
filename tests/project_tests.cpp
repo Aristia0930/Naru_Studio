@@ -449,6 +449,40 @@ TEST_CASE("잘못된 선택지 형식·범위·중첩은 파일 오류로 거부
     CHECK(hasErrorContaining(loadCommand(nested), "scenes/scene_001.json", "너무 깊습니다"));
 }
 
+TEST_CASE("에셋 목록은 JSON 왕복·누락 파일 복구·기존 프로젝트와 호환된다") {
+    TempDir dir;
+    auto p = *ProjectIO::create(dir.path, "assets").project;
+    CHECK(p.assets.empty());
+    p.assets.push_back({"asset_test", "그림", "image", "assets/test.png", "원본.png", std::string(64, 'a')});
+    const auto validation = validateAssets(p.assets, dir.path);
+    if (!validation.empty()) std::printf("Asset validation: %s\n", validation.c_str());
+    CHECK(ProjectIO::save(p, dir.path).empty());
+    auto loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok() && loaded.project->assets == p.assets);
+    // A missing file is repairable; an unsafe catalog must fail before any save.
+    for (const auto& invalidPath : {"../outside.png", "assets/../project.json", "assets/../../outside.png",
+                                   "C:/outside.png", "assets\\file.png", "assets//test.png"}) {
+        auto invalid = p;
+        invalid.assets[0].path = invalidPath;
+        CHECK(!ProjectIO::save(invalid, dir.path).empty());
+        CHECK(ProjectIO::load(dir.path).project->assets == p.assets);
+    }
+    auto invalid = p;
+    invalid.assets.push_back(p.assets[0]);
+    CHECK(!validateAssets(invalid.assets, dir.path).empty());
+    invalid = p; invalid.assets[0].kind = "unknown";
+    CHECK(!validateAssets(invalid.assets, dir.path).empty());
+    invalid = p; invalid.assets[0].sha256 = "broken";
+    CHECK(!validateAssets(invalid.assets, dir.path).empty());
+    invalid = p; invalid.assets[0].sourceName = "C:/private/file.png";
+    CHECK(!validateAssets(invalid.assets, dir.path).empty());
+    writeText(dir.path / "project.json", R"({"formatVersion":1,"name":"old","scenes":[]})");
+    auto old = ProjectIO::load(dir.path);
+    CHECK(old.ok() && old.project->assets.empty());
+    writeText(dir.path / "project.json", R"({"formatVersion":1,"scenes":[],"assets":[{"id":"bad"}]})");
+    CHECK(!ProjectIO::load(dir.path).ok());
+}
+
 TEST_MAIN()
 
 TEST_CASE("Python 입력 설정이 유일한 원본이며 코드 변경과 저장 재로드가 일치한다") {

@@ -34,6 +34,7 @@ public:
     void insertObject(const std::string& sceneId, int index, const naru::SceneObject& object);
     void removeObject(const std::string& sceneId, const std::string& objectId);
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
+    void setAssets(const std::vector<naru::Asset>& assets);
     void setDatabase(const naru::Database& database);
     void setGlobalScripts(const std::vector<std::string>& scripts);
     void setCommonEvents(const std::vector<naru::CommonEvent>& events);
@@ -49,6 +50,7 @@ signals:
     void commonEventsChanged();
     void globalScriptsChanged();
     void variablesChanged();
+    void assetsChanged();
     void databaseChanged();
     void scenesChanged();
     void sceneChanged(const QString& sceneId);

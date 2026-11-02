@@ -133,6 +133,11 @@ void ProjectDocument::removeObject(const std::string& sceneId, const std::string
     emit sceneChanged(QString::fromStdString(sceneId));
 }
 
+void ProjectDocument::setAssets(const std::vector<naru::Asset>& assets) {
+    project_.assets = assets;
+    emit assetsChanged();
+}
+
 void ProjectDocument::setDatabase(const naru::Database& database) {
     project_.database = database;
     emit databaseChanged();

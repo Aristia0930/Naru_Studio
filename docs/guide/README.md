@@ -6,6 +6,7 @@
 
 ## 목차
 
+- [에셋 가져오기·목록·미리보기](ASSETS.md)
 - [키 설정 · Python과 양방향 동기화](INPUT_SETTINGS.md)
 - [이벤트 명령 13종 사용법](EVENTS.md)
 - [Python 작성·이벤트/전역 스크립트 연결](SCRIPTING.md)
@@ -53,7 +54,7 @@
   data/monster.json     데이터베이스: 데이터 종류 하나의 속성 정의와 항목
   scripts/main.py       Python 게임 스크립트 (이벤트에서 호출)
   scripts/game.py       전역 스크립트 예제 (게임 전체에서 실행)
-  assets/               이미지·음원 (가져오기 기능은 아직 없음)
+  assets/               가져온 이미지·WAV 소리·글꼴 (목록은 project.json의 assets)
 ```
 
 ---
@@ -533,9 +534,15 @@ Ctrl+R로 게임을 시작하면 **실행 변수** 패널에 현재 변수·스�
 
 ![게임 실행 변수 확인](images/26-runtime-debug.png)
 
+## 에셋 가져오기·목록
+
+**에셋 → 에셋 목록...**에서 PNG/JPG/BMP·WAV·TTF/OTF를 가져옵니다. 썸네일·투명 이미지 미리보기·소리 미리듣기, 이름/종류 검색, 이름 변경·재가져오기·등록 해제·Undo·저장/재열기를 지원합니다. [사용법·제한·복구·예제](ASSETS.md)를 보세요. 객체 그림/게임 소리/DB 연결은 다음 단계입니다.
+
+![에셋 목록](images/27-assets.png)
+
 ## 9. 아직 안 되는 것
 
-- 객체 이미지·음원 가져오기 (지금은 색 사각형). 데이터베이스의 이미지 속성도 이것과 함께 추가 예정
+- 객체에 이미지/장면 배경 지정·게임 소리 재생·DB 이미지/소리 참조 (가져오기·목록·미리보기는 [에셋 안내](ASSETS.md)대로 사용 가능)
 - 게임 화면: 클릭으로 조사, 이용자 개인 설정 메뉴·게임패드
 - 스크립트에서 대사 띄우고 기다리기(`async`), 이동 경로를 여러 단계로 정하기(위로 2칸 → 오른쪽 3칸 같은 이동 루트)
 - 이미지·소리·화면 연출 명령 (장면 이동 때 페이드 등)
@@ -576,6 +583,7 @@ $p = "build\windows-msvc\test_projects\guide\내 RPG"   # 비어 있는 새 위�
 & $exe --input-settings-dialog --screenshot "$img\24-input-settings.png"
 & $exe --input-combination-dialog --screenshot "$img\25-input-combination.png"
 & $exe docs/examples/common-events --run-game --game-log-directory build/guide-logs --smoke-test 1800 --screenshot "$img\26-runtime-debug.png"
+& $exe docs/examples/assets --assets --smoke-test 1200 --screenshot "$img\27-assets.png"
 # 선택지 예제는 개인 프로젝트를 바꾸지 않고 그대로 촬영할 수 있습니다.
 & $exe docs/examples/choices --event obj_002 --run-event --smoke-test 1500 --screenshot "$img\20-choices-preview.png"
 & build\windows-msvc\bin\NaruPlayer.exe docs/examples/choices --frames 12 --hold confirm:2-2 --screenshot "$img\21-choices-game.png"

@@ -134,7 +134,9 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 | `naru_event_tests.exe` | 이벤트 명령 실행(대사 대기·변수·조건 분기·스크립트 호출·오류 위치) 테스트 |
 | `naru_python_tests.exe` | Python 임베딩·오류 위치·재로드·반환값·전역 스크립트(모듈 유지·import·이름 겹침·오류 훅) 테스트 |
 
-빌드 후 `windeployqt`가 Qt DLL/플러그인을, CMake가 `python3xx.dll`을 bin 폴더에 복사한다.
+빌드 후 `windeployqt`가 Qt DLL/플러그인을, CMake가 `python3xx.dll`과 SDL3 DLL을 bin 폴더에 복사한다. 에디터의 WAV 미리듣기도 SDL3를 사용하므로 `NARU_BUILD_PLAYER=OFF`여도 에디터 빌드에는 SDL3가 필요하다. 새 `asset_editor` 테스트는 SDL 더미 오디오 장치로 가져오기·Undo·미리듣기·복구·프로젝트 이동을 검사한다.
+
+에셋 목록 촬영: `NaruStudio docs/examples/assets --assets --smoke-test 1200 --screenshot docs/guide/images/27-assets.png`. [지원 형식/예제](guide/ASSETS.md).
 
 ### 제작툴 사용법
 

@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "AssetBrowser.h"
 
 #include "DatabaseEditor.h"
 #include "CommandDialog.h"
@@ -157,7 +158,22 @@ MainWindow::~MainWindow() {
     }
 }
 
+void MainWindow::showAssets() {
+    auto* dock = findChild<QDockWidget*>(QStringLiteral("assetsDock"));
+    dock->show(); dock->raise();
+    dock->findChild<AssetBrowser*>(QStringLiteral("assetBrowser"))->refresh();
+}
+
 void MainWindow::createDocks() {
+    auto* assetsDock = new QDockWidget(QStringLiteral("에셋 목록"), this);
+    assetsDock->setObjectName(QStringLiteral("assetsDock"));
+    assetsDock->setWidget(new AssetBrowser(doc_, assetsDock));
+    connect(assetsDock, &QDockWidget::visibilityChanged, assetsDock, [assetsDock](bool visible) {
+        if (!visible) assetsDock->findChild<AssetBrowser*>(QStringLiteral("assetBrowser"))->stopAudio();
+    });
+    assetsDock->setMinimumWidth(390);
+    addDockWidget(Qt::RightDockWidgetArea, assetsDock);
+    assetsDock->hide();
     tree_ = new QTreeWidget(this);
     tree_->setHeaderHidden(true);
     connect(tree_, &QTreeWidget::itemSelectionChanged, this, &MainWindow::onTreeSelection);
@@ -315,6 +331,9 @@ void MainWindow::createActions() {
     file->addAction(closeProject);
     file->addSeparator();
     file->addAction(quit);
+
+    auto* assets = menuBar()->addMenu(QStringLiteral("에셋"));
+    assets->addAction(make(QStringLiteral("에셋 목록..."), {}, &MainWindow::showAssets));
 
     auto* edit = menuBar()->addMenu(QStringLiteral("편집(&E)"));
     edit->addAction(undo);

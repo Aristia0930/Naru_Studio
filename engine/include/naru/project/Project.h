@@ -1,6 +1,7 @@
 #pragma once
 
 #include "naru/core/Value.h"
+#include "naru/project/Asset.h"
 #include "naru/data/Database.h"
 #include "naru/events/EventData.h"
 #include "naru/runtime/Input.h"
@@ -70,6 +71,7 @@ struct Project {
     std::string startSceneId;
     std::vector<Scene> scenes;
     Database database;
+    std::vector<Asset> assets;
     // 게임 전체에서 실행되는 전역 스크립트 (scripts/ 안의 파일 이름, 등록 순서대로 훅을 부른다).
     std::vector<std::string> globalScripts;
     // 공용 변수·스위치 정의 (편집 화면에 보이는 순서).

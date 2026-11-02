@@ -809,6 +809,14 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
                     std::to_string(parsed.line) + "행: " + parsed.error});
             } else project.inputSettings = *parsed.settings;
         }
+        for (const auto& aj : getArray(root, "assets")) {
+            requireObject(aj, "에셋");
+            project.assets.push_back({requireString(aj, "id"), requireString(aj, "name"),
+                requireString(aj, "kind"), requireString(aj, "path"),
+                getString(aj, "sourceName", ""), requireString(aj, "sha256")});
+        }
+        if (auto assetError = validateAssets(project.assets, dir); !assetError.empty())
+            throw std::runtime_error(assetError);
         for (const auto& scriptJson : getArray(root, "globalScripts")) {
             if (!scriptJson.is_string()) {
                 throw std::runtime_error("'globalScripts'에는 스크립트 파일 이름 문자열만 넣을 수 있습니다");
@@ -943,6 +951,8 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
 }
 
 std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path& dir) {
+    if (auto error = validateAssets(project.assets, dir); !error.empty())
+        return {{kProjectFile, error}};
     std::vector<ProjectError> errors;
     if (!project.inputSettingsScript.empty()) {
         auto parsed = parseInputSettings(project.inputSource);
@@ -1004,6 +1014,11 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
                  {"scenes", sceneIds},
                  {"dataTypes", dataKeys},
                  {"globalScripts", project.globalScripts}};
+    root["assets"] = json::array();
+    for (const auto& a : project.assets) {
+        root["assets"].push_back({{"id", a.id}, {"name", a.name}, {"kind", a.kind},
+            {"path", a.path}, {"sourceName", a.sourceName}, {"sha256", a.sha256}});
+    }
     json variables = json::array();
     for (const auto& v : project.variables) {
         json vj = {{"name", v.name}, {"value", valueToJson(v.initial)}};
