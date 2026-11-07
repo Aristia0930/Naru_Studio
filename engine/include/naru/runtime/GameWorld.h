@@ -136,6 +136,8 @@ public:
     bool setObjectPassable(const std::string& id, bool passable);
     bool setObjectColor(const std::string& id, const std::string& color);
     bool setObjectVisible(const std::string& id, bool visible);
+    bool setObjectImage(const std::string& id, const std::string& asset);
+    bool setBackgroundImage(const std::string& asset);
     // "@self"(selfId)·"@player"·객체 ID를 실제 객체 ID로 바꾼다. 장면에 없으면 빈 문자열.
     std::string resolveTarget(const std::string& target, const std::string& selfId) const;
 

@@ -2,11 +2,15 @@
 
 > 기능을 추가하거나 바꿀 때마다 이 문서와 그림을 함께 갱신합니다. 그림은 툴이 직접 촬영합니다 ([그림 다시 찍기](#부록-그림-다시-찍기)).
 >
-> 기준 버전: 2026-11-01 — 프로젝트 · 장면 편집 · 이벤트 편집(선택지·공통 이벤트 포함) · 데이터베이스 · Python 스크립트(전역 스크립트 포함) · 게임 실행 화면
+> 기준 버전: 2026-11-08 — 프로젝트 · 장면/이미지/배경 · 이벤트 · 데이터베이스 · 에셋 ID/그룹 · Python 전체 연결 가이드 · 실제 게임 실행
 
 ## 목차
 
-- [에셋 가져오기·목록·미리보기](ASSETS.md)
+- [현재 Python 연결 전체 가이드·복사 가능한 코드](PYTHON_COOKBOOK.md)
+
+- [객체 이미지·장면 배경·Python 변경](IMAGES.md)
+- [에셋 목록 팝업·별도 추가 창·미리보기](ASSETS.md)
+- [에셋 ID 직접 지정·변경과 스크립트 연결](ASSETS.md#id-직접-지정변경)
 - [키 설정 · Python과 양방향 동기화](INPUT_SETTINGS.md)
 - [이벤트 명령 13종 사용법](EVENTS.md)
 - [Python 작성·이벤트/전역 스크립트 연결](SCRIPTING.md)
@@ -371,7 +375,7 @@ def run(ctx):
 
 **등록하기**: 메뉴 **스크립트 → 전역 스크립트…** 에서 체크하고 **위로/아래로**로 순서를 정합니다. 또는 스크립트 목록에서 **오른쪽 클릭 → 전역 스크립트로 사용**. 등록된 파일은 목록에 **굵게 `[전역 1]`** 로 표시됩니다. 등록 변경도 Ctrl+Z로 되돌릴 수 있습니다.
 
-![전역 스크립트 등록 창](images/13-global-scripts.png)
+![전역 스크립트 추가 창](images/13-global-scripts.png)
 
 **훅 함수**: 아래 이름의 함수가 있으면 게임이 부릅니다. 필요한 것만 만들면 됩니다. 여러 전역 스크립트에 같은 훅이 있으면 등록 순서대로 모두 불립니다. **자동으로 불리는 것은 이 4개 이름뿐**입니다. 이름이 조금이라도 다르면(`onUpdate` 등) 불리지 않고, 그 밖의 함수(`add_combo` 등)는 이벤트의 "스크립트 호출"이나 다른 코드가 불러야 실행됩니다. 함수 밖에 쓴 코드는 게임 시작 때 한 번 실행됩니다.
 
@@ -414,7 +418,7 @@ def on_update(ctx):
 
 **기본 조작을 끄고 직접 만들기**: `ctx.player.default_control = False`로 끄면 엔진이 방향키 이동·결정 키 조사를 하지 않습니다. 그 대신 `on_update`에서 `ctx.player.move(dx, dy)`(충돌·접촉 이벤트 포함), `ctx.player.interact()`(앞의 객체 조사)로 직접 처리합니다.
 
-**검사 규칙** (어기면 오류로 알림 — 게임 시작 시 로그, F7, 등록 창):
+**검사 규칙** (어기면 오류로 알림 — 게임 시작 시 로그, F7, 추가 창):
 
 - 등록된 전역 스크립트끼리 **파일 최상위 변수 이름이 같으면 안 됩니다** (예: 두 파일 모두 `combo = 0`). 오류에 두 위치가 함께 나옵니다. 훅 함수, `import`한 이름, `_`로 시작하는 이름은 겹쳐도 됩니다.
 - 파일 이름이 Python 표준 모듈과 같으면 안 됩니다 (예: `random.py`) — `import`가 꼬입니다.
@@ -534,15 +538,21 @@ Ctrl+R로 게임을 시작하면 **실행 변수** 패널에 현재 변수·스�
 
 ![게임 실행 변수 확인](images/26-runtime-debug.png)
 
+## 객체 이미지·장면 배경
+
+인스펙터의 이미지 설정 팝업에서 그림과 배경을 지정합니다. 그림과 충돌 크기는 별개이며 배경은 충돌하지 않습니다. [설정 기본값·실행 예제·수동 확인](IMAGES.md)을 참고하세요.
+
+![이미지 장면](images/29-image-scene.png)
+
 ## 에셋 가져오기·목록
 
-**에셋 → 에셋 목록...**에서 PNG/JPG/BMP·WAV·TTF/OTF를 가져옵니다. 썸네일·투명 이미지 미리보기·소리 미리듣기, 이름/종류 검색, 이름 변경·재가져오기·등록 해제·Undo·저장/재열기를 지원합니다. [사용법·제한·복구·예제](ASSETS.md)를 보세요. 객체 그림/게임 소리/DB 연결은 다음 단계입니다.
+**에셋 → 에셋 목록...**은 장면 편집 영역을 좁히지 않는 독립 팝업입니다. **에셋 추가... → 파일 선택... → 추가**는 별도 창에서 진행하며 취소하면 변경하지 않습니다. **파일 교체...**, **파일 내보내기...**, **목록에서 제거...**로 작업하며 그룹 추가·이름 변경·삭제·여러 에셋 그룹 이동을 지원합니다. 그룹·종류·검색 필터를 함께 쓰고 Ctrl+S로 분류를 저장합니다. 그룹 삭제는 에셋을 미분류로 옮기며 파일은 보존합니다. [사용법·제한·복구·예제](ASSETS.md)를 보세요. 객체 그림·장면 배경은 [이미지 안내](IMAGES.md)에서 설정합니다. 게임 소리·DB 연결은 다음 단계입니다.
 
 ![에셋 목록](images/27-assets.png)
 
 ## 9. 아직 안 되는 것
 
-- 객체에 이미지/장면 배경 지정·게임 소리 재생·DB 이미지/소리 참조 (가져오기·목록·미리보기는 [에셋 안내](ASSETS.md)대로 사용 가능)
+- 게임 소리 재생·DB 이미지/소리 참조 (가져오기·목록·미리보기는 [에셋 안내](ASSETS.md)대로 사용 가능)
 - 게임 화면: 클릭으로 조사, 이용자 개인 설정 메뉴·게임패드
 - 스크립트에서 대사 띄우고 기다리기(`async`), 이동 경로를 여러 단계로 정하기(위로 2칸 → 오른쪽 3칸 같은 이동 루트)
 - 이미지·소리·화면 연출 명령 (장면 이동 때 페이드 등)
@@ -584,6 +594,7 @@ $p = "build\windows-msvc\test_projects\guide\내 RPG"   # 비어 있는 새 위�
 & $exe --input-combination-dialog --screenshot "$img\25-input-combination.png"
 & $exe docs/examples/common-events --run-game --game-log-directory build/guide-logs --smoke-test 1800 --screenshot "$img\26-runtime-debug.png"
 & $exe docs/examples/assets --assets --smoke-test 1200 --screenshot "$img\27-assets.png"
+& $exe docs/examples/assets --asset-import-dialog --smoke-test 1200 --screenshot "$img\28-asset-import.png"
 # 선택지 예제는 개인 프로젝트를 바꾸지 않고 그대로 촬영할 수 있습니다.
 & $exe docs/examples/choices --event obj_002 --run-event --smoke-test 1500 --screenshot "$img\20-choices-preview.png"
 & build\windows-msvc\bin\NaruPlayer.exe docs/examples/choices --frames 12 --hold confirm:2-2 --screenshot "$img\21-choices-game.png"

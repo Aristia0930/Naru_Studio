@@ -2,8 +2,10 @@
 
 #include <QGraphicsView>
 #include <QHash>
+#include <QImage>
 #include <QPointF>
 #include <QString>
+#include <string>
 
 class ProjectDocument;
 class QGraphicsRectItem;
@@ -40,12 +42,14 @@ private:
     void rebuild();
     void fitScene();
     void updateObject(const QString& sceneId, const QString& objectId);
+    QImage imageFor(const std::string& id);
 
     ProjectDocument* doc_;
     QGraphicsScene* canvas_;
     QGraphicsRectItem* frame_ = nullptr;
     QString sceneId_;
     QHash<QString, SceneObjectItem*> items_;
+    QHash<QString, QImage> images_;
     bool syncingSelection_ = false;
     // 사용자가 확대/축소하기 전까지는 창 크기에 맞춰 장면 전체를 보여 준다.
     bool autoFit_ = true;

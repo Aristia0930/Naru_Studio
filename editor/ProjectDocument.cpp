@@ -100,6 +100,7 @@ void ProjectDocument::setSceneInfo(const naru::Scene& info) {
     scene->width = info.width;
     scene->height = info.height;
     scene->background = info.background;
+    scene->backgroundImage = info.backgroundImage;
     scene->playerObjectId = info.playerObjectId;
     emit sceneChanged(QString::fromStdString(info.id));
     emit scenesChanged();
@@ -136,6 +137,34 @@ void ProjectDocument::removeObject(const std::string& sceneId, const std::string
 void ProjectDocument::setAssets(const std::vector<naru::Asset>& assets) {
     project_.assets = assets;
     emit assetsChanged();
+}
+
+void ProjectDocument::setAssetCatalog(const std::vector<naru::Asset>& assets, const std::vector<std::string>& groups) {
+    project_.assets = assets;
+    project_.assetGroups = groups;
+    emit assetsChanged();
+}
+
+void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references) {
+    project_.assets = assets;
+    QStringList changedScenes;
+    for (const auto& reference : references) {
+        auto* scene = project_.findScene(reference.id);
+        if (!scene) continue;
+        bool changed = false;
+        if (scene->backgroundImage.asset != reference.backgroundImage.asset) {
+            scene->backgroundImage.asset = reference.backgroundImage.asset; changed = true;
+        }
+        for (const auto& objectReference : reference.objects) {
+            auto* object = scene->findObject(objectReference.id);
+            if (object && object->image.asset != objectReference.image.asset) {
+                object->image.asset = objectReference.image.asset; changed = true;
+            }
+        }
+        if (changed) changedScenes.append(QString::fromStdString(scene->id));
+    }
+    emit assetsChanged();
+    for (const auto& scene : changedScenes) emit sceneChanged(scene);
 }
 
 void ProjectDocument::setDatabase(const naru::Database& database) {

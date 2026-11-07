@@ -2,6 +2,8 @@
 
 #include "ProjectDocument.h"
 #include "UndoCommands.h"
+#include "ImageSettingsDialog.h"
+#include "ImageAssets.h"
 
 #include <QCheckBox>
 #include <QColorDialog>
@@ -60,9 +62,22 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     objectForm->addRow(QStringLiteral("이름"), objectName_);
     objectForm->addRow(QStringLiteral("X"), objectX_);
     objectForm->addRow(QStringLiteral("Y"), objectY_);
-    objectForm->addRow(QStringLiteral("너비"), objectW_);
-    objectForm->addRow(QStringLiteral("높이"), objectH_);
+    objectForm->addRow(QStringLiteral("충돌 너비"), objectW_);
+    objectForm->addRow(QStringLiteral("충돌 높이"), objectH_);
     objectForm->addRow(QStringLiteral("색"), objectColor_);
+    objectImage_ = new QPushButton(QStringLiteral("이미지 설정..."), objectPage);
+    objectImage_->setObjectName(QStringLiteral("objectImageSettings"));
+    objectForm->addRow(QStringLiteral("객체 그림"), objectImage_);
+    connect(objectImage_, &QPushButton::clicked, this, [this] {
+        const auto* scene = doc_->project().findScene(sceneId_.toStdString());
+        const auto* current = scene ? scene->findObject(objectId_.toStdString()) : nullptr;
+        if (!current) return;
+        const auto before = *current;
+        ImageSettingsDialog dialog(doc_, before, this);
+        if (dialog.exec() != QDialog::Accepted) return;
+        auto after = before; after.image = dialog.objectImage();
+        if (after != before) doc_->undoStack()->push(new SetObjectCommand(doc_, sceneId_.toStdString(), before, after));
+    });
     objectPlayer_ = new QCheckBox(QStringLiteral("방향키로 조작 (장면마다 하나)"), objectPage);
     objectPlayer_->setToolTip(QStringLiteral("게임 실행 화면에서 이 객체를 방향키로 움직입니다. 결정 키로 앞의 객체를 조사합니다."));
     objectPassable_ = new QCheckBox(QStringLiteral("지나갈 수 있음"), objectPage);
@@ -103,6 +118,18 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     sceneForm->addRow(QStringLiteral("너비"), sceneW_);
     sceneForm->addRow(QStringLiteral("높이"), sceneH_);
     sceneForm->addRow(QStringLiteral("배경색"), sceneColor_);
+    backgroundImage_ = new QPushButton(QStringLiteral("배경 이미지 설정..."), scenePage);
+    backgroundImage_->setObjectName(QStringLiteral("backgroundImageSettings"));
+    sceneForm->addRow(QStringLiteral("배경 그림"), backgroundImage_);
+    connect(backgroundImage_, &QPushButton::clicked, this, [this] {
+        const auto* current = doc_->project().findScene(sceneId_.toStdString());
+        if (!current) return;
+        const auto before = *current;
+        ImageSettingsDialog dialog(doc_, before, this);
+        if (dialog.exec() != QDialog::Accepted) return;
+        auto after = before; after.backgroundImage = dialog.backgroundImage();
+        if (after != before) doc_->undoStack()->push(new SetSceneInfoCommand(doc_, before, after, -1));
+    });
     pages_->addWidget(scenePage);
 
     connect(sceneName_, &QLineEdit::editingFinished, this, [this] { commitScene(Name); });
@@ -121,6 +148,7 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
         }
     });
     connect(doc_, &ProjectDocument::scenesChanged, this, &Inspector::refresh);
+    connect(doc_, &ProjectDocument::assetsChanged, this, &Inspector::refresh);
     refresh();
 }
 
@@ -143,6 +171,8 @@ void Inspector::refresh() {
         objectW_->setValue(object->width);
         objectH_->setValue(object->height);
         showColor(objectColor_, object->color);
+        objectImage_->setIcon(QPixmap::fromImage(loadProjectImage(doc_, object->image.asset)).scaled(48, 32, Qt::KeepAspectRatio));
+        objectImage_->setToolTip(object->image.asset.empty() ? QStringLiteral("이미지 없음 (색 사각형)") : QString::fromStdString(object->image.asset));
         objectPlayer_->setChecked(scene->playerObjectId == object->id);
         objectPassable_->setChecked(object->passable);
         objectVisible_->setChecked(object->visible);
@@ -153,6 +183,8 @@ void Inspector::refresh() {
         sceneW_->setValue(scene->width);
         sceneH_->setValue(scene->height);
         showColor(sceneColor_, scene->background);
+        backgroundImage_->setIcon(QPixmap::fromImage(loadProjectImage(doc_, scene->backgroundImage.asset)).scaled(48, 32, Qt::KeepAspectRatio));
+        backgroundImage_->setToolTip(scene->backgroundImage.asset.empty() ? QStringLiteral("이미지 없음 (배경색)") : QString::fromStdString(scene->backgroundImage.asset));
     } else {
         pages_->setCurrentIndex(0);
     }

@@ -9,11 +9,13 @@
   "globalScripts": [],
   "variables": [],
   "commonEvents": [],
+  "assetGroups": ["그림", "소리", "빈 그룹 예제"],
   "assets": [
     {
       "id": "asset_image",
       "name": "반투명 그림 예제",
       "kind": "image",
+      "group": "그림",
       "path": "assets/sample.png",
       "sourceName": "sample.png",
       "sha256": "405cbbef8b7ca051ee69a8f4631326ad8fb71f5bc89fdad5665c24acbdc051c1"
@@ -22,6 +24,7 @@
       "id": "asset_audio",
       "name": "미리듣기 예제",
       "kind": "audio",
+      "group": "소리",
       "path": "assets/tone.wav",
       "sourceName": "tone.wav",
       "sha256": "d44bc5482e75952dbed0e27e1dfca9344370cac5070840dee0272a5b0fb3c349"

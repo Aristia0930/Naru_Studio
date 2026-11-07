@@ -1,6 +1,7 @@
 #include "TestMain.h"
 
 #include "naru/project/ProjectIO.h"
+#include "naru/project/ImageLayout.h"
 
 #include <filesystem>
 #include <fstream>
@@ -481,6 +482,70 @@ TEST_CASE("에셋 목록은 JSON 왕복·누락 파일 복구·기존 프로젝�
     CHECK(old.ok() && old.project->assets.empty());
     writeText(dir.path / "project.json", R"({"formatVersion":1,"scenes":[],"assets":[{"id":"bad"}]})");
     CHECK(!ProjectIO::load(dir.path).ok());
+}
+
+TEST_CASE("에셋 그룹의 잘못된 이름·형식·참조를 거부한다") {
+    TempDir dir;
+    auto p = *ProjectIO::create(dir.path, "groups").project;
+    p.assetGroups = {"characters", "empty"};
+    p.assets.push_back({"asset_test", "image", "image", "assets/test.png", "test.png", std::string(64, 'a'), "characters"});
+    CHECK(ProjectIO::save(p, dir.path).empty());
+    const auto loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok() && loaded.project->assetGroups == p.assetGroups && loaded.project->assets == p.assets);
+    for (const auto& groups : std::vector<std::vector<std::string>>{{""}, {" "}, {"characters", "characters"}, {"empty"}}) {
+        auto invalid = p;
+        invalid.assetGroups = groups;
+        CHECK(!ProjectIO::save(invalid, dir.path).empty());
+        CHECK(ProjectIO::load(dir.path).project->assetGroups == p.assetGroups);
+    }
+    for (const auto& fragment : {R"("assetGroups":4)", R"("assetGroups":[true])", R"("assetGroups":["a","a"])", R"("assetGroups":[""])",
+        R"("assets":[{"id":"a","name":"a","kind":"image","path":"assets/a.png","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","group":"missing"}])"}) {
+        writeText(dir.path / "project.json", std::string(R"({"formatVersion":1,"name":"bad","scenes":[],)") + fragment + "}");
+        CHECK(!ProjectIO::load(dir.path).ok());
+    }
+}
+
+TEST_CASE("객체 이미지·장면 배경의 저장 호환·참조·범위와 공통 배치를 검사한다") {
+    TempDir dir;
+    auto p = *ProjectIO::create(dir.path, "images").project;
+    auto& s = p.scenes[0];
+    auto& o = s.objects[0];
+    p.assets = {{"image", "image", "image", "assets/missing.png", "image.png", std::string(64, 'a')},
+                {"sound", "sound", "audio", "assets/tone.wav", "tone.wav", std::string(64, 'b')}};
+    o.image.asset = "image"; o.image.width = 120; o.image.height = 80; o.image.anchorX = .5; o.image.anchorY = 1;
+    o.image.offsetX = 10; o.image.offsetY = -4; o.image.rotation = 45; o.image.opacity = .4; o.image.flipX = true;
+    o.image.order = 3; s.backgroundImage = {"image", "fill", 10, 20, 2, .5, true};
+    CHECK(ProjectIO::save(p, dir.path).empty());
+    auto loaded = ProjectIO::load(dir.path);
+    CHECK(loaded.ok() && *loaded.project == p);
+    const auto r = objectImageRect(o, 192, 128);
+    CHECK(r.x == o.x + 10 - 60 && r.y == o.y - 4 - 80 && r.width == 120 && r.height == 80);
+    CHECK(imageUses(p, "image").size() == 2);
+    auto missing = p; missing.scenes[0].objects[0].image.asset = "missing";
+    CHECK(ProjectIO::save(missing, dir.path).empty()); // repairable missing ID
+    auto invalid = p; invalid.scenes[0].objects[0].image.asset = "sound";
+    CHECK(!ProjectIO::save(invalid, dir.path).empty());
+    invalid = p; invalid.scenes[0].objects[0].image.opacity = 2;
+    CHECK(!ProjectIO::save(invalid, dir.path).empty());
+    invalid = p; invalid.scenes[0].objects[0].image.scaleX = 0;
+    CHECK(!ProjectIO::save(invalid, dir.path).empty());
+    invalid = p; invalid.scenes[0].backgroundImage.mode = "unknown";
+    CHECK(!ProjectIO::save(invalid, dir.path).empty());
+    Scene scene; scene.width = 200; scene.height = 100;
+    scene.backgroundImage.mode = "fit";
+    auto fit = backgroundImageRect(scene, 100, 100);
+    CHECK(fit.x == 50 && fit.y == 0 && fit.width == 100 && fit.height == 100);
+    scene.backgroundImage.mode = "fill"; auto fill = backgroundImageRect(scene, 100, 100);
+    CHECK(fill.x == 0 && fill.y == -50 && fill.width == 200 && fill.height == 200);
+    scene.backgroundImage.mode = "stretch"; auto stretch = backgroundImageRect(scene, 100, 100);
+    CHECK(stretch.width == 200 && stretch.height == 100);
+    scene.backgroundImage.mode = "original"; auto original = backgroundImageRect(scene, 10, 20);
+    CHECK(original.x == 0 && original.y == 0 && original.width == 10 && original.height == 20);
+    scene.backgroundImage.mode = "repeat"; scene.backgroundImage.offsetX = 5;
+    CHECK(backgroundImageRect(scene, 10, 20).x == -5);
+    SceneObject a, b, c; a.id = "a"; b.id = "b"; c.id = "c"; a.image.order = 1;
+    scene.objects = {a, b, c}; auto ordered = drawingOrder(scene);
+    CHECK(ordered[0]->id == "b" && ordered[1]->id == "c" && ordered[2]->id == "a");
 }
 
 TEST_MAIN()

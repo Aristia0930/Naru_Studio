@@ -1,7 +1,7 @@
-find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3-shared)
+find_package(SDL3 3.4 REQUIRED CONFIG COMPONENTS SDL3-shared)
 find_package(SDL3_ttf 3.2 REQUIRED CONFIG)
 
-add_executable(naru_player main.cpp)
+add_executable(naru_player main.cpp ImageRenderer.cpp ImageRenderer.h)
 target_include_directories(naru_player SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/third_party)
 
 set_target_properties(naru_player PROPERTIES
@@ -20,6 +20,7 @@ endif()
 
 # SDL3.dll, SDL3_ttf.dll을 실행 파일 옆에 둔다.
 if(WIN32)
+  target_link_libraries(naru_player PRIVATE windowscodecs ole32)
   add_custom_command(TARGET naru_player POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_RUNTIME_DLLS:naru_player> $<TARGET_FILE_DIR:naru_player>
     COMMAND_EXPAND_LISTS

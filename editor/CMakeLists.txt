@@ -32,6 +32,8 @@ qt_add_executable(naru_editor
   EventEditor.h
   Inspector.cpp
   Inspector.h
+  ImageSettingsDialog.cpp
+  ImageSettingsDialog.h
   MainWindow.cpp
   MainWindow.h
   ProjectDocument.cpp

@@ -48,6 +48,9 @@ endif()
 
 if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
   find_package(Python3 3.13 REQUIRED COMPONENTS Interpreter)
+  add_test(NAME python_guide_docs COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python_guide_docs.py ${PROJECT_SOURCE_DIR})
+  add_test(NAME player_images COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_images.py $<TARGET_FILE:naru_player>)
+  set_tests_properties(player_images PROPERTIES TIMEOUT 60)
   add_test(NAME player_choices COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/player_choices.py $<TARGET_FILE:naru_player>
     ${PROJECT_SOURCE_DIR}/docs/examples/choices)
@@ -70,11 +73,20 @@ if(NARU_BUILD_EDITOR)
   find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3-shared)
   qt_add_executable(naru_asset_editor_tests
     asset_editor_tests.cpp
+    image_editor_tests.cpp
+    ../editor/ImageSettingsDialog.cpp ../editor/ImageSettingsDialog.h
+    ../editor/Inspector.cpp ../editor/Inspector.h
+    ../editor/SceneView.cpp ../editor/SceneView.h
+    ../editor/UndoCommands.cpp ../editor/UndoCommands.h
     ../editor/AssetBrowser.cpp ../editor/AssetBrowser.h
     ../editor/ProjectDocument.cpp ../editor/ProjectDocument.h)
   target_include_directories(naru_asset_editor_tests PRIVATE ../editor)
   set_target_properties(naru_asset_editor_tests PROPERTIES AUTOMOC ON)
   target_link_libraries(naru_asset_editor_tests PRIVATE naru_engine Qt6::Widgets SDL3::SDL3)
+  if(NARU_BUILD_PLAYER)
+    target_compile_definitions(naru_asset_editor_tests PRIVATE NARU_TEST_PLAYER_EXE="$<TARGET_FILE:naru_player>")
+    add_dependencies(naru_asset_editor_tests naru_player)
+  endif()
   add_dependencies(naru_asset_editor_tests naru_editor)
   add_test(NAME asset_editor COMMAND naru_asset_editor_tests)
 endif()

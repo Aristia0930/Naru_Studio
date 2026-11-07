@@ -1,6 +1,8 @@
 # Python 스크립트 작성·연결 안내
 
-기준: 2026-11-01. 현재 구현된 기능으로 설명합니다. 전체 이름·기본값·오류 규칙은 [SCRIPT_API](../SCRIPT_API.md), 이벤트 입력값은 [이벤트 명령 안내](EVENTS.md), 기본 설정 코드/화면 동기화는 [키 설정 안내](INPUT_SETTINGS.md)에 있습니다.
+현재 공개 기능 전체의 연결·에셋 ID·배경/객체 이미지·변수/DB·입력/이동·공통 이벤트·전역 훅·오류 예제는 [Python 전체 가이드](PYTHON_COOKBOOK.md)를 보세요. 완성 파일 [python_guide.py](../examples/python_guide.py)와 [guide_global.py](../examples/guide_global.py)를 함께 제공합니다. 이벤트 함수만 쓰면 전역 등록 불필요, 다른 파일 import를 쓰는 전역 예제는 python_guide → guide_global 순서로 등록합니다.
+
+기준: 2026-11-08. 현재 구현된 기능으로 설명합니다. 전체 이름·기본값·오류 규칙은 [SCRIPT_API](../SCRIPT_API.md), 이벤트 입력값은 [이벤트 명령 안내](EVENTS.md), 기본 설정 코드/화면 동기화는 [키 설정 안내](INPUT_SETTINGS.md)에 있습니다.
 
 게임 실행 중 `ctx.variables`의 값은 코드를 추가하지 않아도 **실행 변수** 패널에서 볼 수 있습니다. `ctx.log`와 예외의 traceback은 게임 파일 로그에도 기록합니다. Python 오류를 더블클릭하면 파일·행으로, 뒤따르는 **명령 실패**를 더블클릭하면 호출한 이벤트로 이동합니다. [패널·파일 로그·체력 출력 예제](DEBUGGING.md)를 보세요. Python 함수·인자·반환값과 호출 시점은 바뀌지 않았습니다.
 
@@ -98,11 +100,13 @@ def run(ctx):
 
 첫 값은 종류 **키**, 다음 값은 항목 **ID**입니다. 표시 이름과 다릅니다. 항목 없음은 None, 종류 없음은 KeyError입니다. `ctx.db.types()`로 종류, `ctx.db.ids("item")`으로 항목 ID를 볼 수 있습니다. DB는 읽기 전용이며 반환한 사전을 수정해도 DB가 수정되는 API가 아닙니다.
 
-[에셋 가져오기·목록](ASSETS.md)은 제작툴에서 사용할 수 있습니다. 에셋 전용 Python API는 아직 없으며 `ctx.assets` 같은 이름을 현재 API로 사용하면 안 됩니다. 일반 Python 파일 읽기와 엔진 에셋 기능은 별개입니다.
+[에셋 추가·파일 교체·파일 내보내기·그룹 분류](ASSETS.md)는 제작툴에서 사용할 수 있습니다. 그룹은 제작 자료 분류이며 게임 실행에 영향을 주지 않습니다. [객체 이미지·장면 배경](IMAGES.md)은 인스펙터에서 지정하고 실제 게임에서는 `ctx.scene.object(ID).image`와 `ctx.scene.background_image`에 등록한 이미지 ID 또는 빈 문자열을 넣어 변경합니다. 잘못된 ID·다른 종류는 ValueError, 문자열 이외는 TypeError이며 기존 값을 유지합니다. 실행 사본에 즉시 반영·대기 없음, 장면 재진입·재시작은 편집값으로 초기화합니다. `docs/examples/images/scripts/appearance.py`를 프로젝트 scripts에 두고 이벤트 스크립트 호출에 toggle_background를 연결하면 됩니다. 인자 ctx·반환 bool, 전역 등록 불필요. F5/F6의 ctx.scene은 None이므로 예제는 안내 로그만 남기며 오류 위치·traceback은 기존과 같습니다. `ctx.assets` 같은 관리 API·게임 소리·애니메이션 API는 아직 없습니다.
 
 DB에 스킬을 정의해서 Python 피해 계산·이미지/소리/이펙트로 연결하는 기능은 개발 계획입니다. 현재 스킬/전투 API가 있다고 가정하지 마세요.
 
 ## 6. 게임 중 객체·입력·장면 조작
+
+에셋을 추가할 때 **에셋 ID** 칸에 `day`·`night` 같은 이름을 직접 입력할 수 있습니다. 기존 에셋은 목록에서 **ID 변경...**을 사용합니다. 객체/배경 연결은 자동 갱신되지만 스크립트의 ID 문자열은 직접 수정해야 합니다. 예를 들어 ID가 `sky_day`라면 `ctx.scene.background_image == "sky_day"`처럼 비교와 대입 모두 맞춥니다. 자세한 규칙은 [ID 지정·변경](ASSETS.md#id-직접-지정변경)을 보세요.
 
 ```python
 def open_gate(ctx):
@@ -141,6 +145,6 @@ def recover(ctx):
 
 F7은 문법, F5는 단독 `run`, F6는 이벤트 연결, Ctrl+R은 실제 게임 흐름을 확인합니다. 전용 입력 설정 파일은 F5로 일반 함수를 실행하는 대신 설정을 검사·저장합니다.
 
-`ctx.log`, `ctx.warning`, `print`는 로그로 확인합니다. Python 오류는 파일·행·traceback을 기록하며 로그의 파일 위치에서 코드를 열 수 있습니다. 실제 게임의 객체/이벤트 오류 위치로 이동하는 기능은 아직 개발 예정입니다. 오류가 나면 다음 명령이 실행되지 않았는지와 남아 있는 조작/이동도 확인하세요.
+`ctx.log`, `ctx.warning`, `print`는 로그로 확인합니다. Python 오류는 파일·행·traceback을 기록하며 로그의 파일 위치에서 코드를 열 수 있습니다. 실제 게임의 명령 실패 로그를 더블클릭하면 객체/공통 이벤트의 오류 명령으로 이동할 수 있습니다. 오류가 나면 다음 명령이 실행되지 않았는지와 남아 있는 조작/이동도 확인하세요.
 
 새 기능마다 이 안내·이벤트 문서·API·예제를 함께 갱신합니다. 복사 가능한 예제는 [예제 목록](../examples/README.md), 현재 미구현 범위는 [로드맵](../ROADMAP.md)에 있습니다.

@@ -7,12 +7,15 @@
 #include "EventConditionsDialog.h"
 #include "VariablesDialog.h"
 #include "InputSettingsDialog.h"
+#include "AssetBrowser.h"
+#include "ImageSettingsDialog.h"
 
 #include "naru/python/PythonRuntime.h"
 
 #include <QApplication>
 #include <QCommandLineParser>
 #include <QDir>
+#include <QDialog>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QStatusBar>
@@ -98,8 +101,13 @@ int main(int argc, char* argv[]) {
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
                        globalScriptsOption, variablesDialogOption, inputSettingsOption, combinationOption, conditionsDialogOption, lastOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
-    QCommandLineOption assetsOption(QStringLiteral("assets"), QStringLiteral("에셋 목록 패널 표시 (촬영용)."));
+    QCommandLineOption assetsOption(QStringLiteral("assets"), QStringLiteral("에셋 목록 팝업 표시 (촬영용)."));
     parser.addOption(assetsOption);
+    QCommandLineOption assetImportOption(QStringLiteral("asset-import-dialog"), QStringLiteral("에셋 추가 팝업 촬영."));
+    parser.addOption(assetImportOption);
+    QCommandLineOption objectImageOption(QStringLiteral("object-image-dialog"), QStringLiteral("객체 이미지 설정 촬영"), QStringLiteral("object-id"));
+    QCommandLineOption backgroundImageOption(QStringLiteral("background-image-dialog"), QStringLiteral("장면 배경 설정 촬영"), QStringLiteral("scene-id"));
+    parser.addOptions({objectImageOption, backgroundImageOption});
     parser.process(app);
     if (parser.isSet(gameLogDirectoryOption)) app.setProperty("gameLogDirectory", parser.value(gameLogDirectoryOption));
     else if (parser.isSet(selfTestOption)) app.setProperty("gameLogDirectory", QDir(parser.value(newOption)).absoluteFilePath(QStringLiteral("test-logs")));
@@ -121,6 +129,20 @@ int main(int argc, char* argv[]) {
         QApplication::setOrganizationName(QStringLiteral("NaruGuideCapture"));
         StartDialog start;
         return captureDialog(start);
+    }
+    if (parser.isSet(objectImageOption) || parser.isSet(backgroundImageOption)) {
+        if (parser.positionalArguments().isEmpty()) return 3;
+        QString error; auto doc = ProjectDocument::open(parser.positionalArguments().first(), &error);
+        if (!doc) return 3;
+        for (const auto& scene : doc->project().scenes) {
+            if (parser.isSet(backgroundImageOption) && scene.id == parser.value(backgroundImageOption).toStdString()) {
+                ImageSettingsDialog dialog(doc.get(), scene); return captureDialog(dialog);
+            }
+            if (parser.isSet(objectImageOption)) if (const auto* object = scene.findObject(parser.value(objectImageOption).toStdString())) {
+                ImageSettingsDialog dialog(doc.get(), *object); return captureDialog(dialog);
+            }
+        }
+        return 3;
     }
     if (parser.isSet(commandDialogOption)) {
         auto type = naru::commandTypeFromKey(parser.value(commandDialogOption).toStdString());
@@ -303,7 +325,15 @@ int main(int argc, char* argv[]) {
 
         MainWindow window(doc.get(), python.get());
         window.show();
-        if (parser.isSet(assetsOption)) window.showAssets();
+        if (parser.isSet(assetsOption) || parser.isSet(assetImportOption)) window.showAssets();
+        if (parser.isSet(assetImportOption)) {
+            QStringList captureFiles;
+            if (parser.isSet(screenshotOption) && !doc->project().assets.empty())
+                captureFiles.append(QDir(doc->directory()).filePath(QString::fromStdString(doc->project().assets.front().path)));
+            QTimer::singleShot(0, &window, [&window, captureFiles] {
+                window.findChild<AssetBrowser*>()->showImportDialog(captureFiles);
+            });
+        }
         if (parser.isSet(runGameOption)) window.runGame();
         if (parser.isSet(commonEventOption)) {
             window.showCommonEvent(parser.value(commonEventOption), parser.isSet(runEventOption));
@@ -331,7 +361,9 @@ int main(int argc, char* argv[]) {
             }
             QTimer::singleShot(ms > 0 ? ms : 1000, &app, [&window, screenshot] {
                 if (!screenshot.isEmpty()) {
-                    window.grab().save(screenshot);
+                    auto* popup = QApplication::activeModalWidget();
+                    if (!popup) popup = window.findChild<QDialog*>(QStringLiteral("assetsDialog"));
+                    (popup && popup->isVisible() ? popup : &window)->grab().save(screenshot);
                 }
                 QApplication::exit(0);
             });

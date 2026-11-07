@@ -44,6 +44,7 @@ private:
     QDoubleSpinBox* objectW_;
     QDoubleSpinBox* objectH_;
     QPushButton* objectColor_;
+    QPushButton* objectImage_;
     QCheckBox* objectPlayer_;
     QCheckBox* objectPassable_;
     QCheckBox* objectVisible_;
@@ -53,4 +54,5 @@ private:
     QSpinBox* sceneW_;
     QSpinBox* sceneH_;
     QPushButton* sceneColor_;
+    QPushButton* backgroundImage_;
 };

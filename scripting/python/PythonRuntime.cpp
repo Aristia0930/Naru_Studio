@@ -112,6 +112,8 @@ class SceneObject:
                        lambda self, v: _naru.object_set(self._id, "visible", v))
     color = property(lambda self: _naru.object_get(self._id, "color"),
                      lambda self, v: _naru.object_set(self._id, "color", v))
+    image = property(lambda self: _naru.object_get(self._id, "image"),
+                     lambda self, v: _naru.object_set(self._id, "image", v))
     def move(self, dx, dy):
         return _naru.object_move(self._id, float(dx), float(dy))
 
@@ -122,6 +124,8 @@ class Scene:
     name = _ro(_naru.scene_get, "name")
     width = _ro(_naru.scene_get, "width")
     height = _ro(_naru.scene_get, "height")
+    background_image = property(lambda self: _naru.scene_get("background_image"),
+                                lambda self, v: _naru.scene_set_background(v))
     def change(self, scene_id, x=None, y=None, facing=None):
         _naru.scene_change(scene_id, x, y, facing)
     def ids(self):
@@ -663,8 +667,19 @@ PyObject* naruSceneGet(PyObject*, PyObject* args) {
     if (key == "name") return stringObject(scene->name);
     if (key == "width") return PyLong_FromLong(scene->width);
     if (key == "height") return PyLong_FromLong(scene->height);
+    if (key == "background_image") return stringObject(scene->backgroundImage.asset);
     PyErr_SetString(PyExc_AttributeError, name);
     return nullptr;
+}
+
+PyObject* naruSceneSetBackground(PyObject*, PyObject* args) {
+    const char* asset = nullptr;
+    GameWorld* game = nullptr;
+    if (!PyArg_ParseTuple(args, "s", &asset) || !(game = requireGame())) return nullptr;
+    if (!game->setBackgroundImage(asset)) {
+        PyErr_SetString(PyExc_ValueError, "배경은 등록된 이미지 에셋 ID 또는 빈 문자열을 사용하세요."); return nullptr;
+    }
+    Py_RETURN_NONE;
 }
 
 PyObject* naruSceneChange(PyObject*, PyObject* args) {
@@ -762,6 +777,7 @@ PyObject* naruObjectGet(PyObject*, PyObject* args) {
     if (key == "passable") return PyBool_FromLong(o->passable ? 1 : 0);
     if (key == "visible") return PyBool_FromLong(o->visible ? 1 : 0);
     if (key == "color") return stringObject(o->color);
+    if (key == "image") return stringObject(o->image.asset);
     if (key == "is_player") return PyBool_FromLong(game->player() == o ? 1 : 0);
     PyErr_SetString(PyExc_AttributeError, name);
     return nullptr;
@@ -780,6 +796,13 @@ PyObject* naruObjectSet(PyObject*, PyObject* args) {
         return nullptr;
     }
     std::string key = name;
+    if (key == "image") {
+        if (!PyUnicode_Check(value)) { PyErr_SetString(PyExc_TypeError, "이미지 에셋 ID는 문자열이어야 합니다."); return nullptr; }
+        if (!game->setObjectImage(id, utf8(value))) {
+            PyErr_SetString(PyExc_ValueError, "등록된 이미지 에셋 ID 또는 빈 문자열을 사용하세요."); return nullptr;
+        }
+        Py_RETURN_NONE;
+    }
     if (key == "passable") {
         game->setObjectPassable(id, PyObject_IsTrue(value) == 1);
         Py_RETURN_NONE;
@@ -879,6 +902,7 @@ PyObject* naruRunEvent(PyObject*, PyObject* args) {
 }
 
 PyMethodDef kMethods[] = {
+    {"scene_set_background", naruSceneSetBackground, METH_VARARGS, "scene_set_background(asset_id)"},
     {"run_event", naruRunEvent, METH_VARARGS, "run_event(id)"},
     {"log", naruLog, METH_VARARGS, "log(message, level)"},
     {"get_var", naruGetVar, METH_VARARGS, "get_var(name, default=None)"},

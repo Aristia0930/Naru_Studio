@@ -1,4 +1,5 @@
 #include "naru/runtime/GameWorld.h"
+#include "naru/project/ImageLayout.h"
 
 #include <algorithm>
 #include <cmath>
@@ -473,6 +474,19 @@ void GameWorld::advanceRoutes(double dt) {
             ++i;
         }
     }
+}
+
+bool GameWorld::setObjectImage(const std::string& id, const std::string& asset) {
+    auto* object = scene_ ? scene_->findObject(id) : nullptr;
+    if (!object || (!asset.empty() && !findImageAsset(project_, asset))) return false;
+    object->image.asset = asset;
+    return true;
+}
+
+bool GameWorld::setBackgroundImage(const std::string& asset) {
+    if (!scene_ || (!asset.empty() && !findImageAsset(project_, asset))) return false;
+    scene_->backgroundImage.asset = asset;
+    return true;
 }
 
 bool GameWorld::setObjectColor(const std::string& id, const std::string& color) {

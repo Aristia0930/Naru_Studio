@@ -1,0 +1,51 @@
+{
+  "formatVersion": 1,
+  "name": "객체 이미지와 장면 배경",
+  "startScene": "scene_001",
+  "scenes": [
+    "scene_001"
+  ],
+  "assets": [
+    {
+      "id": "day",
+      "name": "낮 풍경",
+      "kind": "image",
+      "group": "배경",
+      "path": "assets/day.png",
+      "sourceName": "day.png",
+      "sha256": "5e608fc849380a05f8b53200f4362bac1805d37c92c48da79e0dd926a4f6924f"
+    },
+    {
+      "id": "night",
+      "name": "밤 풍경",
+      "kind": "image",
+      "group": "배경",
+      "path": "assets/night.png",
+      "sourceName": "night.png",
+      "sha256": "cf8c986d325258d983f1b0274c2b8e733816ebf20c98d7cd583e94385740287f"
+    },
+    {
+      "id": "hero",
+      "name": "주인공",
+      "kind": "image",
+      "group": "캐릭터",
+      "path": "assets/hero.png",
+      "sourceName": "hero.png",
+      "sha256": "1a73f5a46f435cdce3d2aa80f44b7d1e188a4861b19bd0ba632020756f05fcf7"
+    },
+    {
+      "id": "tree",
+      "name": "나무",
+      "kind": "image",
+      "group": "장식",
+      "path": "assets/tree.png",
+      "sourceName": "tree.png",
+      "sha256": "312bbd2cfa178878f47232a12a3a74ba7657a455c20c2733e7305797693983f9"
+    }
+  ],
+  "assetGroups": [
+    "배경",
+    "캐릭터",
+    "장식"
+  ]
+}

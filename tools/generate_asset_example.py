@@ -45,9 +45,11 @@ def create(folder):
     assets = []
     for filename, name, kind in [("sample.png", "반투명 그림 예제", "image"), ("tone.wav", "미리듣기 예제", "audio")]:
         assets.append(dict(id="asset_" + kind, name=name, kind=kind, path="assets/" + filename,
-            sourceName=filename, sha256=hashlib.sha256((folder / "assets" / filename).read_bytes()).hexdigest()))
+            sourceName=filename, sha256=hashlib.sha256((folder / "assets" / filename).read_bytes()).hexdigest(),
+            group="그림" if kind == "image" else "소리"))
     project = dict(formatVersion=1, name="에셋 목록 예제", startScene="scene_001", scenes=["scene_001"],
-        dataTypes=[], globalScripts=[], variables=[], commonEvents=[], assets=assets)
+        dataTypes=[], globalScripts=[], variables=[], commonEvents=[], assets=assets,
+        assetGroups=["그림", "소리", "빈 그룹 예제"])
     scene = dict(formatVersion=1, id="scene_001", name="시작 장면", width=1280, height=720,
         background="#202830", objects=[])
     for path, data in [(folder / "project.json", project), (folder / "scenes" / "scene_001.json", scene)]:

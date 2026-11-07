@@ -11,7 +11,27 @@
 
 namespace naru {
 
-// 장면에 배치된 객체. 이미지·컴포넌트는 이후 단계에서 추가한다.
+struct ObjectImage {
+    std::string asset;
+    double width = 0, height = 0; // 0 uses the image's original pixel size.
+    double offsetX = 0, offsetY = 0;
+    double scaleX = 1, scaleY = 1;
+    double anchorX = 0, anchorY = 0; // 0..1, relative to the drawn rectangle.
+    double rotation = 0, opacity = 1;
+    bool flipX = false, flipY = false, smooth = false;
+    int order = 0;
+    bool operator==(const ObjectImage&) const = default;
+};
+
+struct BackgroundImage {
+    std::string asset;
+    std::string mode = "fit"; // fit, fill, stretch, original, repeat
+    double offsetX = 0, offsetY = 0, scale = 1, opacity = 1;
+    bool smooth = false;
+    bool operator==(const BackgroundImage&) const = default;
+};
+
+// 장면에 배치된 객체. x/y/width/height는 충돌·조사 영역이며 그림과 독립이다.
 struct SceneObject {
     std::string id;
     std::string name;
@@ -26,6 +46,7 @@ struct SceneObject {
     // (자동 실행·병렬 처리 이벤트는 그대로 실행된다 — 보이지 않는 진행 담당 객체로 쓸 수 있게)
     bool visible = true;
     ObjectEvent event;
+    ObjectImage image;
 
     bool operator==(const SceneObject&) const = default;
 };
@@ -39,6 +60,7 @@ struct Scene {
     // 게임 실행 중 방향키로 조작하는 객체. 비어 있으면 플레이어가 없는 장면(컷신 등)이다.
     std::string playerObjectId;
     std::vector<SceneObject> objects;
+    BackgroundImage backgroundImage;
 
     SceneObject* findObject(const std::string& objectId);
     const SceneObject* findObject(const std::string& objectId) const;
@@ -72,6 +94,7 @@ struct Project {
     std::vector<Scene> scenes;
     Database database;
     std::vector<Asset> assets;
+    std::vector<std::string> assetGroups;
     // 게임 전체에서 실행되는 전역 스크립트 (scripts/ 안의 파일 이름, 등록 순서대로 훅을 부른다).
     std::vector<std::string> globalScripts;
     // 공용 변수·스위치 정의 (편집 화면에 보이는 순서).

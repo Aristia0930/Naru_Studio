@@ -7,6 +7,7 @@ add_library(naru_engine STATIC
   events/EventCompiler.cpp
   events/EventData.cpp
   project/Asset.cpp
+  project/ImageLayout.cpp
   project/Project.cpp
   project/ProjectIO.cpp
   runtime/GameWorld.cpp

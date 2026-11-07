@@ -5,6 +5,19 @@
 
 namespace naru {
 
+std::string validateAssetGroups(const std::vector<std::string>& groups, const std::vector<Asset>& assets) {
+    std::set<std::string> names;
+    for (const auto& name : groups) {
+        if (name.find_first_not_of(" \t\r\n") == std::string::npos || !names.insert(name).second)
+            return "에셋 그룹 이름이 비어 있거나 중복됩니다.";
+    }
+    for (const auto& asset : assets) {
+        if (!asset.group.empty() && !names.contains(asset.group))
+            return "에셋이 없는 그룹을 참조합니다: " + asset.id;
+    }
+    return {};
+}
+
 namespace {
 // Resolve the existing parent explicitly: MSVC can report an error from
 // weakly_canonical for a missing final component. Missing assets are repairable.
@@ -28,14 +41,18 @@ std::filesystem::path resolveMissing(std::filesystem::path path, std::error_code
 }
 }
 
+bool isValidAssetId(const std::string& id) {
+    return !id.empty() && id.size() <= 64 && std::all_of(id.begin(), id.end(), [](unsigned char c) {
+        return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+               (c >= '0' && c <= '9') || c == '_' || c == '-';
+    });
+}
+
 std::string validateAssets(const std::vector<Asset>& assets, const std::filesystem::path& directory) {
     namespace fs = std::filesystem;
     std::set<std::string> ids, paths;
     for (const auto& a : assets) {
-        if (a.id.empty() || a.id.size() > 64 || !std::all_of(a.id.begin(), a.id.end(), [](unsigned char c) {
-            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-                   (c >= '0' && c <= '9') || c == '_' || c == '-';
-        }) || !ids.insert(a.id).second) return "에셋 ID가 올바르지 않거나 중복됩니다: " + a.id;
+        if (!isValidAssetId(a.id) || !ids.insert(a.id).second) return "에셋 ID가 올바르지 않거나 중복됩니다: " + a.id;
         if (a.name.find_first_not_of(" \t\r\n") == std::string::npos) return "에셋 이름이 비어 있습니다: " + a.id;
         if (a.kind != "image" && a.kind != "audio" && a.kind != "font") return "알 수 없는 에셋 종류: " + a.kind;
         if (a.sha256.size() != 64 || !std::all_of(a.sha256.begin(), a.sha256.end(), [](char c) {

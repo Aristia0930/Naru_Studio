@@ -27,6 +27,7 @@
 #include <QCheckBox>
 #include <QDoubleSpinBox>
 #include <QDialogButtonBox>
+#include <QVBoxLayout>
 #include <QComboBox>
 #include <QCloseEvent>
 #include <QDesktopServices>
@@ -159,21 +160,28 @@ MainWindow::~MainWindow() {
 }
 
 void MainWindow::showAssets() {
-    auto* dock = findChild<QDockWidget*>(QStringLiteral("assetsDock"));
-    dock->show(); dock->raise();
-    dock->findChild<AssetBrowser*>(QStringLiteral("assetBrowser"))->refresh();
+    auto* dialog = findChild<QDialog*>(QStringLiteral("assetsDialog"));
+    if (!dialog) {
+        dialog = new QDialog(this);
+        dialog->setObjectName(QStringLiteral("assetsDialog"));
+        dialog->setWindowTitle(QStringLiteral("에셋 목록"));
+        dialog->resize(960, 680);
+        auto* layout = new QVBoxLayout(dialog);
+        auto* browser = new AssetBrowser(doc_, dialog);
+        layout->addWidget(browser);
+        auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+        buttons->button(QDialogButtonBox::Close)->setText(QStringLiteral("닫기"));
+        layout->addWidget(buttons);
+        connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+        connect(dialog, &QDialog::finished, browser, &AssetBrowser::stopAudio);
+    }
+    dialog->findChild<AssetBrowser*>()->refresh();
+    dialog->show();
+    dialog->raise();
+    dialog->activateWindow();
 }
 
 void MainWindow::createDocks() {
-    auto* assetsDock = new QDockWidget(QStringLiteral("에셋 목록"), this);
-    assetsDock->setObjectName(QStringLiteral("assetsDock"));
-    assetsDock->setWidget(new AssetBrowser(doc_, assetsDock));
-    connect(assetsDock, &QDockWidget::visibilityChanged, assetsDock, [assetsDock](bool visible) {
-        if (!visible) assetsDock->findChild<AssetBrowser*>(QStringLiteral("assetBrowser"))->stopAudio();
-    });
-    assetsDock->setMinimumWidth(390);
-    addDockWidget(Qt::RightDockWidgetArea, assetsDock);
-    assetsDock->hide();
     tree_ = new QTreeWidget(this);
     tree_->setHeaderHidden(true);
     connect(tree_, &QTreeWidget::itemSelectionChanged, this, &MainWindow::onTreeSelection);

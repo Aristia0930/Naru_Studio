@@ -1,0 +1,65 @@
+{
+  "formatVersion": 1,
+  "id": "scene_001",
+  "name": "그림과 충돌 영역",
+  "width": 640,
+  "height": 360,
+  "background": "#202830",
+  "backgroundImage": {
+    "asset": "day",
+    "mode": "fit"
+  },
+  "player": "hero",
+  "objects": [
+    {
+      "id": "hero",
+      "name": "주인공",
+      "x": 145,
+      "y": 260,
+      "width": 24,
+      "height": 16,
+      "image": {
+        "asset": "hero",
+        "width": 64,
+        "height": 96,
+        "offsetX": 12,
+        "offsetY": 16,
+        "anchorX": 0.5,
+        "anchorY": 1,
+        "order": 1
+      }
+    },
+    {
+      "id": "tree",
+      "name": "나무",
+      "x": 350,
+      "y": 240,
+      "width": 36,
+      "height": 18,
+      "image": {
+        "asset": "tree",
+        "width": 128,
+        "height": 192,
+        "offsetX": 18,
+        "offsetY": 18,
+        "anchorX": 0.5,
+        "anchorY": 1,
+        "order": 2
+      },
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "say",
+            "text": "나무 그림과 발밑 충돌 영역은 따로입니다. 배경도 바꿔 볼까요?"
+          },
+          {
+            "type": "call_script",
+            "script": "appearance.py",
+            "function": "toggle_background"
+          }
+        ]
+      }
+    }
+  ]
+}

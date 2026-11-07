@@ -12,6 +12,7 @@
 
 #include "naru/project/ProjectIO.h"
 #include "naru/runtime/GameWorld.h"
+#include "ImageRenderer.h"
 
 #if NARU_PLAYER_HAS_PYTHON
 #include "naru/python/PythonGameScripts.h"
@@ -249,20 +250,12 @@ private:
     float h_ = 0.0f;
 };
 
-void drawScene(SDL_Renderer* r, const Scene& scene, const SceneObject* player, Facing facing) {
+void drawScene(SDL_Renderer* r, const Scene& scene, const SceneObject* player, Facing facing, ImageRenderer& images) {
     setColor(r, parseColor(scene.background, SDL_Color{32, 40, 48, 255}));
     SDL_RenderClear(r);
-    for (const SceneObject& o : scene.objects) {
-        if (!o.visible) {
-            continue;
-        }
-        SDL_FRect rect{static_cast<float>(o.x), static_cast<float>(o.y), static_cast<float>(o.width),
-                       static_cast<float>(o.height)};
-        setColor(r, parseColor(o.color, SDL_Color{74, 144, 217, 255}));
-        SDL_RenderFillRect(r, &rect);
-    }
+    images.draw(scene);
     // 플레이어가 바라보는 쪽 가장자리에 작은 표시 (이미지가 생기기 전 임시 표현)
-    if (player && player->visible) {
+    if (player && player->visible && player->image.asset.empty()) {
         const float s = 8.0f;
         float x = static_cast<float>(player->x);
         float y = static_cast<float>(player->y);
@@ -483,6 +476,7 @@ int main(int argc, char** argv) {
     }
     SDL_SetRenderLogicalPresentation(renderer, scene.width, scene.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     SDL_SetRenderVSync(renderer, 1);
+    ImageRenderer images(renderer, world.project(), options->projectDir, world.logger());
 
     TTF_Font* font = nullptr;
     if (TTF_Init()) {
@@ -554,7 +548,7 @@ int main(int argc, char** argv) {
             messageSince = frame;
         }
 
-        drawScene(renderer, *world.scene(), world.player(), world.facing());
+        drawScene(renderer, *world.scene(), world.player(), world.facing(), images);
         if (world.message()) {
             drawMessage(renderer, font, *world.message(), *world.scene(), speakerText, bodyText, frame,
                         world.choices().get(), world.selectedChoice(), choiceText, hintText);
@@ -584,6 +578,7 @@ int main(int argc, char** argv) {
         TTF_CloseFont(font);
     }
     TTF_Quit();
+    images.clear();
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

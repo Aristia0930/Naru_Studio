@@ -12,6 +12,21 @@
 
 using namespace naru;
 
+TEST_CASE("그림 크기·회전·투명도는 충돌 영역을 바꾸지 않고 실행 이미지 변경은 원본을 보존한다") {
+    Project p; Scene scene; scene.id = "scene"; scene.width = 320; scene.height = 180; scene.playerObjectId = "hero";
+    SceneObject hero; hero.id = "hero"; hero.x = 20; hero.y = 20; hero.width = 10; hero.height = 10;
+    hero.image.width = 200; hero.image.height = 160; hero.image.rotation = 45; hero.image.opacity = 0;
+    SceneObject wall; wall.id = "wall"; wall.x = 60; wall.y = 20; wall.width = 10; wall.height = 10;
+    scene.objects = {hero, wall}; p.scenes = {scene};
+    p.assets = {{"picture", "picture", "image", "assets/p.png", "p.png", std::string(64, 'a')}};
+    GameWorld world(p, ScriptRunner{}); CHECK(world.startGame("scene"));
+    CHECK(world.movePlayer(100, 0)); CHECK(world.player()->x == 50);
+    CHECK(world.setObjectImage("hero", "picture")); CHECK(world.setBackgroundImage("picture"));
+    CHECK(!world.setObjectImage("hero", "missing")); CHECK(world.player()->image.asset == "picture");
+    CHECK(world.project() == p);
+    CHECK(world.enterScene("scene")); CHECK(world.player()->image.asset.empty()); CHECK(world.scene()->backgroundImage.asset.empty());
+}
+
 namespace {
 
 constexpr double kStep = 1.0 / 60.0;

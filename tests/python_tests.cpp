@@ -387,9 +387,134 @@ TEST_CASE("ctx.scene.change는 도착 위치와 방향을 받는다") {
     CHECK(world.facing() == Facing::Left);
 }
 
+TEST_CASE("Python 이미지 변경은 실행 사본만 바꾸고 잘못된 참조는 기존 값을 보존한다") {
+    auto p = globalProject();
+    p.scenes[0].objects[1].event.commands.clear();
+    p.assets = {{"picture", "picture", "image", "assets/p.png", "p.png", std::string(64, 'a')},
+                {"sound", "sound", "audio", "assets/s.wav", "s.wav", std::string(64, 'b')}};
+    GameWorld world(p, ScriptRunner{}); CHECK(world.startGame("scene_001"));
+    CHECK(g_runtime->runFile(script("images.py"), f_ctxOf(world)).ok);
+    auto bad = g_runtime->runFile(script("images.py"), f_ctxOf(world), "bad_type");
+    CHECK(!bad.ok && bad.error.type == "TypeError" && bad.error.line > 0);
+    CHECK(world.project() == p);
+}
+
+TEST_CASE("전체 가이드의 이벤트 함수는 실제 엔진 상태·반환·F5 보호·DB·오류를 검증한다") {
+    auto p = globalProject();
+    auto& first = p.scenes[0];
+    for (auto& obj : first.objects) obj.event.commands.clear();
+    first.objects[0].x = 64; first.objects[0].y = 64; first.objects[0].width = 16; first.objects[0].height = 16;
+    first.objects[1].id = "tree"; first.objects[1].name = "나무"; first.objects[1].x = 200; first.objects[1].y = 200;
+    first.backgroundImage.asset = "day";
+    for (const auto* id : {"day", "night", "tree", "hero"})
+        p.assets.push_back({id, id, "image", std::string("assets/") + id + ".png", std::string(id) + ".png", std::string(64, 'a')});
+    auto second = first; second.id = "scene_002";
+    for (auto& obj : second.objects) obj.id += "_2";
+    second.playerObjectId += "_2"; p.scenes.push_back(second);
+    auto items = makeTemplate(DataTemplate::Item, p.database);
+    items.records = {{"potion", "포션", {{"price", std::int64_t{50}}}}}; p.database.types.push_back(items);
+    GameWorld world(p, ScriptRunner{}); CHECK(world.startGame("scene_001"));
+    const auto file = std::string(NARU_EXAMPLES_DIR) + "/python_guide.py";
+    Value returned;
+    const auto call = [&](const char* function) {
+        auto result = g_runtime->runFile(file, f_ctxOf(world), function, &returned);
+        if (!result.ok) std::printf("%s: %s\n", function, result.summary().c_str());
+        CHECK(result.ok);
+    };
+    call("run"); call("variables_demo"); call("variables_demo");
+    CHECK(var(world, "guide_count") == Value{std::int64_t{2}} && var(world, "guide_switch") == Value{false});
+    call("inspect_database"); call("read_item_price");
+    CHECK(returned == Value{std::int64_t{50}} && var(world, "guide_item_name") == Value{std::string("포션")});
+    call("set_night"); CHECK(world.scene()->backgroundImage.asset == "night");
+    call("set_day"); call("toggle_background"); CHECK(world.scene()->backgroundImage.asset == "night");
+    call("toggle_background"); CHECK(world.scene()->backgroundImage.asset == "day");
+    call("clear_background"); CHECK(world.scene()->backgroundImage.asset.empty());
+    call("change_object_image"); CHECK(world.object("tree")->image.asset == "tree");
+    call("clear_object_image"); CHECK(world.object("tree")->image.asset.empty());
+    call("change_player_image"); CHECK(world.player()->image.asset == "hero");
+    call("hide_object"); CHECK(!world.object("tree")->visible);
+    call("show_object"); CHECK(world.object("tree")->visible);
+    call("toggle_passable"); CHECK(world.object("tree")->passable);
+    call("toggle_passable"); CHECK(!world.object("tree")->passable);
+    call("change_object_color"); CHECK(world.object("tree")->color == "#ff8800");
+    call("move_object"); CHECK(world.object("tree")->x == 248);
+    call("teleport_object"); CHECK(world.object("tree")->x == 128 && world.object("tree")->y == 128);
+    call("inspect_scene"); call("inspect_player");
+    call("move_player"); CHECK(world.player()->x == 112);
+    call("teleport_player"); CHECK(world.player()->x == 64 && world.player()->y == 64);
+    call("face_right"); CHECK(world.facing() == Facing::Right);
+    call("set_player_speed"); CHECK(world.playerSpeed() == 360);
+    call("disable_default_control"); CHECK(!world.defaultControl());
+    call("enable_default_control"); CHECK(world.defaultControl());
+    call("interact"); CHECK(returned == Value{false});
+    call("inspect_input"); call("bind_runtime_keys");
+    CHECK(world.inputMap().keys("guide_special").size() == 2);
+    call("disable_runtime_action"); CHECK(world.inputMap().keys("guide_special").empty());
+    call("log_examples");
+    auto error = g_runtime->runFile(file, f_ctxOf(world), "error_example");
+    CHECK(!error.ok && error.error.type == "ValueError" && error.error.line > 0 && !error.error.traceback.empty());
+    call("change_scene"); CHECK(world.sceneChangePending()); world.update(1.0 / 60.0, {});
+    CHECK(world.scene()->id == "scene_002" && world.player()->x == 64 && world.player()->y == 96 && world.facing() == Facing::Up);
+    CHECK(world.project() == p);
+    Fixture outside; outside.ctx.database = &p.database;
+    CHECK(g_runtime->runFile(std::string(NARU_EXAMPLES_DIR) + "/guide_global.py", outside.ctx).ok);
+    for (const auto* function : {"run", "variables_demo", "inspect_database", "read_item_price", "set_day", "set_night", "toggle_background", "clear_background",
+        "change_object_image", "clear_object_image", "change_player_image", "hide_object", "show_object", "toggle_passable", "change_object_color", "move_object", "teleport_object",
+        "inspect_scene", "inspect_player", "move_player", "teleport_player", "face_right", "set_player_speed", "disable_default_control", "enable_default_control", "interact",
+        "inspect_input", "bind_runtime_keys", "disable_runtime_action", "queue_common_event", "change_scene", "log_examples"}) {
+        CHECK(g_runtime->runFile(file, outside.ctx, function).ok);
+    }
+}
+
+TEST_CASE("가이드의 공통 이벤트는 F6 예약·대기·반환값·호출 뒤 명령을 연결한다") {
+    Project p;
+    EventCommand wait; wait.type = EventCommandType::Wait; wait.seconds = .1;
+    EventCommand done; done.type = EventCommandType::SetVariable; done.variable = "guide_done"; done.value = true;
+    p.commonEvents = {{"recover", "회복", {EventTrigger::Action, {}, false, {wait, done}}}};
+    EventCommand call; call.type = EventCommandType::CallScript; call.script = "python_guide.py"; call.function = "queue_common_event"; call.variable = "guide_queued";
+    EventCommand after = done; after.variable = "guide_after";
+    const auto file = std::string(NARU_EXAMPLES_DIR) + "/python_guide.py";
+    ScriptRunner runner = [&](const std::string&, const std::string& function, CommandContext& ctx) {
+        ScriptCallResult result; auto scriptResult = g_runtime->runFile(file, ctx, function, &result.returned);
+        if (!scriptResult.ok) result.error = scriptResult.summary(); return result;
+    };
+    Session session({}, .05); session.setProject(&p); session.start(compileEvent({call, after}, runner));
+    CHECK(session.variables().get("guide_queued") == Value{true});
+    CHECK(!session.variables().get("guide_done") && !session.variables().get("guide_after"));
+    session.advance(.2); CHECK(session.state() == SessionState::Completed);
+    CHECK(session.variables().get("guide_done") == Value{true} && session.variables().get("guide_after") == Value{true});
+}
+
+TEST_CASE("가이드의 전역 등록 순서·import·새 입력/유지·busy·네 훅이 실제 동작한다") {
+    auto p = globalProject();
+    for (auto& s : p.scenes) for (auto& o : s.objects) o.event.commands.clear();
+    p.scenes[0].objects[0].x = 100; p.scenes[0].objects[0].y = 200;
+    p.scenes[0].backgroundImage.asset = "day";
+    for (const auto* id : {"day", "night"}) p.assets.push_back({id, id, "image", std::string("assets/") + id + ".png", "p.png", std::string(64, 'a')});
+    auto second = p.scenes[0]; second.id = "scene_002";
+    for (auto& o : second.objects) o.id += "_2";
+    second.playerObjectId += "_2"; p.scenes.push_back(second);
+    p.inputSettings.bindings["guide_toggle_background"] = {"G"}; p.inputSettings.bindings["guide_move_up"] = {"8"};
+    const auto guide = std::string(NARU_EXAMPLES_DIR) + "/python_guide.py";
+    const auto global = std::string(NARU_EXAMPLES_DIR) + "/guide_global.py";
+    python::PythonGameScripts globals(*g_runtime, {guide, global});
+    GameWorld world(p, {}); world.setGameScripts(&globals); CHECK(world.startGame("scene_001"));
+    CHECK(world.failedEventCount() == 0 && var(world, "guide_scene_visits") == Value{std::int64_t{1}});
+    InputState input; input.press("guide_toggle_background"); world.update(1.0 / 60.0, input);
+    CHECK(world.scene()->backgroundImage.asset == "night"); input.endFrame(); world.update(1.0 / 60.0, input);
+    CHECK(world.scene()->backgroundImage.asset == "night");
+    input.release("guide_toggle_background"); world.update(1.0 / 60.0, input); input.endFrame();
+    input.press("guide_toggle_background"); world.update(1.0 / 60.0, input); CHECK(world.scene()->backgroundImage.asset == "day"); input.endFrame();
+    input.press("guide_move_up"); world.update(1.0 / 60.0, input); CHECK(world.player()->y == 152 && world.facing() == Facing::Right); input.endFrame();
+    world.showMessage("", "대사 중"); input.release("guide_toggle_background"); world.update(1.0 / 60.0, input); input.endFrame();
+    input.press("guide_toggle_background"); world.update(1.0 / 60.0, input); CHECK(world.scene()->backgroundImage.asset == "day");
+    CHECK(world.enterScene("scene_002")); CHECK(var(world, "guide_scene_visits") == Value{std::int64_t{2}});
+    CHECK(world.failedEventCount() == 0 && world.project() == p);
+}
+
 TEST_CASE("docs/examples의 예제는 문법 오류가 없고 함께 전역 등록해도 이름이 겹치지 않는다") {
     std::vector<std::string> paths;
-    for (const char* name : {"chase.py", "patrol.py", "push.py", "door.py", "key_combinations.py", "key_move_face.py", "reward.py"}) {
+    for (const char* name : {"chase.py", "patrol.py", "push.py", "door.py", "key_combinations.py", "key_move_face.py", "reward.py", "images/scripts/appearance.py", "python_guide.py", "guide_global.py"}) {
         std::string path = std::string(NARU_EXAMPLES_DIR) + "/" + name;
         auto syntax = g_runtime->checkSyntax(path);
         if (!syntax.ok) {
@@ -409,6 +534,9 @@ TEST_CASE("스크립트에 공개된 모든 이름과 훅이 docs/SCRIPT_API.md�
     std::ifstream in(std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_SCRIPT_API_DOC)), std::ios::binary);
     std::string doc((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
     CHECK(!doc.empty());
+    std::ifstream cookbookFile(std::filesystem::path(reinterpret_cast<const char8_t*>(NARU_EXAMPLES_DIR)) / "../guide/PYTHON_COOKBOOK.md", std::ios::binary);
+    const std::string cookbook((std::istreambuf_iterator<char>(cookbookFile)), std::istreambuf_iterator<char>());
+    CHECK(!cookbook.empty());
     Fixture f;
     Value returned;
     CHECK(g_runtime->runFile(script("api_names.py"), f.ctx, "run", &returned).ok);
@@ -432,6 +560,7 @@ TEST_CASE("스크립트에 공개된 모든 이름과 훅이 docs/SCRIPT_API.md�
             std::printf("  docs/SCRIPT_API.md에 없는 이름: %s\n", name.c_str());
         }
         CHECK(documented);
+        CHECK(cookbook.find(name) != std::string::npos);
     }
     std::printf("  문서에서 확인한 이름 %zu개\n", all.size());
 }

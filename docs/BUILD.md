@@ -2,6 +2,8 @@
 
 다른 PC에서 clone한 뒤 이 순서대로 configure → build → test 한다. 버전은 2026-10-27에 실제 빌드를 확인한 조합이다.
 
+2026-11-07 이미지 표시 추가: player는 SDL3 **3.4 이상**이 필요하며 검증 버전 3.4.18을 그대로 사용한다. PNG 디코딩은 SDL3, JPG/JPEG/BMP는 Windows 기본 WIC를 사용한다. Windows SDK의 `windowscodecs`·`ole32`를 링크하며 추가 이미지 DLL·코덱 설치는 필요 없다. 엔진 배치·검증 코드는 Qt/SDL 비의존이고 제작툴은 Qt 이미지 읽기를 사용한다. Windows 이외 player의 JPG/BMP는 아직 미지원이다. 검증은 `dev.cmd test`의 `player_images`(실제 PNG 픽셀)와 `asset_editor`(실제 JPG/BMP 플레이어·인스펙터·캔버스)를 포함한다.
+
 ## 1. 검증한 도구 조합
 
 | 도구 | 버전 | 설치 방법 |

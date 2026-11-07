@@ -1,4 +1,5 @@
 #include "naru/project/ProjectIO.h"
+#include "naru/project/ImageLayout.h"
 
 #include <nlohmann/json.hpp>
 
@@ -441,9 +442,16 @@ std::vector<EventCommand> commandsFromJson(const json& list, int depth) {
     return result;
 }
 
+json imageToJson(const ObjectImage& i) {
+    return {{"asset", i.asset}, {"width", i.width}, {"height", i.height}, {"offsetX", i.offsetX}, {"offsetY", i.offsetY},
+        {"scaleX", i.scaleX}, {"scaleY", i.scaleY}, {"anchorX", i.anchorX}, {"anchorY", i.anchorY},
+        {"rotation", i.rotation}, {"opacity", i.opacity}, {"flipX", i.flipX}, {"flipY", i.flipY}, {"smooth", i.smooth}, {"order", i.order}};
+}
+
 json objectToJson(const SceneObject& o) {
     json j = {{"id", o.id},     {"name", o.name},     {"x", o.x},         {"y", o.y},
               {"width", o.width}, {"height", o.height}, {"color", o.color}};
+    if (!(o.image == ObjectImage{})) j["image"] = imageToJson(o.image);
     if (o.passable) {
         j["passable"] = true;
     }
@@ -483,6 +491,9 @@ json sceneToJson(const Scene& s) {
     if (!s.playerObjectId.empty()) {
         j["player"] = s.playerObjectId;
     }
+    const auto& b = s.backgroundImage;
+    if (!(b == BackgroundImage{})) j["backgroundImage"] = {{"asset", b.asset}, {"mode", b.mode}, {"offsetX", b.offsetX},
+        {"offsetY", b.offsetY}, {"scale", b.scale}, {"opacity", b.opacity}, {"smooth", b.smooth}};
     return j;
 }
 
@@ -494,6 +505,13 @@ Scene sceneFromJson(const json& j) {
     s.width = getInt(j, "width", s.width);
     s.height = getInt(j, "height", s.height);
     s.background = getString(j, "background", s.background);
+    if (auto it = j.find("backgroundImage"); it != j.end()) {
+        const auto& bj = requireObject(*it, "장면 배경 이미지");
+        auto& b = s.backgroundImage;
+        b.asset = getString(bj, "asset", ""); b.mode = getString(bj, "mode", "fit");
+        b.offsetX = getNumber(bj, "offsetX", 0); b.offsetY = getNumber(bj, "offsetY", 0);
+        b.scale = getNumber(bj, "scale", 1); b.opacity = getNumber(bj, "opacity", 1); b.smooth = getBool(bj, "smooth", false);
+    }
     for (const auto& oj : getArray(j, "objects")) {
         requireObject(oj, "장면 객체");
         SceneObject o;
@@ -506,6 +524,17 @@ Scene sceneFromJson(const json& j) {
         o.color = getString(oj, "color", o.color);
         o.passable = getBool(oj, "passable", false);
         o.visible = getBool(oj, "visible", true);
+        if (auto it = oj.find("image"); it != oj.end()) {
+            const auto& ij = requireObject(*it, "객체 이미지");
+            auto& i = o.image;
+            i.asset = getString(ij, "asset", ""); i.width = getNumber(ij, "width", 0); i.height = getNumber(ij, "height", 0);
+            i.offsetX = getNumber(ij, "offsetX", 0); i.offsetY = getNumber(ij, "offsetY", 0);
+            i.scaleX = getNumber(ij, "scaleX", 1); i.scaleY = getNumber(ij, "scaleY", 1);
+            i.anchorX = getNumber(ij, "anchorX", 0); i.anchorY = getNumber(ij, "anchorY", 0);
+            i.rotation = getNumber(ij, "rotation", 0); i.opacity = getNumber(ij, "opacity", 1);
+            i.flipX = getBool(ij, "flipX", false); i.flipY = getBool(ij, "flipY", false);
+            i.smooth = getBool(ij, "smooth", false); i.order = getInt(ij, "order", 0);
+        }
         if (auto it = oj.find("event"); it != oj.end()) {
             const json& ej = requireObject(*it, "event");
             std::string triggerKey = getString(ej, "trigger", std::string("action"));
@@ -809,12 +838,18 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
                     std::to_string(parsed.line) + "행: " + parsed.error});
             } else project.inputSettings = *parsed.settings;
         }
+        for (const auto& group : getArray(root, "assetGroups")) {
+            if (!group.is_string()) throw std::runtime_error("에셋 그룹 이름은 문자열이어야 합니다.");
+            project.assetGroups.push_back(group.get<std::string>());
+        }
         for (const auto& aj : getArray(root, "assets")) {
             requireObject(aj, "에셋");
             project.assets.push_back({requireString(aj, "id"), requireString(aj, "name"),
                 requireString(aj, "kind"), requireString(aj, "path"),
-                getString(aj, "sourceName", ""), requireString(aj, "sha256")});
+                getString(aj, "sourceName", ""), requireString(aj, "sha256"), getString(aj, "group", "")});
         }
+        if (auto groupError = validateAssetGroups(project.assetGroups, project.assets); !groupError.empty())
+            throw std::runtime_error(groupError);
         if (auto assetError = validateAssets(project.assets, dir); !assetError.empty())
             throw std::runtime_error(assetError);
         for (const auto& scriptJson : getArray(root, "globalScripts")) {
@@ -945,12 +980,17 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
         result.errors.push_back({kProjectFile, "시작 장면이 없습니다: " + project.startSceneId});
     }
     if (result.errors.empty()) {
-        result.project = std::move(project);
+        if (auto imageError = validateImages(project); !imageError.empty()) {
+            result.errors.push_back({kProjectFile, imageError});
+        } else result.project = std::move(project);
     }
     return result;
 }
 
 std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path& dir) {
+    if (auto error = validateImages(project); !error.empty()) return {{kProjectFile, error}};
+    if (auto error = validateAssetGroups(project.assetGroups, project.assets); !error.empty())
+        return {{kProjectFile, error}};
     if (auto error = validateAssets(project.assets, dir); !error.empty())
         return {{kProjectFile, error}};
     std::vector<ProjectError> errors;
@@ -1015,9 +1055,10 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
                  {"dataTypes", dataKeys},
                  {"globalScripts", project.globalScripts}};
     root["assets"] = json::array();
+    root["assetGroups"] = project.assetGroups;
     for (const auto& a : project.assets) {
         root["assets"].push_back({{"id", a.id}, {"name", a.name}, {"kind", a.kind},
-            {"path", a.path}, {"sourceName", a.sourceName}, {"sha256", a.sha256}});
+            {"path", a.path}, {"sourceName", a.sourceName}, {"sha256", a.sha256}, {"group", a.group}});
     }
     json variables = json::array();
     for (const auto& v : project.variables) {
