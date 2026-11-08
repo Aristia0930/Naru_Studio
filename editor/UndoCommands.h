@@ -6,6 +6,18 @@
 
 class ProjectDocument;
 
+class RenameObjectIdCommand : public QUndoCommand {
+public:
+    RenameObjectIdCommand(ProjectDocument* doc, std::string scene, std::string before, std::string after);
+    void redo() override;
+    void undo() override;
+private:
+    ProjectDocument* doc_;
+    std::string scene_, before_, after_;
+    std::vector<naru::Scene> beforeScenes_, afterScenes_;
+    std::vector<naru::CommonEvent> beforeEvents_, afterEvents_;
+};
+
 class AddSceneCommand : public QUndoCommand {
 public:
     AddSceneCommand(ProjectDocument* doc, naru::Scene scene, int index);

@@ -39,7 +39,7 @@ private:
     QStackedWidget* pages_;
     QLabel* emptyLabel_;
 
-    QLabel* objectIdLabel_;
+    QLineEdit* objectIdLabel_;
     QLineEdit* objectName_;
     QCheckBox* objectShowName_;
     QLineEdit* objectNameText_;

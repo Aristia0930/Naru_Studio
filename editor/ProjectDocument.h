@@ -25,6 +25,10 @@ public:
     bool isModified() const { return !undoStack_.isClean(); }
 
     bool save(QString* error);
+    // Validates and records an object ID change, including all editor-owned references.
+    bool renameObjectId(const QString& sceneId, const QString& before, const QString& after, QString* error);
+    void applyObjectId(const std::string& sceneId, const std::string& before, const std::string& after,
+                       const std::vector<naru::Scene>& scenes, const std::vector<naru::CommonEvent>& events);
 
     // 아래 함수는 Undo 명령에서만 호출한다.
     void insertScene(int index, const naru::Scene& scene);
@@ -36,7 +40,7 @@ public:
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
     void setAssets(const std::vector<naru::Asset>& assets);
     void setAssetCatalog(const std::vector<naru::Asset>& assets, const std::vector<std::string>& groups);
-    void setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents);
+    void setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents, const naru::Database& database);
     void setDatabase(const naru::Database& database);
     void setGlobalScripts(const std::vector<std::string>& scripts);
     void setCommonEvents(const std::vector<naru::CommonEvent>& events);
@@ -48,6 +52,7 @@ public:
     bool isGlobalScript(const QString& fileName) const;
 
 signals:
+    void objectIdChanged(const QString& sceneId, const QString& before, const QString& after);
     void inputSettingsChanged();
     void commonEventsChanged();
     void globalScriptsChanged();

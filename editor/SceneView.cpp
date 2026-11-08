@@ -120,6 +120,14 @@ SceneView::SceneView(ProjectDocument* doc, QWidget* parent)
     setBackgroundBrush(QColor(60, 60, 64));
     setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
 
+    connect(doc_, &ProjectDocument::objectIdChanged, this, [this](const QString& s, const QString& before, const QString& after) {
+        if (s != sceneId_) return;
+        const bool selected = selectedObjectId() == before;
+        const bool wasBlocked = blockSignals(true);
+        rebuild();
+        blockSignals(wasBlocked);
+        if (selected) { selectObject(after); emit selectionChangedTo(after); }
+    });
     connect(doc_, &ProjectDocument::sceneChanged, this, [this](const QString& id) {
         if (id == sceneId_) {
             rebuild();

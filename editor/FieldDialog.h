@@ -4,6 +4,7 @@
 
 #include <QDialog>
 
+class ProjectDocument;
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
@@ -20,7 +21,7 @@ class FieldDialog : public QDialog {
 public:
     // isNew가 false면 키는 바꿀 수 없다 (스크립트·저장 데이터가 키로 값을 찾기 때문).
     FieldDialog(const naru::FieldDef& field, const naru::DataType& owner, const naru::Database& database, bool isNew,
-                QWidget* parent = nullptr);
+                QWidget* parent = nullptr, ProjectDocument* document = nullptr);
 
     naru::FieldDef field() const { return field_; }
 
@@ -33,6 +34,7 @@ private:
     const naru::DataType& owner_;
     const naru::Database& database_;
     bool isNew_;
+    ProjectDocument* document_;
 
     QFormLayout* form_;
     QLineEdit* name_;

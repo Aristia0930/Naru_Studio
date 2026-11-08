@@ -1,0 +1,29 @@
+{
+  "formatVersion": 1,
+  "name": "DB 이미지·소리 연결",
+  "startScene": "scene_001",
+  "scenes": [
+    "scene_001"
+  ],
+  "dataTypes": [
+    "media"
+  ],
+  "assets": [
+    {
+      "id": "db_picture",
+      "name": "DB 예제 image",
+      "kind": "image",
+      "path": "assets/picture.png",
+      "sourceName": "picture.png",
+      "sha256": "405cbbef8b7ca051ee69a8f4631326ad8fb71f5bc89fdad5665c24acbdc051c1"
+    },
+    {
+      "id": "db_sound",
+      "name": "DB 예제 audio",
+      "kind": "audio",
+      "path": "assets/effect.wav",
+      "sourceName": "effect.wav",
+      "sha256": "34683d2f940fec174e84cdedc054260847c8fa05af2c71f9e3061157292dd1b5"
+    }
+  ]
+}

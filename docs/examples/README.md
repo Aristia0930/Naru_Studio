@@ -1,5 +1,7 @@
 # 스크립트 예제
 
+[DB 이미지·소리 예제](database-assets/README.md)는 DB의 기본 그림·항목별 효과음을 Python으로 읽어 상자 조사 때 적용합니다. [설정·수동 확인](../guide/DB_ASSETS.md).
+
 **전체 연결 방법:** [Python 전체 가이드](../guide/PYTHON_COOKBOOK.md). [python_guide.py](python_guide.py)는 현재 공개 기능별 이벤트 함수, [guide_global.py](guide_global.py)는 전역 훅·키 입력·모듈 공유 예제입니다. 두 파일을 scripts에 복사하며, 이벤트 함수만 쓰면 전역 등록 불필요, 전역 예제는 python_guide → guide_global 순서로 둘 다 등록합니다.
 
 [객체 이미지·장면 배경 예제](images/README.md)는 그림과 충돌 영역 분리, 배경 다섯 맞춤 방식과 이벤트의 Python 호출로 낮/밤 변경을 확인합니다.

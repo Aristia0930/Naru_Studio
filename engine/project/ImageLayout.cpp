@@ -35,6 +35,8 @@ const Asset* findImageAsset(const Project& p, const std::string& id) {
 
 std::vector<std::string> imageUses(const Project& p, const std::string& id) {
     auto uses = audioUses(p, id);
+    const auto dbUses = databaseAssetUses(p.database, id);
+    uses.insert(uses.end(), dbUses.begin(), dbUses.end());
     if (id.empty()) return uses;
     for (const auto& s : p.scenes) {
         if (s.backgroundImage.asset == id) uses.push_back(s.name + " / 장면 배경");

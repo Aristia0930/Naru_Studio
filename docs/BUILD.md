@@ -170,6 +170,10 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 
 ### 소리 디코더와 검증 (2026-11-08)
 
+객체 ID 편집은 추가 의존성이 없습니다. `asset_editor`는 프로젝트 전체 중복·형식 오류, 인스펙터와 선택 상태, 플레이어 지정, 중첩 이벤트·공통 이벤트 참조, Undo/Redo·저장/재열기와 Python 파일 보존을 검사합니다. [객체 ID 수동 확인](guide/OBJECT_IDS.md).
+
+DB 이미지·소리 속성도 추가 설치 없이 빌드됩니다. `database`는 종류·기본값·참조 검사, `python`은 ID/None·반환 사본, `asset_editor`는 실제 선택/기본값/종류 제한·사용처/삭제 보호·ID 변경/Undo·저장/재열기를 검사합니다. `player_db_assets`는 생성한 독립 예제를 실제 player에서 실행하여 DB 그림·효과음 연결, 빈 소리 기본값, 누락 파일 traceback과 편집 원본 보존을 검사합니다. [사용법·그림·사용자 수동 확인](guide/DB_ASSETS.md).
+
 WAV/MP3는 audio/의 공통 naru_audio 라이브러리가 읽고 SDL3로 재생합니다. MP3 디코더는 third_party/dr_libs/dr_mp3.h에 고정 버전으로 포함되어 추가 설치/다운로드가 필요 없습니다. [버전·SHA-256·라이선스](../third_party/dr_libs/README.md). 기존 Qt/Python/SDL3/SDL3_ttf 설치로 빌드합니다.
 
 객체 이름표도 기존 SDL3_ttf로 표시하며 추가 의존성은 없습니다. `player_nameplates` 검사는 실제 게임 화면에서 F9 전환·숨김·개별/사용자 문구·Python 변경·이동 추종을 비교합니다. JSON 기본값/형식/실행 사본은 project, Python 인자/오류는 python, 인스펙터/Undo/저장/재열기는 asset_editor, 제작툴 초기 표시 메뉴의 인자 전달은 editor_selftest에서 함께 검사합니다. [이름표 가이드·그림·직접 확인](guide/NAMEPLATES.md).

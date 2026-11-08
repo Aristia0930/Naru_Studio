@@ -250,6 +250,7 @@ DatabaseEditor::DatabaseEditor(ProjectDocument* doc, QWidget* parent) : QWidget(
     connect(upButton, &QPushButton::clicked, this, [this] { moveField(-1); });
     connect(downButton, &QPushButton::clicked, this, [this] { moveField(1); });
 
+    connect(doc_, &ProjectDocument::assetsChanged, this, &DatabaseEditor::rebuildAll);
     connect(doc_, &ProjectDocument::databaseChanged, this, [this] {
         if (committing_) {
             // 값 입력 중에는 입력 칸을 다시 만들지 않는다 (포커스·커서 유지). 목록과 표만 갱신한다.
@@ -381,7 +382,7 @@ void DatabaseEditor::rebuildForm() {
         QString recordId = q(r->id);
         for (const auto& f : t->fields) {
             naru::Value value = t->valueOf(*r, f);
-            auto* editor = new ValueEditor(f, value, &db);
+            auto* editor = new ValueEditor(f, value, &db, nullptr, doc_);
             auto* label = new QLabel(q(f.name));
             QString tip = QStringLiteral("키: %1 · %2").arg(q(f.key), ValueEditor::typeLabel(f.type));
             if (auto problem = naru::checkValue(value, f)) {
@@ -424,7 +425,7 @@ void DatabaseEditor::rebuildFields() {
 }
 
 void DatabaseEditor::updateIssues() {
-    auto issues = doc_->project().database.validate();
+    auto issues = doc_->project().database.validate(&doc_->project().assets);
     if (issues.empty()) {
         issues_->hide();
         return;
@@ -635,6 +636,8 @@ bool DatabaseEditor::setRecordValue(const QString& typeKey, const QString& recor
             if (!r || !t->findField(fieldKey.toStdString())) {
                 return false;
             }
+            const auto* f = t->findField(fieldKey.toStdString());
+            if (naru::isAssetField(f->type) && naru::checkAssetValue(value, *f, doc_->project().assets)) return false;
             r->values[fieldKey.toStdString()] = value;
             return true;
         },
@@ -652,7 +655,7 @@ void DatabaseEditor::addFieldInteractive() {
     f.name = "새 속성";
     f.type = FieldType::Integer;
     f.defaultValue = std::int64_t{0};
-    FieldDialog dialog(f, *t, doc_->project().database, true, this);
+    FieldDialog dialog(f, *t, doc_->project().database, true, this, doc_);
     if (dialog.exec() != QDialog::Accepted) {
         return;
     }
@@ -669,6 +672,7 @@ void DatabaseEditor::addFieldInteractive() {
 }
 
 bool DatabaseEditor::setField(const QString& typeKey, int index, const FieldDef& field, bool askBeforeReset) {
+    if (naru::isAssetField(field.type) && naru::checkAssetValue(field.defaultValue, field, doc_->project().assets)) return false;
     const DataType* t = doc_->project().database.findType(typeKey.toStdString());
     if (!t || index < 0 || index >= static_cast<int>(t->fields.size())) {
         return false;
@@ -718,7 +722,7 @@ void DatabaseEditor::editFieldInteractive() {
     if (!t || row < 0 || row >= static_cast<int>(t->fields.size())) {
         return;
     }
-    FieldDialog dialog(t->fields[static_cast<std::size_t>(row)], *t, doc_->project().database, false, this);
+    FieldDialog dialog(t->fields[static_cast<std::size_t>(row)], *t, doc_->project().database, false, this, doc_);
     if (dialog.exec() == QDialog::Accepted) {
         setField(typeKey_, row, dialog.field(), true);
     }

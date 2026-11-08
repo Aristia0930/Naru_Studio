@@ -53,8 +53,20 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     // 객체 페이지
     auto* objectPage = new QWidget(this);
     auto* objectForm = new QFormLayout(objectPage);
-    objectIdLabel_ = new QLabel(objectPage);
-    objectIdLabel_->setTextInteractionFlags(Qt::TextSelectableByMouse);
+    objectIdLabel_ = new QLineEdit(objectPage);
+    objectIdLabel_->setObjectName(QStringLiteral("objectId"));
+    objectIdLabel_->setToolTip(QStringLiteral("영문·숫자·밑줄(_)·하이픈(-) 1~64자. 프로젝트 전체에서 고유해야 합니다.\n"
+        "플레이어 지정과 모든 장면·공통 이벤트의 객체 대상은 함께 변경합니다. Python 코드에 적은 ID는 직접 수정하세요."));
+    connect(objectIdLabel_, &QLineEdit::editingFinished, this, [this] {
+        if (loading_ || objectIdLabel_->text() == objectId_) return;
+        QString error;
+        if (!doc_->renameObjectId(sceneId_, objectId_, objectIdLabel_->text(), &error)) {
+            loading_ = true;
+            QMessageBox::warning(this, QStringLiteral("객체 ID 변경"), error);
+            loading_ = false;
+            refresh();
+        }
+    });
     objectName_ = new QLineEdit(objectPage);
     objectX_ = coordinateBox(objectPage, -100000);
     objectY_ = coordinateBox(objectPage, -100000);
@@ -160,6 +172,9 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     connect(sceneH_, &QSpinBox::valueChanged, this, [this] { commitScene(Height); });
     connect(sceneColor_, &QPushButton::clicked, this, &Inspector::chooseSceneColor);
 
+    connect(doc_, &ProjectDocument::objectIdChanged, this, [this](const QString& s, const QString& before, const QString& after) {
+        if (s == sceneId_ && before == objectId_) { objectId_ = after; refresh(); }
+    });
     connect(doc_, &ProjectDocument::objectChanged, this, [this](const QString& s, const QString& o) {
         if (s == sceneId_ && o == objectId_) {
             refresh();

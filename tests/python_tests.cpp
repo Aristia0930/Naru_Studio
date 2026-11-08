@@ -74,6 +74,17 @@ TEST_CASE("Python 소리 API의 호출 인자·F5 보호·오류 파일과 trace
     CHECK(result.error.line>0 && !result.error.traceback.empty());
 }
 
+TEST_CASE("DB 에셋 ID와 None을 Python으로 읽고 반환 사본을 수정한다") {
+    Database db; DataType type; type.key="media";
+    FieldDef picture; picture.key="picture"; picture.type=FieldType::Image; picture.defaultValue=std::string("pic");
+    FieldDef sound; sound.key="sound"; sound.type=FieldType::Audio;
+    type.fields={picture,sound}; type.records={{"demo","예제",{{"sound",std::string("se")}}},{"empty","빈 항목",{}}};
+    db.types={type}; Fixture f; f.ctx.database=&db; Value returned;
+    auto result=g_runtime->runFile(script("db_assets.py"),f.ctx,"run",&returned);
+    CHECK(result.ok && returned==Value{std::string("se")});
+    CHECK(db.types[0].fields[0].defaultValue==Value{std::string("pic")});
+}
+
 TEST_CASE("스크립트가 변수를 읽고 쓰며 로그를 남긴다") {
     Fixture f;
     f.variables.set("visits", std::int64_t{2});

@@ -316,6 +316,10 @@ EventEditor::EventEditor(ProjectDocument* doc, naru::python::PythonRuntime* pyth
         }
     });
 
+    connect(doc_, &ProjectDocument::objectIdChanged, this, [this](const QString& s, const QString& before, const QString& after) {
+        if (s == sceneId_ && before == objectId_) setTarget(s, after);
+        else stopTest();
+    });
     connect(doc_, &ProjectDocument::objectChanged, this, [this](const QString& s, const QString& o) {
         if (s == sceneId_ && o == objectId_) {
             rebuild();

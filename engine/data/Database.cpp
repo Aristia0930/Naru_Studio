@@ -11,13 +11,15 @@ namespace naru {
 
 namespace {
 
-constexpr std::array<std::pair<FieldType, const char*>, 6> kFieldTypes{{
+constexpr std::array<std::pair<FieldType, const char*>, 8> kFieldTypes{{
     {FieldType::Integer, "integer"},
     {FieldType::Number, "number"},
     {FieldType::Text, "text"},
     {FieldType::Boolean, "boolean"},
     {FieldType::Choice, "choice"},
     {FieldType::Reference, "reference"},
+    {FieldType::Image, "image"},
+    {FieldType::Audio, "audio"},
 }};
 
 bool isAsciiAlnum(char c) {
@@ -90,6 +92,42 @@ FieldDef choiceField(const char* key, const char* name, std::vector<std::string>
 }
 
 } // namespace
+
+bool isAssetField(FieldType type) { return type == FieldType::Image || type == FieldType::Audio; }
+
+std::optional<std::string> checkAssetValue(const Value& value, const FieldDef& field, const std::vector<Asset>& assets) {
+    if (auto error = checkValue(value, field)) return error;
+    const auto* id = std::get_if<std::string>(&value);
+    if (!id || !isAssetField(field.type)) return std::nullopt;
+    for (const auto& asset : assets) if (asset.id == *id) {
+        if (asset.kind == (field.type == FieldType::Image ? "image" : "audio")) return std::nullopt;
+        return "에셋 종류가 다릅니다: " + *id;
+    }
+    return "없는 에셋입니다: " + *id;
+}
+
+std::vector<std::string> databaseAssetUses(const Database& db, const std::string& id) {
+    std::vector<std::string> uses;
+    if (id.empty()) return uses;
+    for (const auto& t : db.types) for (const auto& f : t.fields) if (isAssetField(f.type)) {
+        if (f.defaultValue == Value{id}) uses.push_back("DB " + t.key + "." + f.key + " (기본값)");
+        for (const auto& r : t.records) {
+            auto it = r.values.find(f.key);
+            if (it != r.values.end() && it->second == Value{id}) uses.push_back("DB " + t.key + "/" + r.id + "." + f.key);
+        }
+    }
+    return uses;
+}
+
+void renameDatabaseAsset(Database& db, const std::string& before, const std::string& after) {
+    for (auto& t : db.types) for (auto& f : t.fields) if (isAssetField(f.type)) {
+        if (f.defaultValue == Value{before}) f.defaultValue = after;
+        for (auto& r : t.records) {
+            auto it = r.values.find(f.key);
+            if (it != r.values.end() && it->second == Value{before}) it->second = after;
+        }
+    }
+}
 
 const char* toKey(FieldType type) {
     for (const auto& [t, name] : kFieldTypes) {
@@ -220,7 +258,7 @@ std::vector<std::string> Database::referencesTo(const std::string& typeKey) cons
     return result;
 }
 
-std::vector<DataIssue> Database::validate() const {
+std::vector<DataIssue> Database::validate(const std::vector<Asset>* assets) const {
     std::vector<DataIssue> issues;
     for (const auto& t : types) {
         for (const auto& f : t.fields) {
@@ -231,6 +269,9 @@ std::vector<DataIssue> Database::validate() const {
             if (f.type == FieldType::Reference && !findType(f.refType)) {
                 issues.push_back({where, f.refType.empty() ? "참조할 데이터 종류를 정하지 않았습니다"
                                                            : "참조할 데이터 종류가 없습니다: " + f.refType});
+            }
+            if (assets && isAssetField(f.type)) {
+                if (auto problem = checkAssetValue(f.defaultValue, f, *assets)) issues.push_back({where + " (기본값)", *problem});
             }
             if (auto problem = checkValue(f.defaultValue, f)) {
                 issues.push_back({where + " (기본값)", *problem});
@@ -247,6 +288,9 @@ std::vector<DataIssue> Database::validate() const {
                 if (auto problem = checkValue(value, *f)) {
                     issues.push_back({where, *problem});
                     continue;
+                }
+                if (assets && isAssetField(f->type)) {
+                    if (auto problem = checkAssetValue(value, *f, *assets)) issues.push_back({where, *problem});
                 }
                 if (f->type == FieldType::Reference) {
                     if (const auto* id = std::get_if<std::string>(&value)) {
@@ -271,6 +315,8 @@ Value emptyValueFor(const FieldDef& f) {
     case FieldType::Text: return std::string();
     case FieldType::Boolean: return false;
     case FieldType::Choice: return f.choices.empty() ? std::string() : f.choices.front();
+    case FieldType::Image:
+    case FieldType::Audio:
     case FieldType::Reference: return std::monostate{};
     }
     return std::monostate{};
@@ -312,6 +358,11 @@ std::optional<std::string> checkValue(const Value& value, const FieldDef& f) {
             return "선택지에 없는 값입니다: " + *s;
         }
         return "선택지 중 하나여야 합니다";
+    case FieldType::Image:
+    case FieldType::Audio:
+        if (std::holds_alternative<std::monostate>(value)) return std::nullopt;
+        if (const auto* id = std::get_if<std::string>(&value); id && isValidAssetId(*id)) return std::nullopt;
+        return "에셋 ID이거나 비어 있어야 합니다";
     case FieldType::Reference:
         if (std::holds_alternative<std::monostate>(value) || std::holds_alternative<std::string>(value)) {
             return std::nullopt;
@@ -361,6 +412,8 @@ std::optional<Value> convertValue(const Value& value, const FieldDef& target) {
         }
         return std::nullopt;
     case FieldType::Choice:
+    case FieldType::Image:
+    case FieldType::Audio:
     case FieldType::Reference:
         return std::nullopt;
     }

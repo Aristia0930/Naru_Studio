@@ -53,6 +53,8 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
   set_tests_properties(player_nameplates PROPERTIES TIMEOUT 60)
   add_test(NAME player_images COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_images.py $<TARGET_FILE:naru_player>)
   add_test(NAME player_audio COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_audio.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
+  add_test(NAME player_db_assets COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_db_assets.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
+  set_tests_properties(player_db_assets PROPERTIES TIMEOUT 60)
   set_tests_properties(player_audio PROPERTIES TIMEOUT 45)
   set_tests_properties(player_images PROPERTIES TIMEOUT 60)
   add_test(NAME player_choices COMMAND ${Python3_EXECUTABLE}
@@ -86,10 +88,15 @@ if(NARU_BUILD_EDITOR)
   qt_add_executable(naru_asset_editor_tests
     asset_editor_tests.cpp
     audio_editor_tests.cpp
+    database_asset_editor_tests.cpp
+    ../editor/DatabaseEditor.cpp ../editor/DatabaseEditor.h
+    ../editor/FieldDialog.cpp ../editor/FieldDialog.h
+    ../editor/ValueEditor.cpp ../editor/ValueEditor.h
     ../editor/CommandDialog.cpp ../editor/CommandDialog.h
     ../editor/VariablesDialog.cpp ../editor/VariablesDialog.h
     image_editor_tests.cpp
     nameplate_editor_tests.cpp
+    object_id_editor_tests.cpp
     ../editor/ImageSettingsDialog.cpp ../editor/ImageSettingsDialog.h
     ../editor/Inspector.cpp ../editor/Inspector.h
     ../editor/SceneView.cpp ../editor/SceneView.h

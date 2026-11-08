@@ -1,0 +1,40 @@
+{
+  "formatVersion": 1,
+  "id": "scene_001",
+  "name": "상자를 조사하면 DB 그림·소리 적용",
+  "width": 640,
+  "height": 360,
+  "background": "#202830",
+  "player": "hero",
+  "objects": [
+    {
+      "id": "hero",
+      "name": "주인공",
+      "x": 80,
+      "y": 180,
+      "width": 40,
+      "height": 40,
+      "color": "#5fa7cf"
+    },
+    {
+      "id": "display",
+      "name": "Z로 조사",
+      "x": 180,
+      "y": 180,
+      "width": 50,
+      "height": 50,
+      "color": "#dbb560",
+      "showName": true,
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "call_script",
+            "script": "db_media.py",
+            "function": "run"
+          }
+        ]
+      }
+    }
+  ]
+}

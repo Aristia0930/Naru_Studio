@@ -31,6 +31,7 @@ public:
     bool unregisterAsset(const std::string& id);
     QString assetState(const naru::Asset& asset) const;
     void refresh();
+    void selectAsset(const std::string& id);
     void stopAudio();
     void showImportDialog(const QStringList& initialFiles = {});
 

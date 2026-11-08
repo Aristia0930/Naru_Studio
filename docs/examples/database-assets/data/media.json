@@ -1,0 +1,33 @@
+{
+  "formatVersion": 1,
+  "key": "media",
+  "name": "표현 자료",
+  "fields": [
+    {
+      "key": "picture",
+      "name": "그림",
+      "type": "image",
+      "default": "db_picture"
+    },
+    {
+      "key": "sound",
+      "name": "효과음",
+      "type": "audio",
+      "default": null
+    }
+  ],
+  "records": [
+    {
+      "id": "demo",
+      "name": "그림과 소리 예제",
+      "values": {
+        "sound": "db_sound"
+      }
+    },
+    {
+      "id": "empty",
+      "name": "기본 그림·소리 없음",
+      "values": {}
+    }
+  ]
+}

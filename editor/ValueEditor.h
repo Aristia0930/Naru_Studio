@@ -4,6 +4,7 @@
 
 #include <QWidget>
 
+class ProjectDocument;
 class QCheckBox;
 class QComboBox;
 class QDoubleSpinBox;
@@ -17,7 +18,7 @@ class ValueEditor : public QWidget {
 
 public:
     ValueEditor(const naru::FieldDef& field, const naru::Value& value, const naru::Database* database,
-                QWidget* parent = nullptr);
+                QWidget* parent = nullptr, ProjectDocument* document = nullptr);
 
     naru::Value value() const;
 

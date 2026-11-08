@@ -1,5 +1,9 @@
 # Python 스크립트 작성·연결 안내
 
+인스펙터에서 객체 ID를 변경하면 Python 코드에 직접 적은 `ctx.scene.object("이전 ID")` 문자열은 자동 수정되지 않습니다. 스크립트에서 새 ID로 직접 고치세요. [객체 ID 사용법](OBJECT_IDS.md).
+
+DB에서 선택한 이미지·소리를 읽어 게임 객체에 적용하는 완성 예제는 [DB 에셋 연결](DB_ASSETS.md)에 있습니다. `scripts/db_media.py`의 `run(ctx)`를 이벤트 스크립트 호출에 연결하며 전역 등록은 필요 없습니다.
+
 현재 공개 기능 전체의 연결·에셋 ID·배경/객체 이미지·변수/DB·입력/이동·공통 이벤트·전역 훅·오류 예제는 [Python 전체 가이드](PYTHON_COOKBOOK.md)를 보세요. 완성 파일 [python_guide.py](../examples/python_guide.py)와 [guide_global.py](../examples/guide_global.py)를 함께 제공합니다. 이벤트 함수만 쓰면 전역 등록 불필요, 다른 파일 import를 쓰는 전역 예제는 python_guide → guide_global 순서로 등록합니다.
 
 기준: 2026-11-08. 현재 구현된 기능으로 설명합니다. 전체 이름·기본값·오류 규칙은 [SCRIPT_API](../SCRIPT_API.md), 이벤트 입력값은 [이벤트 명령 안내](EVENTS.md), 기본 설정 코드/화면 동기화는 [키 설정 안내](INPUT_SETTINGS.md)에 있습니다.

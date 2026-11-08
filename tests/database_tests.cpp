@@ -151,4 +151,28 @@ TEST_CASE("이벤트의 데이터 → 변수 명령") {
     CHECK(noDb.state() == SessionState::Failed);
 }
 
+TEST_CASE("DB 이미지·소리 참조 형식과 기본값 검증·텍스트 ID 보존") {
+    Database db;
+    FieldDef image; image.key="icon"; image.name="그림"; image.type=FieldType::Image; image.defaultValue=std::string("pic");
+    FieldDef sound; sound.key="sound"; sound.name="소리"; sound.type=FieldType::Audio;
+    FieldDef text; text.key="text"; text.type=FieldType::Text; text.defaultValue=std::string("pic");
+    DataType t; t.key="media"; t.fields={image,sound,text};
+    t.records={{"demo","예제",{{"sound",std::string("se")}}}}; db.types={t};
+    std::vector<Asset> assets(2); assets[0].id="pic"; assets[0].kind="image"; assets[1].id="se"; assets[1].kind="audio";
+    CHECK(db.validate(&assets).empty());
+    CHECK(fieldTypeFromKey("image")==FieldType::Image && fieldTypeFromKey("audio")==FieldType::Audio);
+    CHECK(checkValue(std::int64_t{3},image).has_value()); CHECK(checkValue(std::string("../pic"),image).has_value());
+    CHECK(checkAssetValue(std::string("se"),image,assets).has_value());
+    CHECK(checkAssetValue(std::string("gone"),image,assets).has_value());
+    CHECK(!checkAssetValue(std::monostate{},image,assets));
+    renameDatabaseAsset(db,"pic","new_pic");
+    CHECK(db.types[0].fields[2].defaultValue==Value{std::string("pic")});
+    CHECK(databaseAssetUses(db,"new_pic").size()==1);
+    CHECK(hasIssue(db.validate(&assets),"media.icon (기본값)","new_pic"));
+    Session session(Variables{}); session.setDatabase(&db);
+    EventCommand read; read.type=EventCommandType::GetData; read.dataType="media"; read.record="demo"; read.field="sound"; read.variable="se";
+    session.start(compileEvent({read},{}));
+    CHECK(session.state()==SessionState::Completed && session.variables().get("se")==Value{std::string("se")});
+}
+
 TEST_MAIN()

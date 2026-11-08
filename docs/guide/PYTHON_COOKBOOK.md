@@ -1,5 +1,7 @@
 # 현재 기능을 Python으로 연결하는 전체 가이드
 
+DB의 이미지·소리 에셋 속성은 `ctx.db.get`에서 ID 문자열 또는 None으로 읽습니다. [완성 코드·연결 순서·F5/F6 보호·오류](DB_ASSETS.md), [실행 프로젝트](../examples/database-assets/README.md)를 함께 제공합니다.
+
 기준: 2026-11-08. **현재 구현된 공개 API**만 사용합니다. 엔진은 C++, 제작 UI는 Qt이고 아래 Python은 게임 프로젝트 안의 동작을 작성하는 코드입니다. 상세 형식·범위·실행 순서는 [SCRIPT_API](../SCRIPT_API.md), 화면 설명은 [이미지](IMAGES.md)·[입력 설정](INPUT_SETTINGS.md)·[이벤트](EVENTS.md)에 있습니다.
 
 복사할 완성 코드:

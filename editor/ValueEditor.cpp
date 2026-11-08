@@ -1,4 +1,9 @@
 #include "ValueEditor.h"
+#include "AssetBrowser.h"
+#include "ImageAssets.h"
+#include <QDialog>
+#include <QPushButton>
+#include <QVBoxLayout>
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -40,12 +45,14 @@ QString ValueEditor::typeLabel(FieldType type) {
     case FieldType::Boolean: return QStringLiteral("참/거짓");
     case FieldType::Choice: return QStringLiteral("선택지");
     case FieldType::Reference: return QStringLiteral("데이터 참조");
+    case FieldType::Image: return QStringLiteral("이미지 에셋");
+    case FieldType::Audio: return QStringLiteral("소리 에셋");
     }
     return {};
 }
 
 ValueEditor::ValueEditor(const naru::FieldDef& field, const Value& value, const naru::Database* database,
-                         QWidget* parent)
+                         QWidget* parent, ProjectDocument* document)
     : QWidget(parent), field_(field) {
     auto* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
@@ -109,6 +116,60 @@ ValueEditor::ValueEditor(const naru::FieldDef& field, const Value& value, const 
         connect(combo_, &QComboBox::currentIndexChanged, this, &ValueEditor::edited);
         break;
     }
+    case FieldType::Image:
+    case FieldType::Audio: {
+        combo_ = new QComboBox(this);
+        combo_->setObjectName(QStringLiteral("dbAssetValue"));
+        combo_->addItem(QStringLiteral("(없음)"), QVariant());
+        if (document) for (const auto& a : document->project().assets) {
+            if (a.kind != (field.type == FieldType::Image ? "image" : "audio")) continue;
+            combo_->addItem(QStringLiteral("%1 (%2)").arg(q(a.name), q(a.id)), q(a.id));
+            if (field.type == FieldType::Image) {
+                auto image = loadProjectImage(document, a.id);
+                if (!image.isNull()) combo_->setItemIcon(combo_->count() - 1, QPixmap::fromImage(image.scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation)));
+            }
+        }
+        int index = 0;
+        if (const auto* id = std::get_if<std::string>(&value)) {
+            index = combo_->findData(q(*id));
+            if (index < 0) {
+                combo_->addItem(QStringLiteral("⚠ 누락/종류 오류: %1").arg(q(*id)), q(*id));
+                index = combo_->count() - 1;
+            }
+        }
+        combo_->setCurrentIndex(index);
+        layout->addWidget(combo_, 1);
+        auto* preview = new QPushButton(QStringLiteral("에셋 확인..."), this);
+        preview->setObjectName(QStringLiteral("dbAssetPreview"));
+        preview->setToolTip(QStringLiteral("그림·파일 상태·사용처를 확인하거나 소리를 미리 듣습니다."));
+        auto updatePreview = [this, document, preview] {
+            bool found = false;
+            if (document) for (const auto& asset : document->project().assets) {
+                if (asset.id == combo_->currentData().toString().toStdString() &&
+                    asset.kind == (field_.type == FieldType::Image ? "image" : "audio")) found = true;
+            }
+            preview->setEnabled(found);
+        };
+        updatePreview();
+        connect(combo_, &QComboBox::currentIndexChanged, this, updatePreview);
+        layout->addWidget(preview);
+        connect(preview, &QPushButton::clicked, this, [this, document] {
+            QDialog dialog(this);
+            dialog.setWindowTitle(QStringLiteral("DB 연결 에셋 확인"));
+            auto* box = new QVBoxLayout(&dialog);
+            auto* browser = new AssetBrowser(document, &dialog);
+            // 속성 편집 중에는 원본 DB/에셋을 변경하지 않는 확인 창으로 사용한다.
+            for (auto* button : browser->findChildren<QPushButton*>()) {
+                if (button->text() != QStringLiteral("미리듣기") && button->text() != QStringLiteral("정지")) button->hide();
+            }
+            box->addWidget(browser);
+            browser->selectAsset(combo_->currentData().toString().toStdString());
+            dialog.resize(1000, 700);
+            dialog.exec();
+        });
+        connect(combo_, &QComboBox::currentIndexChanged, this, &ValueEditor::edited);
+        break;
+    }
     case FieldType::Reference: {
         combo_ = new QComboBox(this);
         combo_->addItem(QStringLiteral("(없음)"), QVariant());
@@ -146,6 +207,8 @@ Value ValueEditor::value() const {
     case FieldType::Choice:
         return combo_->currentData().isValid() ? Value{combo_->currentData().toString().toStdString()}
                                                : Value{std::string()};
+    case FieldType::Image:
+    case FieldType::Audio:
     case FieldType::Reference:
         return combo_->currentData().isValid() ? Value{combo_->currentData().toString().toStdString()}
                                                : Value{std::monostate{}};

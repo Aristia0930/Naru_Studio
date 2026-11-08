@@ -1,8 +1,33 @@
 #include "UndoCommands.h"
-
 #include "ProjectDocument.h"
-
 #include <QCoreApplication>
+
+namespace {
+void renameObjectTargets(std::vector<naru::EventCommand>& commands, const std::string& before, const std::string& after) {
+    for (auto& command : commands) {
+        if ((command.type == naru::EventCommandType::MoveObject || command.type == naru::EventCommandType::SetVisible)
+            && command.target == before) command.target = after;
+        renameObjectTargets(command.thenCommands, before, after);
+        renameObjectTargets(command.elseCommands, before, after);
+        for (auto& choice : command.choices) renameObjectTargets(choice.commands, before, after);
+    }
+}
+}
+
+RenameObjectIdCommand::RenameObjectIdCommand(ProjectDocument* doc, std::string scene, std::string before, std::string after)
+    : doc_(doc), scene_(std::move(scene)), before_(std::move(before)), after_(std::move(after)) {
+    setText(QStringLiteral("객체 ID 변경"));
+    beforeScenes_ = doc_->project().scenes; afterScenes_ = beforeScenes_;
+    beforeEvents_ = doc_->project().commonEvents; afterEvents_ = beforeEvents_;
+    for (auto& referenceScene : afterScenes_) {
+        if (referenceScene.id == scene_) referenceScene.findObject(before_)->id = after_;
+        if (referenceScene.playerObjectId == before_) referenceScene.playerObjectId = after_;
+        for (auto& object : referenceScene.objects) renameObjectTargets(object.event.commands, before_, after_);
+    }
+    for (auto& event : afterEvents_) renameObjectTargets(event.event.commands, before_, after_);
+}
+void RenameObjectIdCommand::redo() { doc_->applyObjectId(scene_, before_, after_, afterScenes_, afterEvents_); }
+void RenameObjectIdCommand::undo() { doc_->applyObjectId(scene_, after_, before_, beforeScenes_, beforeEvents_); }
 
 namespace {
 

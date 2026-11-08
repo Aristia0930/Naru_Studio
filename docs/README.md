@@ -9,6 +9,8 @@
 | [사용 설명서](guide/README.md) | 프로젝트 생성부터 장면·이벤트·게임 실행까지 기본 흐름 |
 | [이벤트 명령](guide/EVENTS.md) | 명령 14종의 입력·실행·대기·중지·F6와 게임의 차이 |
 | [에셋 관리](guide/ASSETS.md) | 가져오기·그룹·ID 변경·사용처·교체·내보내기 |
+| [DB 이미지·소리](guide/DB_ASSETS.md) | 종류별 에셋 선택·기본값·ID 갱신·Python 연결·수동 확인 |
+| [객체 ID 변경](guide/OBJECT_IDS.md) | 객체 ID 입력·참조 갱신·Python 수정·수동 확인 |
 | [객체 이미지·배경](guide/IMAGES.md) | 그림과 충돌 영역, 표시 설정, Python 변경 |
 | [BGM·효과음](guide/AUDIO.md) · [단계별 소리 테스트](guide/AUDIO_TEST.md) | WAV/MP3·이벤트·Python 연결, 청취 확인 순서 |
 | [객체 이름표](guide/NAMEPLATES.md) | F9 전체 이름/ID, 개별 이름·배경 투명/색·위/아래 |

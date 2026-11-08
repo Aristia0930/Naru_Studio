@@ -103,7 +103,8 @@ public:
     AssetIdCommand(ProjectDocument* doc, const std::string& before, const std::string& after)
         : QUndoCommand(QStringLiteral("에셋 ID 변경")), doc_(doc), before_(doc->project().assets), after_(before_),
           beforeScenes_(doc->project().scenes), afterScenes_(beforeScenes_),
-          beforeCommon_(doc->project().commonEvents), afterCommon_(beforeCommon_) {
+          beforeCommon_(doc->project().commonEvents), afterCommon_(beforeCommon_), beforeDb_(doc->project().database), afterDb_(beforeDb_) {
+        naru::renameDatabaseAsset(afterDb_, before, after);
         for (auto& a : after_) if (a.id == before) a.id = after;
         for (auto& s : afterScenes_) {
             if (s.backgroundImage.asset == before) s.backgroundImage.asset = after;
@@ -114,13 +115,14 @@ public:
         }
         for (auto& event : afterCommon_) naru::renameAudioReferences(event.event.commands, before, after);
     }
-    void redo() override { doc_->setAssetIdentity(after_, afterScenes_, afterCommon_); }
-    void undo() override { doc_->setAssetIdentity(before_, beforeScenes_, beforeCommon_); }
+    void redo() override { doc_->setAssetIdentity(after_, afterScenes_, afterCommon_, afterDb_); }
+    void undo() override { doc_->setAssetIdentity(before_, beforeScenes_, beforeCommon_, beforeDb_); }
 private:
     ProjectDocument* doc_;
     std::vector<naru::Asset> before_, after_;
     std::vector<naru::Scene> beforeScenes_, afterScenes_;
     std::vector<naru::CommonEvent> beforeCommon_, afterCommon_;
+    naru::Database beforeDb_, afterDb_;
 };
 }
 
@@ -177,14 +179,14 @@ AssetBrowser::AssetBrowser(ProjectDocument* document, QWidget* parent) : QWidget
     layout->addLayout(editTools);
     auto* renameId = new QPushButton(QStringLiteral("ID 변경..."), this);
     renameId->setObjectName(QStringLiteral("assetRenameId"));
-    renameId->setToolTip(QStringLiteral("객체·배경·소리 이벤트 연결을 함께 변경합니다. Python 코드의 ID 문자열은 직접 수정하세요."));
+    renameId->setToolTip(QStringLiteral("DB·객체·배경·소리 이벤트 연결을 함께 변경합니다. Python 코드의 ID 문자열은 직접 수정하세요."));
     layout->addWidget(renameId);
     connect(renameId, &QPushButton::clicked, this, [this] {
         if (const auto* a = selectedAsset()) {
             const auto id = a->id;
             bool ok = false;
             const auto after = QInputDialog::getText(this, QStringLiteral("에셋 ID 변경"),
-                QStringLiteral("새 ID (영문·숫자·_·-, 1~64자)\n객체·배경·소리 이벤트 연결은 함께 바꿉니다.\nPython 코드에 직접 쓴 ID는 직접 수정하세요. 실행 중인 게임은 다시 실행하세요."),
+                QStringLiteral("새 ID (영문·숫자·_·-, 1~64자)\nDB·객체·배경·소리 이벤트 연결은 함께 바꿉니다.\nPython 코드에 직접 쓴 ID는 직접 수정하세요. 실행 중인 게임은 다시 실행하세요."),
                 QLineEdit::Normal, QString::fromStdString(id), &ok);
             if (!ok) return;
             QString error;
@@ -258,6 +260,7 @@ AssetBrowser::AssetBrowser(ProjectDocument* document, QWidget* parent) : QWidget
     connect(kind_, &QComboBox::currentIndexChanged, this, [this] { refresh(); });
     connect(list_, &QListWidget::currentRowChanged, this, [this] { preview(); });
     connect(doc_, &ProjectDocument::assetsChanged, this, &AssetBrowser::refresh);
+    connect(doc_, &ProjectDocument::databaseChanged, this, [this] { preview(); });
     connect(doc_, &ProjectDocument::objectChanged, this, [this] { preview(); });
     connect(doc_, &ProjectDocument::sceneChanged, this, [this] { preview(); });
     connect(rename, &QPushButton::clicked, this, [this] {
@@ -733,4 +736,8 @@ void AssetBrowser::playAudio() {
         const auto error = QString::fromUtf8(SDL_GetError());
         stopAudio(); playback_->setText(QStringLiteral("미리듣기 실패: ") + error);
     } else playback_->setText(QStringLiteral("재생 중 — 선택 변경·정지·창 종료 시 중지"));
+}
+
+void AssetBrowser::selectAsset(const std::string& id) {
+    for (int i = 0; i < list_->count(); ++i) if (list_->item(i)->data(Qt::UserRole).toString().toStdString() == id) { list_->setCurrentRow(i); return; }
 }

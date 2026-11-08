@@ -1,11 +1,33 @@
 #include "ProjectDocument.h"
-
+#include "UndoCommands.h"
 #include "naru/project/ProjectIO.h"
-
 #include <QDir>
-
+#include <QRegularExpression>
 #include <algorithm>
 #include <filesystem>
+
+bool ProjectDocument::renameObjectId(const QString& sceneId, const QString& before, const QString& after, QString* error) {
+    if (error) error->clear();
+    auto fail = [&](const QString& message) { if (error) *error = message; return false; };
+    const auto* scene = project_.findScene(sceneId.toStdString());
+    if (!scene || !scene->findObject(before.toStdString())) return fail(QStringLiteral("변경할 객체가 없습니다."));
+    static const QRegularExpression valid(QStringLiteral("\\A[A-Za-z0-9_-]{1,64}\\z"));
+    if (!valid.match(after).hasMatch()) return fail(QStringLiteral("객체 ID는 영문·숫자·밑줄(_)·하이픈(-) 1~64자로 입력하세요."));
+    if (before == after) return true;
+    for (const auto& candidate : project_.scenes)
+        if (candidate.findObject(after.toStdString())) return fail(QStringLiteral("프로젝트에서 이미 사용하는 객체 ID입니다: %1").arg(after));
+    undoStack_.push(new RenameObjectIdCommand(this, sceneId.toStdString(), before.toStdString(), after.toStdString()));
+    return true;
+}
+
+void ProjectDocument::applyObjectId(const std::string& sceneId, const std::string& before, const std::string& after,
+                                  const std::vector<naru::Scene>& scenes, const std::vector<naru::CommonEvent>& events) {
+    project_.scenes = scenes;
+    project_.commonEvents = events;
+    emit objectIdChanged(QString::fromStdString(sceneId), QString::fromStdString(before), QString::fromStdString(after));
+    for (const auto& referenceScene : project_.scenes) emit sceneChanged(QString::fromStdString(referenceScene.id));
+    emit commonEventsChanged();
+}
 
 namespace {
 
@@ -145,7 +167,8 @@ void ProjectDocument::setAssetCatalog(const std::vector<naru::Asset>& assets, co
     emit assetsChanged();
 }
 
-void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents) {
+void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents, const naru::Database& database) {
+    project_.database = database;
     project_.assets = assets;
     QStringList changedScenes;
     for (const auto& reference : references) {
@@ -170,6 +193,7 @@ void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, c
         project_.commonEvents = commonEvents;
         emit commonEventsChanged();
     }
+    emit databaseChanged();
     emit assetsChanged();
     for (const auto& scene : changedScenes) emit sceneChanged(scene);
 }

@@ -1,6 +1,7 @@
 #include "FieldDialog.h"
 
 #include "ValueEditor.h"
+#include "ProjectDocument.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -34,8 +35,8 @@ QDoubleSpinBox* limitBox(QWidget* parent) {
 } // namespace
 
 FieldDialog::FieldDialog(const naru::FieldDef& field, const naru::DataType& owner, const naru::Database& database,
-                         bool isNew, QWidget* parent)
-    : QDialog(parent), field_(field), owner_(owner), database_(database), isNew_(isNew) {
+                         bool isNew, QWidget* parent, ProjectDocument* document)
+    : QDialog(parent), field_(field), owner_(owner), database_(database), isNew_(isNew), document_(document) {
     setWindowTitle(isNew ? QStringLiteral("속성 추가") : QStringLiteral("속성 편집"));
 
     name_ = new QLineEdit(q(field.name), this);
@@ -45,7 +46,7 @@ FieldDialog::FieldDialog(const naru::FieldDef& field, const naru::DataType& owne
                                     "만든 뒤에는 바꿀 수 없습니다."));
     type_ = new QComboBox(this);
     for (auto t : {FieldType::Integer, FieldType::Number, FieldType::Text, FieldType::Boolean, FieldType::Choice,
-                   FieldType::Reference}) {
+                   FieldType::Reference, FieldType::Image, FieldType::Audio}) {
         type_->addItem(ValueEditor::typeLabel(t), static_cast<int>(t));
     }
     type_->setCurrentIndex(type_->findData(static_cast<int>(field.type)));
@@ -161,15 +162,17 @@ void FieldDialog::rebuildDefaultEditor() {
         f.defaultValue = naru::emptyValueFor(f);
     }
     delete default_;
-    default_ = new ValueEditor(f, f.defaultValue, &database_, defaultHolder_);
+    default_ = new ValueEditor(f, f.defaultValue, &database_, defaultHolder_, document_);
     defaultHolder_->layout()->addWidget(default_);
 
     switch (f.type) {
     case FieldType::Integer: hint_->setText(QStringLiteral("예: 체력, 레벨, 가격")); break;
     case FieldType::Number: hint_->setText(QStringLiteral("소수점이 있는 수. 예: 이동 속도 1.5, 확률 0.25")); break;
-    case FieldType::Text: hint_->setText(QStringLiteral("예: 설명, 그림 파일 이름")); break;
+    case FieldType::Text: hint_->setText(QStringLiteral("예: 설명, 자유 문구")); break;
     case FieldType::Boolean: hint_->setText(QStringLiteral("예: 사용하면 사라짐, 보스 여부")); break;
     case FieldType::Choice: hint_->setText(QStringLiteral("정해진 것 중 하나. 예: 속성(불/물/풀), 분류")); break;
+    case FieldType::Image: hint_->setText(QStringLiteral("에셋 목록의 이미지 ID를 참조합니다. 없음은 None입니다.")); break;
+    case FieldType::Audio: hint_->setText(QStringLiteral("WAV/MP3 에셋 ID를 참조합니다. 자동 재생하지 않습니다.")); break;
     case FieldType::Reference: hint_->setText(QStringLiteral("다른 데이터의 항목 하나를 가리킴. 예: 몬스터가 떨어뜨리는 아이템")); break;
     }
 }
@@ -206,6 +209,11 @@ void FieldDialog::accept() {
         return;
     }
     f.defaultValue = default_->value();
+    if (document_ && naru::isAssetField(f.type)) {
+        if (auto error = naru::checkAssetValue(f.defaultValue, f, document_->project().assets)) {
+            QMessageBox::warning(this, windowTitle(), q(*error)); return;
+        }
+    }
     field_ = f;
     QDialog::accept();
 }

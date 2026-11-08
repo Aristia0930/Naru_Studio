@@ -1,6 +1,7 @@
 #pragma once
 
 #include "naru/core/Value.h"
+#include "naru/project/Asset.h"
 
 #include <map>
 #include <optional>
@@ -13,7 +14,7 @@ namespace naru {
 // "데이터 종류"(DataType)가 속성 목록(스키마)을 갖고, 각 항목(DataRecord)이 속성 값을 가진다.
 // 캐릭터·아이템·몬스터 같은 구조를 엔진이 고정하지 않는다 (템플릿은 미리 만든 정의일 뿐).
 
-enum class FieldType { Integer, Number, Text, Boolean, Choice, Reference };
+enum class FieldType { Integer, Number, Text, Boolean, Choice, Reference, Image, Audio };
 
 struct FieldDef {
     std::string key;   // 스크립트·저장용 키. 만든 뒤 바꾸지 않는다 (예: "hp")
@@ -70,12 +71,17 @@ struct Database {
     std::string newTypeKey(const std::string& prefix) const;
 
     // 참조 대상이 없거나 값이 형식에 맞지 않는 곳을 찾는다. 열기·저장을 막지는 않는 경고다.
-    std::vector<DataIssue> validate() const;
+    std::vector<DataIssue> validate(const std::vector<Asset>* assets = nullptr) const;
     // typeKey를 참조하는 속성들 ("종류키.속성키")
     std::vector<std::string> referencesTo(const std::string& typeKey) const;
 
     bool operator==(const Database&) const = default;
 };
+
+bool isAssetField(FieldType type);
+std::optional<std::string> checkAssetValue(const Value& value, const FieldDef& field, const std::vector<Asset>& assets);
+std::vector<std::string> databaseAssetUses(const Database& db, const std::string& id);
+void renameDatabaseAsset(Database& db, const std::string& before, const std::string& after);
 
 const char* toKey(FieldType type);
 std::optional<FieldType> fieldTypeFromKey(const std::string& key);
