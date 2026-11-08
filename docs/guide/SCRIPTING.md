@@ -1,5 +1,54 @@
 # Python 스크립트 작성·연결 안내
 
+## 스크립트 줄 번호와 들여쓰기
+
+스크립트 탭의 왼쪽 숫자는 파일의 **줄 번호**입니다. 로그에 `network_demo.py:16`이 표시되면 파일을 열어 왼쪽의 16을 찾거나 로그를 더블클릭하면 해당 줄로 이동합니다. 공백은 작은 점, 탭은 화살표로 표시되며 이 표시는 편집 화면에서만 보입니다. 저장된 코드에 점이나 화살표가 들어가지는 않습니다.
+
+![줄 번호와 공백이 표시된 스크립트](images/44-script-indentation.png)
+
+- **Enter**: 현재 줄의 앞쪽 들여쓰기를 다음 줄에 복사합니다. 현재 줄이 `:`로 끝나면 다음 줄에 공백 4칸을 추가합니다.
+- **Tab**: 커서 위치에서 다음 4칸 위치까지 공백을 넣습니다. 여러 줄을 선택하면 선택한 각 줄 앞에 공백 4칸을 넣습니다.
+- **Shift+Tab**: 현재 줄 또는 선택한 여러 줄에서 앞쪽 공백을 최대 4칸(또는 탭 1개) 제거합니다. 함수나 `if` 블록을 끝낼 때 사용하세요.
+- 기존 파일의 실제 탭은 화살표로 보입니다. 자동으로 변환하지 않으므로 기존 코드에서 탭과 공백이 섞여 있으면 직접 정리하고 F7 문법 검사를 실행하세요.
+
+예를 들어 아래 코드에서 `ctx.log` 앞은 공백 4칸이고, `if` 안의 `return` 앞은 공백 8칸입니다. 글자 앞에 표시되는 점의 개수로 확인할 수 있습니다.
+
+```python
+def run(ctx):
+    ctx.log("시작")
+    if ctx.scene is None:
+        return
+    ctx.log("게임에서 실행 중")
+```
+
+자동 들여쓰기는 현재 줄 앞쪽 공백과 마지막 `:`를 기준으로 하는 편집 보조 기능입니다. 붙여넣은 코드와 복잡한 여러 줄 표현식의 올바른 들여쓰기는 직접 확인하고, **F7**로 Python 문법을 검사하세요. F5/F6은 게임과 사용 가능한 `ctx` 값이 다를 수 있습니다.
+
+## 로그 선택과 복사
+
+로그 행을 클릭하고 **Ctrl+C**를 누르거나 오른쪽 클릭 → **선택한 로그 복사**를 선택하면 수준·메시지·위치와 상세 traceback이 복사됩니다. Ctrl 또는 Shift를 누르며 여러 행을 선택할 수도 있습니다.
+
+메시지의 일부분만 복사하려면 로그 행을 **오른쪽 클릭 → 로그 상세 보기**로 연 뒤, 텍스트를 마우스로 드래그하여 선택하고 **Ctrl+C**를 누르세요. 오류 메시지와 traceback도 이 창에서 선택할 수 있습니다. 기존 로그 **더블클릭**은 오류 위치로 이동합니다.
+
+![로그 상세에서 오류 선택](images/45-log-detail.png)
+
+### 직접 확인하기
+
+1. 테스트용 프로젝트에서 **새 스크립트**를 만들고 `def run(ctx):`를 입력한 뒤 Enter를 누릅니다. 다음 줄에 점 4개가 보이면 `ctx.log("확인")`을 입력합니다.
+2. 다음 줄에서 Tab과 Shift+Tab을 눌러 공백이 4칸씩 추가·제거되는지 확인합니다. 왼쪽 숫자가 실제 줄 순서와 같은지 보고, **F7**로 문법 검사 통과를 확인합니다.
+3. 테스트 코드의 함수 본문 앞 공백을 모두 지우고 F7을 누릅니다. 오류 로그의 `파일명:줄번호`와 왼쪽 줄 번호를 비교하고, 오류 행을 더블클릭해 해당 줄로 이동하는지 확인합니다. 테스트가 끝나면 공백을 다시 넣습니다.
+4. 오류 로그를 오른쪽 클릭 → **로그 상세 보기**로 열고 오류 문장 일부를 마우스로 드래그한 뒤 Ctrl+C를 누릅니다. 메모장에 붙여 넣어 선택한 부분만 복사되었는지 확인합니다. 로그 목록에서 여러 행을 선택해 Ctrl+C로 복사하는 방법도 확인합니다.
+
+그림을 다시 찍으려면 기존 자료를 덮어쓰지 않도록 새 `build/guide-script` 폴더에 네트워크 예제 사본을 만들고 오류 재현 파일을 만든 뒤 아래 명령을 실행합니다. 이미 그 폴더가 있으면 다른 새 폴더를 사용하세요. 로그 그림의 프로젝트 경로는 촬영 옵션에서 `프로젝트`로 표시합니다.
+
+```powershell
+Copy-Item -Recurse docs/examples/network build/guide-script
+Set-Content -Encoding UTF8 build/guide-script/scripts/indent_error.py "def run(ctx):`nprint(1)"
+& .\build\windows-msvc\bin\NaruStudio.exe docs/examples/network --capture-script network_demo.py --smoke-test 1200 --screenshot docs/guide/images/44-script-indentation.png
+& .\build\windows-msvc\bin\NaruStudio.exe build/guide-script --capture-script indent_error.py --capture-log-detail --smoke-test 1200 --screenshot docs/guide/images/45-log-detail.png
+```
+
+공개 API의 JSON 응답을 게임 변수에 넣는 전역 스크립트 예제와 함수별 오류·실행 시점은 [네트워크 안내](NETWORK.md)를 참고하세요. 게임 실행에서만 실제 통신하며 F5/F6의 `ctx.network`는 None입니다.
+
 인스펙터에서 객체 ID를 변경하면 Python 코드에 직접 적은 `ctx.scene.object("이전 ID")` 문자열은 자동 수정되지 않습니다. 스크립트에서 새 ID로 직접 고치세요. [객체 ID 사용법](OBJECT_IDS.md).
 
 DB에서 선택한 이미지·소리를 읽어 게임 객체에 적용하는 완성 예제는 [DB 에셋 연결](DB_ASSETS.md)에 있습니다. `scripts/db_media.py`의 `run(ctx)`를 이벤트 스크립트 호출에 연결하며 전역 등록은 필요 없습니다.

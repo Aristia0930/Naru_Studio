@@ -1,0 +1,13 @@
+{
+  "formatVersion": 1,
+  "name": "공개 API 응답 확인",
+  "startScene": "scene_001",
+  "scenes": ["scene_001"],
+  "globalScripts": ["network_demo.py"],
+  "dataTypes": [],
+  "variables": [
+    {"name": "api_status", "value": "시작 전", "description": "요청 진행 상태"},
+    {"name": "api_title", "value": "", "description": "서버에서 받은 title"},
+    {"name": "api_completed", "value": false, "description": "서버에서 받은 completed"}
+  ]
+}

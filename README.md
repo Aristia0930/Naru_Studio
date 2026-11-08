@@ -1,5 +1,9 @@
 # Naru Studio
 
+**스크립트 편집과 로그 복사**: 스크립트 줄 번호·공백 표시, 자동 들여쓰기와 Tab/Shift+Tab, 로그 선택 복사를 지원합니다. [사용법과 그림](docs/guide/SCRIPTING.md#스크립트-줄-번호와-들여쓰기).
+
+**외부 API 연결 첫 단계(10⑤-1)**: 게임 Python의 `ctx.network`로 Windows에서 HTTP(S) JSON 요청을 비동기로 보내고 응답을 게임 변수에 연결합니다. [공개 API 실행 예제와 사용법](docs/guide/NETWORK.md). 외부 DB 직접 연결과 별도 이벤트 명령은 후속입니다.
+
 **객체 ID 변경**: 객체를 선택한 뒤 인스펙터 ID를 직접 수정합니다. 플레이어와 이벤트 객체 대상도 함께 갱신하며 실행 취소를 지원합니다. [사용법·Python 주의·수동 확인](docs/guide/OBJECT_IDS.md).
 
 **DB 이미지·소리 속성(10④)**: 데이터베이스에서 이미지/WAV/MP3 에셋을 종류별로 선택하고 미리보기·사용처·ID 변경·삭제 보호를 지원합니다. [사용법·그림·Python·수동 확인](docs/guide/DB_ASSETS.md), [실행 예제](docs/examples/database-assets/README.md). 사용자 수동 확인 후 다음 단계로 진행합니다.
@@ -32,11 +36,11 @@ DB를 중심으로 스킬·Python·이미지·음원·프레임 이펙트를 연
 
 추가할 때 파일별 **에셋 ID**를 직접 입력하고, 기존 항목은 **ID 변경...**으로 수정할 수 있습니다. 중복·형식을 검사하며 객체·배경 참조와 Undo를 함께 처리합니다. Python 코드에 직접 적은 ID 문자열은 직접 수정합니다. [ID 규칙·예제](docs/guide/ASSETS.md#id-직접-지정변경).
 
-**실행 중 확인 도구(순서 9)**: 게임 실행 중 변수·스위치를 읽기 전용 패널에서 보고, 오류 로그를 더블클릭하면 해당 객체·공통 이벤트의 명령으로 이동합니다. 게임 로그는 실행마다 파일로 남깁니다. [사용법·예제·그림](docs/guide/DEBUGGING.md). 자동 테스트는 22종이며 이미지·ID 편집·Python 가이드 실행/문서 검사까지 포함합니다. BGM·효과음과 WAV/MP3 재생을 추가했습니다. [사용법·수동 확인](docs/guide/AUDIO.md).
+**실행 중 확인 도구(순서 9)**: 게임 실행 중 변수·스위치를 읽기 전용 패널에서 보고, 오류 로그를 더블클릭하면 해당 객체·공통 이벤트의 명령으로 이동합니다. 게임 로그는 실행마다 파일로 남깁니다. [사용법·예제·그림](docs/guide/DEBUGGING.md). 자동 테스트는 23종이며 이미지·ID 편집·Python 가이드 실행/문서 검사까지 포함합니다. BGM·효과음과 WAV/MP3 재생을 추가했습니다. [사용법·수동 확인](docs/guide/AUDIO.md).
 
 **키 설정은 화면과 Python이 양방향 동기화됩니다.** 게임 → 키 설정에서 기본 조작 ON/OFF·속도·동작별 키를 바꾸거나 같은 전용 설정 파일을 편집합니다. **동시 키 조합 추가**로 Shift+E 같은 2~4키 입력도 연결합니다. [설정 안내](docs/guide/INPUT_SETTINGS.md), [이벤트 명령 전체](docs/guide/EVENTS.md), [스크립트 작성·연결](docs/guide/SCRIPTING.md)을 참고하세요. 새 기능·동작 변경마다 이 문서들도 함께 갱신합니다.
 
-**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 22종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. **공통 이벤트** 탭에서 여러 장면이 함께 쓸 명령을 편집하고 이벤트 명령 또는 Python `ctx.run_event`로 호출합니다. 이미지·WAV/MP3·글꼴 [가져오기·목록·미리보기](docs/guide/ASSETS.md)를 지원합니다. 객체 이미지·장면 배경을 표시하며 BGM·효과음은 [소리 안내](docs/guide/AUDIO.md)대로 재생하며 배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
+**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 23종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. **공통 이벤트** 탭에서 여러 장면이 함께 쓸 명령을 편집하고 이벤트 명령 또는 Python `ctx.run_event`로 호출합니다. 이미지·WAV/MP3·글꼴 [가져오기·목록·미리보기](docs/guide/ASSETS.md)를 지원합니다. 객체 이미지·장면 배경을 표시하며 BGM·효과음은 [소리 안내](docs/guide/AUDIO.md)대로 재생하며 배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 | 위치 | 내용 |
 |---|---|

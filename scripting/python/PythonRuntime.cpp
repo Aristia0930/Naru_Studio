@@ -160,11 +160,45 @@ class Audio:
     def stop_se(self):
         return _naru.audio_call("stop_se", "", 100, False, 0)
 
+class Network:
+    def request(self, url, method="GET", headers=None, json=None, timeout=10.0):
+        import json as codec
+        if not isinstance(url, str) or not isinstance(method, str):
+            raise TypeError("url과 method는 문자열이어야 합니다")
+        if headers is None:
+            headers = {}
+        if not isinstance(headers, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in headers.items()):
+            raise TypeError("headers는 문자열 키/값 dict여야 합니다")
+        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
+            raise TypeError("timeout은 초 단위 숫자여야 합니다")
+        body = "" if json is None else codec.dumps(json, ensure_ascii=False, allow_nan=False)
+        headers = dict(headers)
+        if json is not None and not any(k.lower() == "content-type" for k in headers):
+            headers["Content-Type"] = "application/json; charset=utf-8"
+        return _naru.network_request(url, method, headers, body, float(timeout))
+    def status(self, request_id):
+        return _naru.network_result(request_id, False)[0]
+    def result(self, request_id, consume=True):
+        import json as codec
+        if not isinstance(consume, bool):
+            raise TypeError("consume은 bool이어야 합니다")
+        status, code, text, error = _naru.network_result(request_id, consume)
+        if status == "pending":
+            return None
+        try:
+            data = codec.loads(text) if text and error != "invalid_json" else None
+        except ValueError:
+            data = None
+        return {"ok": status == "completed", "status_code": code, "text": text, "json": data, "error": error}
+    def cancel(self, request_id):
+        return _naru.network_cancel(request_id)
+
 class Context:
     def __init__(self):
         self.variables = Variables()
         self.db = Database()
         game = _naru.has_game()
+        self.network = Network() if game else None
         # 게임 밖(에디터 테스트 실행, 단독 스크립트 실행)에서는 None
         self.audio = Audio() if game else None
         self.input = Input() if game else None
@@ -982,7 +1016,56 @@ PyObject* naruAudioCall(PyObject*, PyObject* args) {
     Py_RETURN_NONE;
 }
 
+PyObject* networkException(const std::exception& error) {
+    PyErr_SetString(dynamic_cast<const std::invalid_argument*>(&error) ? PyExc_ValueError : PyExc_RuntimeError, error.what());
+    return nullptr;
+}
+PyObject* naruNetworkRequest(PyObject*, PyObject* args) {
+    const char *url, *method, *body;
+    PyObject* headers;
+    double timeout;
+    if (!PyArg_ParseTuple(args, "ssOsd", &url, &method, &headers, &body, &timeout)) return nullptr;
+    auto* game = requireGame();
+    if (!game) return nullptr;
+    if (!std::isfinite(timeout) || timeout < 0.1 || timeout > 60) { PyErr_SetString(PyExc_ValueError, "timeout must be 0.1..60 seconds"); return nullptr; }
+    if (!PyDict_Check(headers)) { PyErr_SetString(PyExc_TypeError, "headers must be dict"); return nullptr; }
+    HttpRequest request;
+    request.url = url; request.method = method; request.body = body; request.timeoutMs = static_cast<int>(timeout * 1000);
+    Py_ssize_t position = 0;
+    PyObject *key, *value;
+    while (PyDict_Next(headers, &position, &key, &value)) {
+        if (!PyUnicode_Check(key) || !PyUnicode_Check(value)) { PyErr_SetString(PyExc_TypeError, "headers must contain strings"); return nullptr; }
+        const auto* name = PyUnicode_AsUTF8(key); const auto* text = PyUnicode_AsUTF8(value);
+        if (!name || !text) return nullptr;
+        if (PyUnicode_FindChar(key, 0, 0, PyUnicode_GetLength(key), 1) >= 0 || PyUnicode_FindChar(value, 0, 0, PyUnicode_GetLength(value), 1) >= 0) { PyErr_SetString(PyExc_ValueError, "invalid_header"); return nullptr; }
+        request.headers.emplace(name, text);
+    }
+    try { return PyLong_FromUnsignedLongLong(game->network().request(std::move(request))); }
+    catch (const std::exception& error) { return networkException(error); }
+}
+PyObject* naruNetworkResult(PyObject*, PyObject* args) {
+    unsigned long long id; int consume;
+    if (!PyArg_ParseTuple(args, "Kp", &id, &consume)) return nullptr;
+    auto* game = requireGame(); if (!game) return nullptr;
+    try {
+        const auto result = game->network().result(id, consume != 0);
+        PyObject* text = PyUnicode_DecodeUTF8(result.text.data(), static_cast<Py_ssize_t>(result.text.size()), "replace");
+        if (!text) return nullptr;
+        return Py_BuildValue("(siNs)", result.status.c_str(), result.statusCode, text, result.error.c_str());
+    } catch (const std::exception& error) { return networkException(error); }
+}
+PyObject* naruNetworkCancel(PyObject*, PyObject* args) {
+    unsigned long long id;
+    if (!PyArg_ParseTuple(args, "K", &id)) return nullptr;
+    auto* game = requireGame(); if (!game) return nullptr;
+    try { game->network().cancel(id); Py_RETURN_NONE; }
+    catch (const std::exception& error) { return networkException(error); }
+}
+
 PyMethodDef kMethods[] = {
+    {"network_request", naruNetworkRequest, METH_VARARGS, "network_request(url, method, headers, body, timeout)"},
+    {"network_result", naruNetworkResult, METH_VARARGS, "network_result(id, consume)"},
+    {"network_cancel", naruNetworkCancel, METH_VARARGS, "network_cancel(id)"},
     {"audio_call", naruAudioCall, METH_VARARGS, "audio_call(action, asset, volume, loop, fade)"},
     {"scene_set_background", naruSceneSetBackground, METH_VARARGS, "scene_set_background(asset_id)"},
     {"run_event", naruRunEvent, METH_VARARGS, "run_event(id)"},

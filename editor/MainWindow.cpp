@@ -25,6 +25,10 @@
 #include <QStandardPaths>
 #include <QApplication>
 #include <QCheckBox>
+#include <QClipboard>
+#include <QMimeData>
+#include <QPlainTextEdit>
+#include <QTextCursor>
 #include <QDoubleSpinBox>
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
@@ -263,6 +267,27 @@ void MainWindow::createDocks() {
     log_->setColumnCount(3);
     log_->setHeaderLabels({QStringLiteral("수준"), QStringLiteral("메시지"), QStringLiteral("위치")});
     log_->setRootIsDecorated(false);
+    log_->setSelectionMode(QAbstractItemView::ExtendedSelection);
+    auto* copyLog = new QAction(QStringLiteral("선택한 로그 복사"), log_);
+    copyLog->setObjectName(QStringLiteral("copyLogAction"));
+    copyLog->setShortcut(QKeySequence::Copy);
+    copyLog->setShortcutContext(Qt::WidgetWithChildrenShortcut);
+    log_->addAction(copyLog);
+    connect(copyLog, &QAction::triggered, this, [this] { copySelectedLogs(); });
+    log_->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(log_, &QWidget::customContextMenuRequested, this, [this, copyLog](const QPoint& pos) {
+        auto* item = log_->itemAt(pos);
+        if (!item) return;
+        if (!item->isSelected()) {
+            log_->clearSelection();
+            log_->setCurrentItem(item);
+            item->setSelected(true);
+        }
+        QMenu menu(this);
+        auto* detail = menu.addAction(QStringLiteral("로그 상세 보기"));
+        menu.addAction(copyLog);
+        if (menu.exec(log_->viewport()->mapToGlobal(pos)) == detail) showLogDetail(item);
+    });
     log_->header()->setStretchLastSection(false);
     log_->header()->setSectionResizeMode(0, QHeaderView::ResizeToContents);
     log_->header()->setSectionResizeMode(1, QHeaderView::Stretch);
@@ -821,6 +846,22 @@ void MainWindow::newScript() {
     openScript(path);
 }
 
+void MainWindow::captureScript(const QString& filename, bool showError) {
+    if (QFileInfo(filename).fileName() != filename) return;
+    if (!openScript(QDir(doc_->scriptsDirectory()).filePath(filename))) return;
+    if (showError) {
+        checkSyntax();
+        if (log_->topLevelItemCount()) showLogDetail(log_->topLevelItem(log_->topLevelItemCount() - 1));
+        if (auto* detail = findChild<QPlainTextEdit*>(QStringLiteral("logDetailText"))) {
+            QString text = detail->toPlainText();
+            const QString directory = QDir(doc_->directory()).absolutePath();
+            text.replace(directory, QStringLiteral("프로젝트"), Qt::CaseInsensitive);
+            text.replace(QDir::toNativeSeparators(directory), QStringLiteral("프로젝트"), Qt::CaseInsensitive);
+            detail->setPlainText(text);
+        }
+    }
+}
+
 ScriptEditor* MainWindow::openScript(const QString& path) {
     QString absolute = QFileInfo(path).absoluteFilePath();
     for (int i = kFixedTabs; i < tabs_->count(); ++i) {
@@ -1229,6 +1270,41 @@ void MainWindow::appendLog(const naru::LogEntry& entry) {
         }
     }
     log_->scrollToItem(item);
+}
+
+void MainWindow::copySelectedLogs() {
+    QStringList rows;
+    for (int i = 0; i < log_->topLevelItemCount(); ++i) {
+        auto* item = log_->topLevelItem(i);
+        if (!item->isSelected()) continue;
+        QString row = item->text(0) + QLatin1Char('\t') + item->text(1) + QLatin1Char('\t') + item->text(2);
+        if (!item->toolTip(1).isEmpty()) row += QLatin1Char('\n') + item->toolTip(1);
+        rows << row;
+    }
+    if (!rows.isEmpty()) QApplication::clipboard()->setText(rows.join(QLatin1Char('\n')));
+}
+
+void MainWindow::showLogDetail(QTreeWidgetItem* item) {
+    if (!item) return;
+    auto* dialog = new QDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setObjectName(QStringLiteral("logDetailDialog"));
+    dialog->setWindowTitle(QStringLiteral("로그 상세"));
+    dialog->resize(760, 480);
+    auto* layout = new QVBoxLayout(dialog);
+    auto* text = new QPlainTextEdit(dialog);
+    text->setObjectName(QStringLiteral("logDetailText"));
+    text->setReadOnly(true);
+    QString content = item->text(0) + QStringLiteral("  ") + item->text(1);
+    if (!item->text(2).isEmpty()) content += QStringLiteral("\n") + item->text(2);
+    if (!item->toolTip(1).isEmpty()) content += QStringLiteral("\n\n") + item->toolTip(1);
+    text->setPlainText(content);
+    layout->addWidget(text);
+    auto* buttons = new QDialogButtonBox(QDialogButtonBox::Close, dialog);
+    buttons->button(QDialogButtonBox::Close)->setText(QStringLiteral("닫기"));
+    connect(buttons, &QDialogButtonBox::rejected, dialog, &QDialog::close);
+    layout->addWidget(buttons);
+    dialog->show();
 }
 
 void MainWindow::showVariables(const naru::Variables& variables) {
@@ -1804,6 +1880,31 @@ bool MainWindow::runSelfTest() {
         for (int row = 0; row < variablesTable_->rowCount(); ++row)
             gameVariable = gameVariable || variablesTable_->item(row, 0)->text() == QStringLiteral("box_opened");
         check(gameVariable && QFileInfo(gameLogPath_).size() > 0, "실제 게임 변수 수신·종료 후 유지·파일 로그 생성");
+        auto* oldClipboard = new QMimeData;
+        const auto* previousMime = QApplication::clipboard()->mimeData();
+        if (previousMime) for (const auto& format : previousMime->formats()) oldClipboard->setData(format, previousMime->data(format));
+        appendLog({naru::LogLevel::Error, "copy first", {"", 0, ""}, "Traceback\n  detail line"});
+        auto* first = log_->topLevelItem(log_->topLevelItemCount() - 1);
+        appendLog({naru::LogLevel::Info, "copy second", {"", 0, ""}, {}});
+        auto* second = log_->topLevelItem(log_->topLevelItemCount() - 1);
+        log_->clearSelection();
+        first->setSelected(true);
+        second->setSelected(true);
+        log_->findChild<QAction*>(QStringLiteral("copyLogAction"))->trigger();
+        const QString copied = QApplication::clipboard()->text();
+        check(copied.contains(QStringLiteral("copy first")) && copied.contains(QStringLiteral("Traceback\n  detail line")) &&
+              copied.indexOf(QStringLiteral("copy first")) < copied.indexOf(QStringLiteral("copy second")),
+              "선택 로그와 traceback을 순서대로 복사");
+        showLogDetail(first);
+        auto* dialog = findChild<QDialog*>(QStringLiteral("logDetailDialog"));
+        auto* text = dialog->findChild<QPlainTextEdit*>(QStringLiteral("logDetailText"));
+        QTextCursor cursor = text->document()->find(QStringLiteral("detail line"));
+        text->setTextCursor(cursor);
+        text->copy();
+        check(text->isReadOnly() && QApplication::clipboard()->text() == QStringLiteral("detail line"),
+              "로그 상세에서 traceback 일부 선택 복사");
+        dialog->close();
+        QApplication::clipboard()->setMimeData(oldClipboard);
         naru::LogEntry link{naru::LogLevel::Error, "[게임] 위치 이동 검사", {"", 0, "0"}, {}};
         link.source.sceneId = currentSceneId_.toStdString();
         link.source.objectId = "obj_002";

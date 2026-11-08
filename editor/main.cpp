@@ -97,9 +97,12 @@ int main(int argc, char* argv[]) {
                                   QStringLiteral("마지막으로 연 프로젝트를 바로 연다 (없으면 시작 화면). 개발 중 빌드 후 실행용."));
     QCommandLineOption runGameOption(QStringLiteral("run-game"), QStringLiteral("게임을 실행하고 실행 변수 패널을 보여 준다 (촬영용)."));
     QCommandLineOption gameLogDirectoryOption(QStringLiteral("game-log-directory"), QStringLiteral("자동 검사/촬영용 게임 로그 폴더"), QStringLiteral("directory"));
+    QCommandLineOption captureScriptOption(QStringLiteral("capture-script"), QStringLiteral("스크립트 탭을 연다 (촬영용)."), QStringLiteral("filename"));
+    QCommandLineOption captureLogDetailOption(QStringLiteral("capture-log-detail"), QStringLiteral("스크립트 문법 검사 결과의 로그 상세를 연다 (촬영용)."));
     parser.addOptions({gameLogDirectoryOption, runGameOption, newOption, smokeOption, screenshotOption, selfTestOption, eventOption, commonEventOption, runEventOption,
                        startScreenOption, commandDialogOption, databaseOption, fieldsTabOption, fieldDialogOption,
-                       globalScriptsOption, variablesDialogOption, inputSettingsOption, combinationOption, conditionsDialogOption, lastOption});
+                       globalScriptsOption, variablesDialogOption, inputSettingsOption, combinationOption, conditionsDialogOption, lastOption,
+                       captureScriptOption, captureLogDetailOption});
     parser.addPositionalArgument(QStringLiteral("project"), QStringLiteral("열 프로젝트 폴더"));
     QCommandLineOption assetsOption(QStringLiteral("assets"), QStringLiteral("에셋 목록 팝업 표시 (촬영용)."));
     parser.addOption(assetsOption);
@@ -339,6 +342,7 @@ int main(int argc, char* argv[]) {
             });
         }
         if (parser.isSet(runGameOption)) window.runGame();
+        if (parser.isSet(captureScriptOption)) window.captureScript(parser.value(captureScriptOption), parser.isSet(captureLogDetailOption));
         if (parser.isSet(commonEventOption)) {
             window.showCommonEvent(parser.value(commonEventOption), parser.isSet(runEventOption));
         }
@@ -367,6 +371,7 @@ int main(int argc, char* argv[]) {
                 if (!screenshot.isEmpty()) {
                     auto* popup = QApplication::activeModalWidget();
                     if (!popup) popup = window.findChild<QDialog*>(QStringLiteral("assetsDialog"));
+                    if (!popup) popup = window.findChild<QDialog*>(QStringLiteral("logDetailDialog"));
                     (popup && popup->isVisible() ? popup : &window)->grab().save(screenshot);
                 }
                 QApplication::exit(0);

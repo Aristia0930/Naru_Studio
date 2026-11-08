@@ -1,0 +1,13 @@
+{
+  "formatVersion": 1,
+  "id": "scene_001",
+  "name": "실행 변수에서 API 결과 확인",
+  "width": 640,
+  "height": 360,
+  "background": "#202830",
+  "player": "hero",
+  "objects": [
+    {"id": "hero", "name": "주인공", "x": 90, "y": 175, "width": 45, "height": 45, "color": "#5fa7cf"},
+    {"id": "guide", "name": "실행 변수에서 API 결과 확인", "x": 270, "y": 120, "width": 80, "height": 80, "color": "#dbb560", "showName": true}
+  ]
+}

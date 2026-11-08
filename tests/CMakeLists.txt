@@ -23,6 +23,14 @@ target_link_libraries(naru_project_tests PRIVATE naru_engine)
 add_test(NAME project COMMAND naru_project_tests)
 
 if(NARU_BUILD_PYTHON)
+  find_package(Python3 3.13 REQUIRED COMPONENTS Interpreter)
+  if(WIN32)
+    add_executable(naru_network_tests network_tests.cpp)
+    target_link_libraries(naru_network_tests PRIVATE naru_python)
+    naru_copy_python_runtime(naru_network_tests)
+    add_test(NAME network COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/network_integration.py $<TARGET_FILE:naru_network_tests>)
+    set_tests_properties(network PROPERTIES TIMEOUT 30)
+  endif()
   add_executable(naru_python_tests python_tests.cpp)
   target_link_libraries(naru_python_tests PRIVATE naru_python)
   target_compile_definitions(naru_python_tests PRIVATE
@@ -87,6 +95,8 @@ if(NARU_BUILD_EDITOR)
   find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3-shared)
   qt_add_executable(naru_asset_editor_tests
     asset_editor_tests.cpp
+    script_editor_tests.cpp
+    ../editor/ScriptEditor.cpp ../editor/ScriptEditor.h
     audio_editor_tests.cpp
     database_asset_editor_tests.cpp
     ../editor/DatabaseEditor.cpp ../editor/DatabaseEditor.h

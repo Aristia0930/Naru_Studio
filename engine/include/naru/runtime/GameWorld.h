@@ -1,4 +1,5 @@
 #pragma once
+#include "naru/network/Network.h"
 
 #include "naru/core/Log.h"
 #include "naru/core/Value.h"
@@ -95,6 +96,7 @@ public:
     void update(double realSeconds, const InputState& input);
 
     const Project& project() const { return project_; }
+    Network& network() { return network_; }
     // 실행 중인 장면 (플레이어 위치 등 실행 중 바뀐 상태 포함). 들어간 장면이 없으면 nullptr.
     const Scene* scene() const { return scene_ ? &*scene_ : nullptr; }
     const std::optional<Message>& message() const { return message_; }
@@ -189,6 +191,7 @@ private:
     void advanceRoutes(double dt);
 
     Project project_;
+    Network network_;
     AudioHost* audio_ = nullptr;
     ScriptRunner scripts_;
     double fixedStep_;

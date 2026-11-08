@@ -213,6 +213,25 @@ def on_update(ctx):
 
 ## 6. 그 밖의 ctx
 
+### 외부 HTTP(S) API — `ctx.network`
+
+Windows 게임 실행에서 사용합니다. F5/F6에서는 `None`입니다. 프로젝트 로컬 정의를 읽는 `ctx.db`와는 별개입니다. [공개 API 실행 예제·사용 안내](guide/NETWORK.md).
+
+| 함수 | 반환 | 동작 |
+|---|---|---|
+| `request(url, method="GET", headers=None, json=None, timeout=10.0)` | int | 비동기 요청 ID. `method`는 GET/POST/PUT/PATCH/DELETE, `headers`는 문자열 키·값 dict, `json`은 JSON으로 직렬화할 값, `timeout`은 0.1~60초. `json`이 있으면 별도 지정이 없을 때 JSON Content-Type을 설정 |
+| `status(id)` | str | `pending`, `completed`, `failed`, `cancelled` 중 하나. 결과는 소비하지 않음 |
+| `result(id, consume=True)` | None 또는 dict | 처리 중이면 None. 종료 시 `ok`(bool), `status_code`(int, 응답 없으면 0), `text`(str), `json`(파싱 값 또는 None), `error`(str). 기본값 `consume=True`는 종료 결과를 읽은 뒤 ID를 제거. `consume=False`는 보존 |
+| `cancel(id)` | None | 진행 중 요청을 취소 상태로 바꾸고 결과를 폐기. 이미 서버에 도착한 요청을 되돌리지는 못함 |
+
+`request`의 잘못된 인자 형식은 `TypeError`, 범위·형식 오류와 없는/이미 소비한 ID는 `ValueError`, 동시 요청 또는 보관 한도 초과는 `RuntimeError`입니다. URL·네트워크 처리 중 발생한 오류는 비동기 결과의 `error`로 확인합니다. 대표 값은 `timeout`, `cancelled`, `http_error`, `invalid_json`, `transport_error`, `response_too_large`, `https_required`, `invalid_url`, `unsupported_platform`입니다. HTTP 2xx가 아닌 응답은 `ok=False`이며 상태 코드를 보존합니다. 빈 응답의 `json`은 None입니다.
+
+HTTPS 인증서 확인은 기본 설정을 유지하고 리디렉션은 자동으로 따르지 않습니다. HTTP는 `127.0.0.1`, `localhost`, `::1`의 로컬 테스트만 허용합니다. 요청/응답 본문은 각 1 MiB, 헤더 총합은 16 KiB까지, 프로세스 전체 작업자 8개와 게임 세션 결과 32개까지 허용합니다. `result()`로 끝난 결과를 소비해 다음 요청을 위한 자리를 확보합니다. 장면 전환·게임 종료 시 진행 중인 요청은 취소 상태가 되며, 취소는 실제 서버 처리의 되돌리기를 보장하지 않습니다. Windows 외 플랫폼의 전송은 미지원입니다. 외부 DB 직접 연결·이벤트 UI·자동 재시도는 아직 없습니다.
+
+`Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Proxy-Authorization`은 엔진이 관리하는 헤더로 직접 지정할 수 없습니다. `timeout`은 호출자 기준 전체 제한입니다. 취소·시간 초과 후 이미 시작된 OS 호출이 별도로 완료될 때까지 작업자가 남을 수 있으며, 이 기간에도 작업자 한도에 포함됩니다. 이벤트 F8은 요청을 별도로 취소하지 않습니다.
+
+응답 `text`는 UTF-8로 해석하며 잘못된 바이트는 대체 문자로 표시합니다. 잘못된 JSON은 `invalid_json`과 `json=None`으로 보고합니다. HTTP 오류 응답도 상태 코드와 가능한 응답 내용을 제공합니다.
+
 | 이름 | 설명 |
 |---|---|
 | `ctx.busy` | 대사가 떠 있거나 조작을 막는 이벤트(조사·접촉·자동 실행)가 진행 중이면 True. 게임 밖에서는 False |

@@ -1,5 +1,9 @@
 # 현재 기능을 Python으로 연결하는 전체 가이드
 
+공개 HTTP API를 비동기로 호출하고 JSON 응답을 게임 변수에 넣는 예제는 [네트워크 안내](NETWORK.md)와 [실행 프로젝트](../examples/network/README.md)에 있습니다.
+
+`ctx.network.request()`로 요청 ID를 받고 `ctx.network.status()` 또는 `ctx.network.result()`로 진행 상태와 결과를 확인합니다. `ctx.network.cancel()`은 결과 처리를 취소합니다. F5/F6의 `ctx.network`는 `None`이므로 게임 실행(Ctrl+R)에서 확인하세요.
+
 DB의 이미지·소리 에셋 속성은 `ctx.db.get`에서 ID 문자열 또는 None으로 읽습니다. [완성 코드·연결 순서·F5/F6 보호·오류](DB_ASSETS.md), [실행 프로젝트](../examples/database-assets/README.md)를 함께 제공합니다.
 
 기준: 2026-11-08. **현재 구현된 공개 API**만 사용합니다. 엔진은 C++, 제작 UI는 Qt이고 아래 Python은 게임 프로젝트 안의 동작을 작성하는 코드입니다. 상세 형식·범위·실행 순서는 [SCRIPT_API](../SCRIPT_API.md), 화면 설명은 [이미지](IMAGES.md)·[입력 설정](INPUT_SETTINGS.md)·[이벤트](EVENTS.md)에 있습니다.
@@ -338,7 +342,7 @@ def error_example(ctx):
 | `ctx.log`, `ctx.warning`, `print`, stderr | log_examples, error_example |
 | `on_game_start`, `on_scene_enter`, `on_scene_exit`, `on_update` | guide_global 네 훅·모듈 상태·import 연결 |
 
-**현재 직접 Python API가 없는 기능:** 에셋 추가/ID·그룹 편집/내보내기, DB 정의 수정, 객체 이름·충돌 크기 변경/생성·삭제, 그림 배치 수치·애니메이션, 배경 맞춤 수치, 대사·선택지·대기 직접 호출, 타일맵·카메라, 저장/로드·배포·외부 DB/API. 이 중 편집 기능은 제작툴에서 사용하고 대사/선택지/대기는 공통 이벤트로 연결합니다. 계획 API를 현재 기능처럼 복사하지 마세요.
+**현재 직접 Python API가 없는 기능:** 에셋 추가/ID·그룹 편집/내보내기, DB 정의 수정, 객체 이름·충돌 크기 변경/생성·삭제, 그림 배치 수치·애니메이션, 배경 맞춤 수치, 대사·선택지·대기 직접 호출, 타일맵·카메라, 저장/로드·배포·외부 DB 직접 연결. HTTP(S) API는 위 `ctx.network`로 사용합니다. 이 중 편집 기능은 제작툴에서 사용하고 대사/선택지/대기는 공통 이벤트로 연결합니다. 계획 API를 현재 기능처럼 복사하지 마세요.
 
 이벤트 명령 14종의 Python 대응도 다음처럼 구분합니다.
 

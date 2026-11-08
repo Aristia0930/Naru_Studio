@@ -96,6 +96,7 @@ GameWorld::GameWorld(Project project, ScriptRunner scripts, double fixedStep)
 }
 
 GameWorld::~GameWorld() {
+    network_.cancelAll();
     stopAll();
 }
 
@@ -119,6 +120,7 @@ bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
     }
     if (scene_) {
         callHook(kHookSceneExit);
+        network_.cancelAll();
     }
     stopAll();
     closeMessage();

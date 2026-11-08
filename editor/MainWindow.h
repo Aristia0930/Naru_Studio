@@ -52,6 +52,7 @@ public:
     bool runGame(bool fromCurrentScene = false, const QStringList& extraArgs = {});
     void stopGame();
     void showAssets();
+    void captureScript(const QString& filename, bool showError);
 
 private:
     void createActions();
@@ -94,6 +95,8 @@ private:
     void updateGameActions();
     void showVariables(const naru::Variables& variables);
     void jumpToLog(QTreeWidgetItem* item);
+    void copySelectedLogs();
+    void showLogDetail(QTreeWidgetItem* item);
     void updateTitle();
     bool hasUnsavedChanges() const;
     bool confirmClose();

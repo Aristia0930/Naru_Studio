@@ -170,6 +170,10 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 
 ### 소리 디코더와 검증 (2026-11-08)
 
+스크립트 줄 번호·공백·들여쓰기 검사는 `asset_editor`에, 로그 여러 행/traceback 복사와 상세 일부 선택 검사는 `editor_selftest`에 포함합니다. 스크립트 편집과 로그 복사에는 새 의존성이 필요 없습니다. [사용법](guide/SCRIPTING.md#스크립트-줄-번호와-들여쓰기).
+
+외부 API 요청은 Windows SDK에 포함된 WinHTTP를 사용하며 별도 다운로드가 필요 없습니다. Windows 외 플랫폼에서 전송은 미지원 결과를 반환합니다. `network` 검사는 로컬 HTTP 서버로 GET/POST/PUT/PATCH/DELETE, 한글·빈 응답·HTTP/JSON 오류·크기 제한·지연/취소·장면 전환·Python 및 게임 틱을 확인합니다. [공개 API 예제와 수동 확인](guide/NETWORK.md).
+
 객체 ID 편집은 추가 의존성이 없습니다. `asset_editor`는 프로젝트 전체 중복·형식 오류, 인스펙터와 선택 상태, 플레이어 지정, 중첩 이벤트·공통 이벤트 참조, Undo/Redo·저장/재열기와 Python 파일 보존을 검사합니다. [객체 ID 수동 확인](guide/OBJECT_IDS.md).
 
 DB 이미지·소리 속성도 추가 설치 없이 빌드됩니다. `database`는 종류·기본값·참조 검사, `python`은 ID/None·반환 사본, `asset_editor`는 실제 선택/기본값/종류 제한·사용처/삭제 보호·ID 변경/Undo·저장/재열기를 검사합니다. `player_db_assets`는 생성한 독립 예제를 실제 player에서 실행하여 DB 그림·효과음 연결, 빈 소리 기본값, 누락 파일 traceback과 편집 원본 보존을 검사합니다. [사용법·그림·사용자 수동 확인](guide/DB_ASSETS.md).
