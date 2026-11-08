@@ -46,6 +46,34 @@ bool hasMessage(const Logger& logger, const std::string& text) {
 
 } // namespace
 
+TEST_CASE("Python 소리 API의 호출 인자·F5 보호·오류 파일과 traceback") {
+    struct Host : AudioHost {
+        int calls=0; bool fail=false;
+        std::string playBgm(const std::string& id,double v,bool loop) override {
+            ++calls; if (fail) return "소리 장치 검사 오류";
+            CHECK(id=="music" && v==40 && loop); return {};
+        }
+        std::string playSe(const std::string& id,double v) override { ++calls; CHECK(id=="music" && v==60); return {}; }
+        std::string stopBgm(double fade) override { ++calls; CHECK(fade==1.5); return {}; }
+        void stopSe() override { ++calls; }
+    } host;
+    Fixture f;
+    CHECK(g_runtime->runFile(script("audio_api.py"), f.ctx).ok);
+    Project p;
+    p.assets = {{"music","음악","audio","assets/music.mp3","music.mp3",std::string(64,'0'),""},
+                {"picture","그림","image","assets/picture.png","picture.png",std::string(64,'1'),""}};
+    GameWorld world(p,{}); world.setAudio(&host);
+    CommandContext ctx{world.variables(),world.logger(),nullptr,std::nullopt,nullptr,&world};
+    Value returned;
+    auto result=g_runtime->runFile(script("audio_api.py"),ctx,"game",&returned);
+    CHECK(result.ok); CHECK(host.calls==4); CHECK(returned==Value{std::int64_t{4}});
+    host.fail=true;
+    result=g_runtime->runFile(script("audio_api.py"),ctx,"failure");
+    CHECK(!result.ok); CHECK(result.error.type=="RuntimeError");
+    CHECK(result.error.file.find("audio_api.py")!=std::string::npos);
+    CHECK(result.error.line>0 && !result.error.traceback.empty());
+}
+
 TEST_CASE("스크립트가 변수를 읽고 쓰며 로그를 남긴다") {
     Fixture f;
     f.variables.set("visits", std::int64_t{2});
@@ -708,4 +736,18 @@ TEST_CASE("전역 훅의 ctx.run_event 예약은 첫 장면과 장면 전환 후
     CHECK(world.enterScene("scene_002"));
     world.update(1.0 / 60.0, {});
     CHECK(world.variables().get("recoveries") == Value{std::int64_t{2}});
+}
+
+
+TEST_CASE("Python 이름표 읽기·변경·오류·장면 재진입 초기화") {
+    Fixture preview; CHECK(g_runtime->runFile(script("nameplates.py"),preview.ctx).ok);
+    auto p=globalProject(); p.scenes[0].objects[0].id="npc";
+    p.scenes[0].playerObjectId="npc";
+    GameWorld world(p,{}); CHECK(world.startGame(p.startSceneId));
+    auto& ctx=f_ctxOf(world); Value returned;
+    auto result=g_runtime->runFile(script("nameplates.py"),ctx,"change",&returned);
+    CHECK(result.ok); CHECK(returned==Value{true});
+    CHECK(world.object("npc")->showName && world.object("npc")->nameText.empty());
+    CHECK(!world.project().scenes[0].objects[0].showName);
+    CHECK(world.enterScene(p.startSceneId)); CHECK(!world.object("npc")->showName);
 }

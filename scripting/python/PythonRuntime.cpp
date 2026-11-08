@@ -9,6 +9,7 @@
 #include "naru/runtime/GameWorld.h"
 
 #include <cstdlib>
+#include <cmath>
 #include <filesystem>
 #include <fstream>
 #include <iterator>
@@ -112,6 +113,16 @@ class SceneObject:
                        lambda self, v: _naru.object_set(self._id, "visible", v))
     color = property(lambda self: _naru.object_get(self._id, "color"),
                      lambda self, v: _naru.object_set(self._id, "color", v))
+    name_background_transparent = property(lambda self: _naru.object_get(self._id, "name_background_transparent"),
+                         lambda self, v: _naru.object_set(self._id, "name_background_transparent", v))
+    name_background_color = property(lambda self: _naru.object_get(self._id, "name_background_color"),
+                         lambda self, v: _naru.object_set(self._id, "name_background_color", v))
+    name_position = property(lambda self: _naru.object_get(self._id, "name_position"),
+                         lambda self, v: _naru.object_set(self._id, "name_position", v))
+    show_name = property(lambda self: _naru.object_get(self._id, "show_name"),
+                         lambda self, v: _naru.object_set(self._id, "show_name", v))
+    name_text = property(lambda self: _naru.object_get(self._id, "name_text"),
+                         lambda self, v: _naru.object_set(self._id, "name_text", v))
     image = property(lambda self: _naru.object_get(self._id, "image"),
                      lambda self, v: _naru.object_set(self._id, "image", v))
     def move(self, dx, dy):
@@ -137,12 +148,25 @@ class Scene:
         return SceneObject(found) if found is not None else None
     def objects(self):
         return [SceneObject(i) for i in _naru.scene_object_ids()]
+class Audio:
+    def play_bgm(self, asset_id, volume=100, loop=True):
+        if not isinstance(loop, bool):
+            raise TypeError("loop은 bool이어야 합니다")
+        return _naru.audio_call("play_bgm", asset_id, volume, loop, 0)
+    def stop_bgm(self, fade_seconds=0):
+        return _naru.audio_call("stop_bgm", "", 100, False, fade_seconds)
+    def play_se(self, asset_id, volume=100):
+        return _naru.audio_call("play_se", asset_id, volume, False, 0)
+    def stop_se(self):
+        return _naru.audio_call("stop_se", "", 100, False, 0)
+
 class Context:
     def __init__(self):
         self.variables = Variables()
         self.db = Database()
         game = _naru.has_game()
         # 게임 밖(에디터 테스트 실행, 단독 스크립트 실행)에서는 None
+        self.audio = Audio() if game else None
         self.input = Input() if game else None
         self.scene = Scene() if game and _naru.has_scene() else None
         self.player = Player() if game and _naru.has_player() else None
@@ -770,6 +794,11 @@ PyObject* naruObjectGet(PyObject*, PyObject* args) {
     }
     std::string key = name;
     if (key == "name") return stringObject(o->name);
+    if (key == "show_name") return PyBool_FromLong(o->showName);
+    if (key == "name_background_transparent") return PyBool_FromLong(o->nameBackgroundTransparent);
+    if (key == "name_background_color") return stringObject(o->nameBackgroundColor);
+    if (key == "name_position") return stringObject(o->namePosition);
+    if (key == "name_text") return stringObject(o->nameText);
     if (key == "x") return PyFloat_FromDouble(o->x);
     if (key == "y") return PyFloat_FromDouble(o->y);
     if (key == "width") return PyFloat_FromDouble(o->width);
@@ -800,6 +829,32 @@ PyObject* naruObjectSet(PyObject*, PyObject* args) {
         if (!PyUnicode_Check(value)) { PyErr_SetString(PyExc_TypeError, "이미지 에셋 ID는 문자열이어야 합니다."); return nullptr; }
         if (!game->setObjectImage(id, utf8(value))) {
             PyErr_SetString(PyExc_ValueError, "등록된 이미지 에셋 ID 또는 빈 문자열을 사용하세요."); return nullptr;
+        }
+        Py_RETURN_NONE;
+    }
+    if (key == "name_background_transparent") {
+        if (!PyBool_Check(value)) { PyErr_SetString(PyExc_TypeError, "배경 투명은 bool이어야 합니다."); return nullptr; }
+        game->setObjectNameBackgroundTransparent(id, value == Py_True); Py_RETURN_NONE;
+    }
+    if (key == "name_background_color" || key == "name_position") {
+        if (!PyUnicode_Check(value)) { PyErr_SetString(PyExc_TypeError, "이름표 배경색/위치는 문자열이어야 합니다."); return nullptr; }
+        Py_ssize_t length = 0; const char* text = PyUnicode_AsUTF8AndSize(value, &length); if (!text) return nullptr;
+        const std::string setting(text, static_cast<std::size_t>(length));
+        const bool ok = key == "name_position" ? game->setObjectNamePosition(id, setting) : game->setObjectNameBackgroundColor(id, setting);
+        if (!ok) { PyErr_SetString(PyExc_ValueError, "위치는 above/below, 배경색은 #rrggbb 형식을 사용하세요."); return nullptr; }
+        Py_RETURN_NONE;
+    }
+    if (key == "show_name") {
+        if (!PyBool_Check(value)) { PyErr_SetString(PyExc_TypeError, "show_name은 bool이어야 합니다."); return nullptr; }
+        game->setObjectShowName(id, value == Py_True); Py_RETURN_NONE;
+    }
+    if (key == "name_text") {
+        if (!PyUnicode_Check(value)) { PyErr_SetString(PyExc_TypeError, "name_text는 문자열이어야 합니다."); return nullptr; }
+        Py_ssize_t length = 0;
+        const char* text = PyUnicode_AsUTF8AndSize(value, &length);
+        if (!text) return nullptr;
+        if (!game->setObjectNameText(id, std::string(text, static_cast<std::size_t>(length)))) {
+            PyErr_SetString(PyExc_ValueError, "이름표는 줄바꿈/제어 문자 없이 UTF-8 512바이트 이하여야 합니다."); return nullptr;
         }
         Py_RETURN_NONE;
     }
@@ -901,7 +956,34 @@ PyObject* naruRunEvent(PyObject*, PyObject* args) {
     Py_RETURN_NONE;
 }
 
+PyObject* naruAudioCall(PyObject*, PyObject* args) {
+    const char* action = nullptr; const char* id = nullptr;
+    double volume, fade; int loop;
+    if (!PyArg_ParseTuple(args, "ssdpd", &action, &id, &volume, &loop, &fade)) return nullptr;
+    auto* game = requireGame(); if (!game) return nullptr;
+    if (!std::isfinite(volume) || volume < 0 || volume > 100 || !std::isfinite(fade) || fade < 0 || fade > 60) {
+        PyErr_SetString(PyExc_ValueError, "음량은 0~100, 페이드는 0~60초여야 합니다"); return nullptr;
+    }
+    const std::string key(action);
+    if (key == "play_bgm" || key == "play_se") {
+        bool found = false;
+        for (const auto& asset : game->project().assets) if (asset.id == id && asset.kind == "audio") found = true;
+        if (!found) { PyErr_SetString(PyExc_ValueError, "소리 에셋 ID가 없거나 소리 종류가 아닙니다"); return nullptr; }
+    }
+    auto* host = game->audio();
+    if (!host) { PyErr_SetString(PyExc_RuntimeError, "소리 재생기가 연결되지 않았습니다"); return nullptr; }
+    std::string error;
+    if (key == "play_bgm") error = host->playBgm(id, volume, loop != 0);
+    else if (key == "stop_bgm") error = host->stopBgm(fade);
+    else if (key == "play_se") error = host->playSe(id, volume);
+    else if (key == "stop_se") host->stopSe();
+    else error = "알 수 없는 소리 동작";
+    if (!error.empty()) { PyErr_SetString(PyExc_RuntimeError, error.c_str()); return nullptr; }
+    Py_RETURN_NONE;
+}
+
 PyMethodDef kMethods[] = {
+    {"audio_call", naruAudioCall, METH_VARARGS, "audio_call(action, asset, volume, loop, fade)"},
     {"scene_set_background", naruSceneSetBackground, METH_VARARGS, "scene_set_background(asset_id)"},
     {"run_event", naruRunEvent, METH_VARARGS, "run_event(id)"},
     {"log", naruLog, METH_VARARGS, "log(message, level)"},

@@ -2,6 +2,9 @@
 
 #include "naru/project/ProjectIO.h"
 #include "naru/project/ImageLayout.h"
+#include "naru/project/Nameplate.h"
+#include "naru/runtime/GameWorld.h"
+#include <cmath>
 
 #include <filesystem>
 #include <fstream>
@@ -627,5 +630,88 @@ TEST_CASE("잘못된 공통 이벤트 목록·ID·명령 형식은 프로젝트 
         auto loaded = ProjectIO::load(dir.path);
         CHECK(!loaded.ok());
         CHECK(!loaded.errors.empty());
+    }
+}
+
+
+TEST_CASE("이름표 기본값·저장·형식 보호·실행 사본·회전 그림 기준점") {
+    TempDir dir; auto created=ProjectIO::create(dir.path,"names"); CHECK(created.ok()); if (!created.ok()) return;
+    auto p=*created.project; auto& obj=p.scenes[0].objects[0];
+    CHECK(!obj.showName && obj.nameText.empty());
+    CHECK(objectNameplateText(obj,false).empty());
+    CHECK(objectNameplateText(obj,true).find(obj.id)!=std::string::npos);
+    obj.showName=true; CHECK(objectNameplateText(obj,false)==obj.name);
+    obj.nameText="여관 주인"; CHECK(objectNameplateText(obj,false)=="여관 주인");
+    obj.visible=false; CHECK(objectNameplateText(obj,false).empty());
+    CHECK(objectNameplateText(obj,true).find("숨김")!=std::string::npos); obj.visible=true;
+    CHECK(ProjectIO::save(p,dir.path).empty()); auto loaded=ProjectIO::load(dir.path); CHECK(loaded.ok());
+    if (loaded.ok()) CHECK(*loaded.project==p);
+    obj.nameText="bad\ntext"; CHECK(!ProjectIO::save(p,dir.path).empty());
+    obj.nameText=std::string(513,'x'); CHECK(!ProjectIO::save(p,dir.path).empty());
+    obj.nameText="";
+    GameWorld world(p,{}); CHECK(world.startGame(p.startSceneId));
+    CHECK(world.setObjectNameText(obj.id,"런타임")); CHECK(world.setObjectShowName(obj.id,false));
+    CHECK(world.object(obj.id)->nameText=="런타임" && !world.object(obj.id)->showName);
+    CHECK(!world.setObjectNameText(obj.id,std::string("x\0y",3)));
+    CHECK(world.object(obj.id)->nameText=="런타임");
+    CHECK(world.project().scenes[0].objects[0].nameText.empty());
+    CHECK(world.enterScene(p.startSceneId)); CHECK(world.object(obj.id)->nameText.empty() && world.object(obj.id)->showName);
+    SceneObject anchor; anchor.x=100; anchor.y=150; anchor.width=20; anchor.height=10;
+    auto point=objectNameplateAnchor(anchor); CHECK(point.x==110 && point.y==144);
+    anchor.image.asset="sprite"; anchor.image.anchorX=.5; anchor.image.anchorY=1;
+    point=objectNameplateAnchor(anchor,80,100); CHECK(point.x==100 && point.y==44);
+    anchor.image.rotation=90; point=objectNameplateAnchor(anchor,80,100);
+    CHECK(std::abs(point.x-150)<.001 && std::abs(point.y-104)<.001);
+    // Older scene JSON has no nameplate fields; invalid types/line breaks must fail loading.
+    const auto sceneFile=dir.path/"scenes/scene_001.json";
+    writeText(sceneFile,R"({"formatVersion":1,"id":"scene_001","name":"test","width":320,"height":240,"objects":[{"id":"npc","name":"old"}]})");
+    auto legacy=ProjectIO::load(dir.path); CHECK(legacy.ok());
+    if (legacy.ok()) CHECK(!legacy.project->scenes[0].objects[0].showName && legacy.project->scenes[0].objects[0].nameText.empty());
+    writeText(sceneFile,R"({"formatVersion":1,"id":"scene_001","name":"test","width":320,"height":240,"objects":[{"id":"npc","name":"old","showName":"yes"}]})");
+    CHECK(!ProjectIO::load(dir.path).ok());
+}
+
+TEST_CASE("이름표 배경·위치 형식과 위아래 기준·실행 사본") {
+    SceneObject object;
+    CHECK(!object.nameBackgroundTransparent && object.nameBackgroundColor=="#0c1018" && object.namePosition=="above");
+    object.x=100; object.y=150; object.width=20; object.height=10;
+    auto point=objectNameplateAnchor(object,0,0,true); CHECK(point.x==110 && point.y==166);
+    object.image.asset="sprite"; object.image.anchorX=.5; object.image.anchorY=1;
+    point=objectNameplateAnchor(object,80,100,true); CHECK(point.x==100 && point.y==156);
+    object.image.rotation=90; point=objectNameplateAnchor(object,80,100,true);
+    CHECK(std::abs(point.x-150)<.001 && std::abs(point.y-196)<.001);
+    CHECK(isValidNameBackgroundColor("#Ab12fF")); CHECK(!isValidNameBackgroundColor("red"));
+    CHECK(!isValidNameBackgroundColor("#00gg00") && !isValidNameBackgroundColor("#00000000"));
+    CHECK(isValidNamePosition("below") && !isValidNamePosition("bottom"));
+}
+
+
+TEST_CASE("이름표 스타일 JSON·이전 형식·오류 보존·장면 초기화") {
+    TempDir dir; auto created=ProjectIO::create(dir.path,"style"); CHECK(created.ok()); if (!created.ok()) return;
+    auto p=*created.project; auto& o=p.scenes[0].objects[0];
+    o.nameBackgroundTransparent=true; o.nameBackgroundColor="#2468ac"; o.namePosition="below";
+    CHECK(ProjectIO::save(p,dir.path).empty()); auto loaded=ProjectIO::load(dir.path); CHECK(loaded.ok());
+    if (loaded.ok()) CHECK(*loaded.project==p);
+    o.nameBackgroundColor="red"; CHECK(!ProjectIO::save(p,dir.path).empty());
+    loaded=ProjectIO::load(dir.path); CHECK(loaded.ok());
+    if (loaded.ok()) CHECK(loaded.project->scenes[0].objects[0].nameBackgroundColor=="#2468ac");
+    o.nameBackgroundColor="#2468ac"; o.namePosition="left"; CHECK(!ProjectIO::save(p,dir.path).empty()); o.namePosition="below";
+    GameWorld world(p,{}); CHECK(world.startGame(p.startSceneId));
+    CHECK(world.setObjectNamePosition(o.id,"above")); CHECK(world.setObjectNameBackgroundColor(o.id,"#fedcba"));
+    CHECK(world.setObjectNameBackgroundTransparent(o.id,false));
+    CHECK(!world.setObjectNameBackgroundColor(o.id,"bad") && !world.setObjectNamePosition(o.id,"top"));
+    CHECK(world.object(o.id)->nameBackgroundColor=="#fedcba" && world.object(o.id)->namePosition=="above");
+    CHECK(world.project().scenes[0].objects[0].nameBackgroundTransparent);
+    CHECK(world.enterScene(p.startSceneId)); CHECK(world.object(o.id)->namePosition=="below" && world.object(o.id)->nameBackgroundTransparent);
+    const auto file=dir.path/"scenes/scene_001.json";
+    for (const auto& fields : {std::string(R"("namePosition":"left")"),std::string(R"("nameBackgroundColor":"red")"),std::string(R"("nameBackgroundTransparent":"true")")}) {
+        writeText(file,std::string(R"({"formatVersion":1,"id":"scene_001","name":"old","width":320,"height":240,"objects":[{"id":"npc","name":"old",)")+fields+"}]}");
+        CHECK(!ProjectIO::load(dir.path).ok());
+    }
+    writeText(file,R"({"formatVersion":1,"id":"scene_001","name":"old","width":320,"height":240,"objects":[{"id":"npc","name":"old"}]})");
+    loaded=ProjectIO::load(dir.path); CHECK(loaded.ok());
+    if (loaded.ok()) {
+        const auto& old=loaded.project->scenes[0].objects[0];
+        CHECK(!old.nameBackgroundTransparent && old.nameBackgroundColor=="#0c1018" && old.namePosition=="above");
     }
 }

@@ -6,6 +6,7 @@
 class ProjectDocument;
 class QCheckBox;
 class QDoubleSpinBox;
+class QComboBox;
 class QLabel;
 class QLineEdit;
 class QPushButton;
@@ -27,6 +28,7 @@ private:
     void commitScene(int field);
     void setPlayer(bool on);
     void chooseObjectColor();
+    void chooseNameBackgroundColor();
     void chooseSceneColor();
 
     ProjectDocument* doc_;
@@ -39,6 +41,11 @@ private:
 
     QLabel* objectIdLabel_;
     QLineEdit* objectName_;
+    QCheckBox* objectShowName_;
+    QLineEdit* objectNameText_;
+    QCheckBox* objectNameTransparent_;
+    QPushButton* objectNameBackgroundColor_;
+    QComboBox* objectNamePosition_;
     QDoubleSpinBox* objectX_;
     QDoubleSpinBox* objectY_;
     QDoubleSpinBox* objectW_;

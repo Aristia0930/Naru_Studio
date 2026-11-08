@@ -1,9 +1,11 @@
 #include "naru/project/ProjectIO.h"
 #include "naru/project/ImageLayout.h"
+#include "naru/project/Nameplate.h"
 
 #include <nlohmann/json.hpp>
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>
 #include <iterator>
 #include <set>
@@ -260,6 +262,10 @@ json commandsToJson(const std::vector<EventCommand>& commands);
 json commandToJson(const EventCommand& c) {
     json j = {{"type", toKey(c.type)}};
     switch (c.type) {
+    case EventCommandType::Audio:
+        j["action"] = c.audioAction; j["asset"] = c.audioAsset;
+        j["volume"] = c.volume; j["loop"] = c.loop; j["fadeSeconds"] = c.fadeSeconds;
+        break;
     case EventCommandType::CallCommonEvent:
         j["commonEvent"] = c.commonEvent;
         break;
@@ -351,6 +357,19 @@ EventCommand commandFromJson(const json& j, int depth) {
         throw std::runtime_error("알 수 없는 이벤트 명령: " + typeKey);
     }
     c.type = *type;
+    if (c.type == EventCommandType::Audio) {
+        c.audioAction = getString(j, "action", c.audioAction);
+        c.audioAsset = getString(j, "asset", c.audioAsset);
+        c.volume = getNumber(j, "volume", c.volume);
+        c.loop = getBool(j, "loop", c.loop);
+        c.fadeSeconds = getNumber(j, "fadeSeconds", c.fadeSeconds);
+        if (c.audioAction != "play_bgm" && c.audioAction != "stop_bgm" && c.audioAction != "play_se" && c.audioAction != "stop_se")
+            throw std::runtime_error("알 수 없는 소리 동작: " + c.audioAction);
+        if ((c.audioAction == "play_bgm" || c.audioAction == "play_se") && !isValidAssetId(c.audioAsset))
+            throw std::runtime_error("소리 에셋 ID가 올바르지 않습니다.");
+        if (!std::isfinite(c.volume) || c.volume < 0 || c.volume > 100 || !std::isfinite(c.fadeSeconds) || c.fadeSeconds < 0 || c.fadeSeconds > 60)
+            throw std::runtime_error("소리 음량/페이드 범위가 올바르지 않습니다.");
+    }
     c.speaker = getString(j, "speaker", std::string());
     c.text = getString(j, "text", std::string());
     c.seconds = getNumber(j, "seconds", 0.0);
@@ -451,6 +470,11 @@ json imageToJson(const ObjectImage& i) {
 json objectToJson(const SceneObject& o) {
     json j = {{"id", o.id},     {"name", o.name},     {"x", o.x},         {"y", o.y},
               {"width", o.width}, {"height", o.height}, {"color", o.color}};
+    if (o.showName) j["showName"] = true;
+    if (!o.nameText.empty()) j["nameText"] = o.nameText;
+    if (o.nameBackgroundTransparent) j["nameBackgroundTransparent"] = true;
+    if (o.nameBackgroundColor != "#0c1018") j["nameBackgroundColor"] = o.nameBackgroundColor;
+    if (o.namePosition != "above") j["namePosition"] = o.namePosition;
     if (!(o.image == ObjectImage{})) j["image"] = imageToJson(o.image);
     if (o.passable) {
         j["passable"] = true;
@@ -524,6 +548,14 @@ Scene sceneFromJson(const json& j) {
         o.color = getString(oj, "color", o.color);
         o.passable = getBool(oj, "passable", false);
         o.visible = getBool(oj, "visible", true);
+        o.showName = getBool(oj, "showName", false);
+        o.nameText = getString(oj, "nameText", "");
+        o.nameBackgroundTransparent = getBool(oj, "nameBackgroundTransparent", false);
+        o.nameBackgroundColor = getString(oj, "nameBackgroundColor", "#0c1018");
+        o.namePosition = getString(oj, "namePosition", "above");
+        if (!isValidNameBackgroundColor(o.nameBackgroundColor) || !isValidNamePosition(o.namePosition))
+            throw std::runtime_error("이름표 배경색/위치가 올바르지 않습니다.");
+        if (!isValidNameText(o.nameText)) throw std::runtime_error("이름표 문구는 줄바꿈/제어 문자 없이 UTF-8 512바이트 이하여야 합니다.");
         if (auto it = oj.find("image"); it != oj.end()) {
             const auto& ij = requireObject(*it, "객체 이미지");
             auto& i = o.image;
@@ -988,6 +1020,11 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
 }
 
 std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path& dir) {
+    for (const auto& scene : project.scenes) for (const auto& object : scene.objects) {
+        if (!isValidNameText(object.nameText)) return {{kProjectFile, "이름표 문구 형식/길이가 올바르지 않습니다: " + object.id}};
+        if (!isValidNameBackgroundColor(object.nameBackgroundColor) || !isValidNamePosition(object.namePosition))
+            return {{kProjectFile, "이름표 배경색/위치가 올바르지 않습니다: " + object.id}};
+    }
     if (auto error = validateImages(project); !error.empty()) return {{kProjectFile, error}};
     if (auto error = validateAssetGroups(project.assetGroups, project.assets); !error.empty())
         return {{kProjectFile, error}};

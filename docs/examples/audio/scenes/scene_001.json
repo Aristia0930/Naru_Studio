@@ -1,0 +1,176 @@
+{
+  "formatVersion": 1,
+  "id": "scene_001",
+  "name": "위쪽 객체를 조사해 소리 확인",
+  "width": 640,
+  "height": 360,
+  "background": "#202830",
+  "player": "hero",
+  "objects": [
+    {
+      "id": "hero",
+      "name": "주인공",
+      "x": 55,
+      "y": 220,
+      "width": 42,
+      "height": 42,
+      "color": "#6b93be",
+      "passable": false,
+      "visible": true,
+      "event": {
+        "trigger": "action",
+        "commands": []
+      }
+    },
+    {
+      "id": "startup",
+      "name": "처음 BGM 재생",
+      "x": 10,
+      "y": 10,
+      "width": 42,
+      "height": 42,
+      "color": "#6b93be",
+      "passable": false,
+      "visible": true,
+      "event": {
+        "trigger": "autorun",
+        "commands": [
+          {
+            "type": "audio",
+            "action": "play_bgm",
+            "asset": "test_bgm",
+            "volume": 35,
+            "loop": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "music",
+      "name": "BGM 다시 재생",
+      "x": 50,
+      "y": 120,
+      "width": 42,
+      "height": 42,
+      "color": "#6b93be",
+      "passable": false,
+      "visible": true,
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "audio",
+            "action": "play_bgm",
+            "asset": "test_bgm",
+            "volume": 35,
+            "loop": true
+          },
+          {
+            "type": "log",
+            "text": "BGM 다시 재생 실행"
+          }
+        ]
+      }
+    },
+    {
+      "id": "effect",
+      "name": "효과음 (겹침 가능)",
+      "x": 160,
+      "y": 120,
+      "width": 42,
+      "height": 42,
+      "color": "#6b93be",
+      "passable": false,
+      "visible": true,
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "audio",
+            "action": "play_se",
+            "asset": "test_se",
+            "volume": 70
+          },
+          {
+            "type": "log",
+            "text": "효과음 (겹침 가능) 실행"
+          }
+        ]
+      }
+    },
+    {
+      "id": "fade",
+      "name": "BGM 2초 페이드 정지",
+      "x": 270,
+      "y": 120,
+      "width": 42,
+      "height": 42,
+      "color": "#6b93be",
+      "passable": false,
+      "visible": true,
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "audio",
+            "action": "stop_bgm",
+            "fadeSeconds": 2
+          },
+          {
+            "type": "log",
+            "text": "BGM 2초 페이드 정지 실행"
+          }
+        ]
+      }
+    },
+    {
+      "id": "silence",
+      "name": "효과음 모두 정지",
+      "x": 380,
+      "y": 120,
+      "width": 42,
+      "height": 42,
+      "color": "#6b93be",
+      "passable": false,
+      "visible": true,
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "audio",
+            "action": "stop_se"
+          },
+          {
+            "type": "log",
+            "text": "효과음 모두 정지 실행"
+          }
+        ]
+      }
+    },
+    {
+      "id": "script",
+      "name": "Python 소리 호출",
+      "x": 490,
+      "y": 120,
+      "width": 42,
+      "height": 42,
+      "color": "#6b93be",
+      "passable": false,
+      "visible": true,
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "call_script",
+            "script": "audio_demo.py",
+            "function": "run"
+          },
+          {
+            "type": "log",
+            "text": "Python 소리 호출 실행"
+          }
+        ]
+      }
+    }
+  ]
+}

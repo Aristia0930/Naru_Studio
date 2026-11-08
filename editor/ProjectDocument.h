@@ -36,7 +36,7 @@ public:
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
     void setAssets(const std::vector<naru::Asset>& assets);
     void setAssetCatalog(const std::vector<naru::Asset>& assets, const std::vector<std::string>& groups);
-    void setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references);
+    void setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents);
     void setDatabase(const naru::Database& database);
     void setGlobalScripts(const std::vector<std::string>& scripts);
     void setCommonEvents(const std::vector<naru::CommonEvent>& events);

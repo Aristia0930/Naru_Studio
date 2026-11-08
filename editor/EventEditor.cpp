@@ -61,6 +61,12 @@ QString firstLine(const std::string& text) {
 
 QString describe(const EventCommand& c, const naru::Scene* scene, const naru::Project* project) {
     switch (c.type) {
+    case EventCommandType::Audio: {
+        const QString action = c.audioAction == "play_bgm" ? QStringLiteral("BGM 재생") :
+            c.audioAction == "stop_bgm" ? QStringLiteral("BGM 정지") :
+            c.audioAction == "play_se" ? QStringLiteral("효과음 재생") : QStringLiteral("효과음 모두 정지");
+        return QStringLiteral("소리: %1 · %2 · %3% · 반복 %4 · 페이드 %5초").arg(action, q(c.audioAsset)).arg(c.volume).arg(c.loop ? QStringLiteral("켬") : QStringLiteral("끔")).arg(c.fadeSeconds);
+    }
     case EventCommandType::CallCommonEvent: {
         auto* event = project ? project->findCommonEvent(c.commonEvent) : nullptr;
         return QStringLiteral("공통 이벤트 호출: %1 (%2)").arg(event ? q(event->name) : QStringLiteral("없는 이벤트"), q(c.commonEvent));
@@ -145,7 +151,7 @@ std::optional<EventCommandType> chooseType(QWidget* parent) {
     for (auto type : {EventCommandType::Say, EventCommandType::ShowChoices, EventCommandType::Wait, EventCommandType::SetVariable,
                       EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::MoveObject,
                       EventCommandType::SetVisible, EventCommandType::ChangeScene, EventCommandType::CallScript,
-                      EventCommandType::CallCommonEvent, EventCommandType::Log,
+                      EventCommandType::CallCommonEvent, EventCommandType::Audio, EventCommandType::Log,
                       EventCommandType::Comment}) {
         menu.addAction(CommandDialog::typeLabel(type))->setData(static_cast<int>(type));
     }

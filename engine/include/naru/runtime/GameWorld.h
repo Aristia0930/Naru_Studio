@@ -7,6 +7,7 @@
 #include "naru/project/Project.h"
 #include "naru/runtime/GameScripts.h"
 #include "naru/runtime/Input.h"
+#include "naru/runtime/Audio.h"
 
 #include <cstddef>
 #include <cstdint>
@@ -71,6 +72,8 @@ public:
 
     // 전역 스크립트를 연결한다 (startGame 전에). 소유하지 않으며 GameWorld보다 오래 살아야 한다.
     void setGameScripts(GameScripts* scripts) { gameScripts_ = scripts; }
+    void setAudio(AudioHost* audio) { audio_ = audio; }
+    AudioHost* audio() const { return audio_; }
     // 전역 스크립트를 읽고 on_game_start를 부른 뒤 첫 장면에 들어간다. 장면이 없으면 false.
     bool startGame(const std::string& sceneId);
     // 장면에 들어갈 때 플레이어를 놓을 곳. 비어 있는 값은 장면 편집 상태 그대로 (방향은 아래).
@@ -136,6 +139,11 @@ public:
     bool setObjectPassable(const std::string& id, bool passable);
     bool setObjectColor(const std::string& id, const std::string& color);
     bool setObjectVisible(const std::string& id, bool visible);
+    bool setObjectShowName(const std::string& id, bool show);
+    bool setObjectNameText(const std::string& id, const std::string& text);
+    bool setObjectNameBackgroundTransparent(const std::string& id, bool transparent);
+    bool setObjectNameBackgroundColor(const std::string& id, const std::string& color);
+    bool setObjectNamePosition(const std::string& id, const std::string& position);
     bool setObjectImage(const std::string& id, const std::string& asset);
     bool setBackgroundImage(const std::string& asset);
     // "@self"(selfId)·"@player"·객체 ID를 실제 객체 ID로 바꾼다. 장면에 없으면 빈 문자열.
@@ -181,6 +189,7 @@ private:
     void advanceRoutes(double dt);
 
     Project project_;
+    AudioHost* audio_ = nullptr;
     ScriptRunner scripts_;
     double fixedStep_;
     Variables variables_;

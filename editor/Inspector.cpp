@@ -4,9 +4,12 @@
 #include "UndoCommands.h"
 #include "ImageSettingsDialog.h"
 #include "ImageAssets.h"
+#include "naru/project/Nameplate.h"
+#include <QMessageBox>
 
 #include <QCheckBox>
 #include <QColorDialog>
+#include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QLabel>
@@ -18,7 +21,7 @@
 
 namespace {
 
-enum Field { Name, X, Y, Width, Height, Color, Passable, Visible };
+enum Field { Name, X, Y, Width, Height, Color, Passable, Visible, ShowName, NameText, NameTransparent, NamePosition };
 
 QDoubleSpinBox* coordinateBox(QWidget* parent, double min) {
     auto* box = new QDoubleSpinBox(parent);
@@ -60,6 +63,24 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     objectColor_ = new QPushButton(objectPage);
     objectForm->addRow(QStringLiteral("ID"), objectIdLabel_);
     objectForm->addRow(QStringLiteral("이름"), objectName_);
+    objectShowName_ = new QCheckBox(QStringLiteral("게임에서 이름 표시"), objectPage);
+    objectShowName_->setObjectName("objectShowName");
+    objectShowName_->setToolTip(QStringLiteral("이 객체의 게임용 이름표입니다. F9 전체 이름·ID 테스트 표시와 별개입니다. 숨긴 객체는 이름표도 숨깁니다."));
+    objectNameText_ = new QLineEdit(objectPage); objectNameText_->setObjectName("objectNameText");
+    objectNameText_->setPlaceholderText(QStringLiteral("비우면 객체 이름 사용"));
+    objectForm->addRow(QStringLiteral("게임 이름표"), objectShowName_);
+    objectForm->addRow(QStringLiteral("표시 문구"), objectNameText_);
+    objectNamePosition_ = new QComboBox(objectPage); objectNamePosition_->setObjectName("objectNamePosition");
+    objectNamePosition_->addItem(QStringLiteral("객체 위"), "above"); objectNamePosition_->addItem(QStringLiteral("객체 아래"), "below");
+    objectNameTransparent_ = new QCheckBox(QStringLiteral("배경 없이 글자만 표시"), objectPage); objectNameTransparent_->setObjectName("objectNameTransparent");
+    objectNameBackgroundColor_ = new QPushButton(objectPage); objectNameBackgroundColor_->setObjectName("objectNameBackgroundColor");
+    objectNameBackgroundColor_->setToolTip(QStringLiteral("게임용 이름표의 배경색을 고릅니다. 배경 투명을 꺼야 색이 보입니다."));
+    objectForm->addRow(QStringLiteral("이름표 위치"), objectNamePosition_);
+    objectForm->addRow(QStringLiteral("배경 투명"), objectNameTransparent_);
+    objectForm->addRow(QStringLiteral("이름표 배경색"), objectNameBackgroundColor_);
+    connect(objectNamePosition_, &QComboBox::currentIndexChanged, this, [this] { commitObject(NamePosition); });
+    connect(objectNameTransparent_, &QCheckBox::toggled, this, [this] { commitObject(NameTransparent); });
+    connect(objectNameBackgroundColor_, &QPushButton::clicked, this, &Inspector::chooseNameBackgroundColor);
     objectForm->addRow(QStringLiteral("X"), objectX_);
     objectForm->addRow(QStringLiteral("Y"), objectY_);
     objectForm->addRow(QStringLiteral("충돌 너비"), objectW_);
@@ -90,6 +111,8 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     objectForm->addRow(QStringLiteral("보이기"), objectVisible_);
     pages_->addWidget(objectPage);
 
+    connect(objectShowName_, &QCheckBox::toggled, this, [this] { commitObject(ShowName); });
+    connect(objectNameText_, &QLineEdit::editingFinished, this, [this] { commitObject(NameText); });
     connect(objectName_, &QLineEdit::editingFinished, this, [this] { commitObject(Name); });
     connect(objectX_, &QDoubleSpinBox::valueChanged, this, [this] { commitObject(X); });
     connect(objectY_, &QDoubleSpinBox::valueChanged, this, [this] { commitObject(Y); });
@@ -166,6 +189,12 @@ void Inspector::refresh() {
         pages_->setCurrentIndex(1);
         objectIdLabel_->setText(QString::fromStdString(object->id));
         objectName_->setText(QString::fromStdString(object->name));
+        objectShowName_->setChecked(object->showName);
+        objectNameText_->setText(QString::fromStdString(object->nameText));
+        objectNamePosition_->setCurrentIndex(objectNamePosition_->findData(QString::fromStdString(object->namePosition)));
+        objectNameTransparent_->setChecked(object->nameBackgroundTransparent);
+        objectNameBackgroundColor_->setEnabled(!object->nameBackgroundTransparent);
+        showColor(objectNameBackgroundColor_, object->nameBackgroundColor);
         objectX_->setValue(object->x);
         objectY_->setValue(object->y);
         objectW_->setValue(object->width);
@@ -217,6 +246,16 @@ void Inspector::commitObject(int field) {
     case Height: after.height = objectH_->value(); break;
     case Passable: after.passable = objectPassable_->isChecked(); break;
     case Visible: after.visible = objectVisible_->isChecked(); break;
+    case ShowName: after.showName = objectShowName_->isChecked(); break;
+    case NameTransparent: after.nameBackgroundTransparent = objectNameTransparent_->isChecked(); break;
+    case NamePosition: after.namePosition = objectNamePosition_->currentData().toString().toStdString(); break;
+    case NameText:
+        after.nameText = objectNameText_->text().toStdString();
+        if (!naru::isValidNameText(after.nameText)) {
+            QMessageBox::warning(this, QStringLiteral("이름표 문구"), QStringLiteral("문구는 줄바꿈/제어 문자 없이 UTF-8 512바이트 이하여야 합니다."));
+            refresh(); return;
+        }
+        break;
     default: break;
     }
     if (after == *current) {
@@ -224,7 +263,20 @@ void Inspector::commitObject(int field) {
     }
     // 체크 상자는 연속 변경으로 묶지 않는다.
     doc_->undoStack()->push(
-        new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after, field == Passable || field == Visible ? -1 : field));
+        new SetObjectCommand(doc_, sceneId_.toStdString(), *current, after, field == Passable || field == Visible || field == ShowName || field == NameTransparent || field == NamePosition ? -1 : field));
+}
+
+void Inspector::chooseNameBackgroundColor() {
+    const auto* scene = doc_->project().findScene(sceneId_.toStdString());
+    const auto* current = scene ? scene->findObject(objectId_.toStdString()) : nullptr;
+    if (!current) return;
+    const auto before = *current;
+    QColorDialog dialog(QColor(QString::fromStdString(before.nameBackgroundColor)), this);
+    dialog.setObjectName("nameBackgroundColorDialog"); dialog.setOption(QColorDialog::DontUseNativeDialog);
+    dialog.setWindowTitle(QStringLiteral("이름표 배경색"));
+    if (dialog.exec() != QDialog::Accepted) return;
+    auto after = before; after.nameBackgroundColor = dialog.selectedColor().name().toStdString();
+    if (after != before) doc_->undoStack()->push(new SetObjectCommand(doc_, sceneId_.toStdString(), before, after));
 }
 
 void Inspector::commitScene(int field) {

@@ -52,7 +52,7 @@ set_target_properties(naru_editor PROPERTIES
   OUTPUT_NAME NaruStudio
   WIN32_EXECUTABLE ON
 )
-target_link_libraries(naru_editor PRIVATE naru_engine naru_python Qt6::Widgets SDL3::SDL3)
+target_link_libraries(naru_editor PRIVATE naru_engine naru_python naru_audio Qt6::Widgets SDL3::SDL3)
 target_compile_definitions(naru_editor PRIVATE NARU_STUDIO_VERSION="${PROJECT_VERSION}")
 
 naru_copy_python_runtime(naru_editor)

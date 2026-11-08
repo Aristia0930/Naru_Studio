@@ -145,7 +145,7 @@ void ProjectDocument::setAssetCatalog(const std::vector<naru::Asset>& assets, co
     emit assetsChanged();
 }
 
-void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references) {
+void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents) {
     project_.assets = assets;
     QStringList changedScenes;
     for (const auto& reference : references) {
@@ -160,8 +160,15 @@ void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, c
             if (object && object->image.asset != objectReference.image.asset) {
                 object->image.asset = objectReference.image.asset; changed = true;
             }
+            if (object && object->event.commands != objectReference.event.commands) {
+                object->event.commands = objectReference.event.commands; changed = true;
+            }
         }
         if (changed) changedScenes.append(QString::fromStdString(scene->id));
+    }
+    if (project_.commonEvents != commonEvents) {
+        project_.commonEvents = commonEvents;
+        emit commonEventsChanged();
     }
     emit assetsChanged();
     for (const auto& scene : changedScenes) emit sceneChanged(scene);

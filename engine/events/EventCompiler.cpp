@@ -501,12 +501,38 @@ private:
     EventRunner runner_;
 };
 
+class AudioCommand final : public Command {
+public:
+    AudioCommand(std::string id, EventCommand data) : Command(std::move(id)), data_(std::move(data)) {}
+    CommandStatus start(CommandContext& ctx) override {
+        if (!ctx.game) {
+            ctx.logger.info("소리 테스트: " + data_.audioAction + " / " + data_.audioAsset + " (실제 재생은 게임 실행에서)");
+            return CommandStatus::Completed;
+        }
+        auto* host = ctx.game->audio();
+        if (!host) { setError("소리 재생기가 연결되지 않았습니다."); return CommandStatus::Failed; }
+        std::string error;
+        if (data_.audioAction == "play_bgm") error = host->playBgm(data_.audioAsset, data_.volume, data_.loop);
+        else if (data_.audioAction == "stop_bgm") error = host->stopBgm(data_.fadeSeconds);
+        else if (data_.audioAction == "play_se") error = host->playSe(data_.audioAsset, data_.volume);
+        else if (data_.audioAction == "stop_se") host->stopSe();
+        else error = "알 수 없는 소리 동작: " + data_.audioAction;
+        if (!error.empty()) { setError(error); return CommandStatus::Failed; }
+        ctx.logger.info("소리: " + data_.audioAction + " / " + data_.audioAsset);
+        return CommandStatus::Completed;
+    }
+private:
+    EventCommand data_;
+};
+
 void emit(const std::vector<EventCommand>& list, const std::string& prefix,
           std::vector<std::unique_ptr<Command>>& out, const ScriptRunner& runScript) {
     for (std::size_t i = 0; i < list.size(); ++i) {
         const EventCommand& c = list[i];
         std::string id = commandId(prefix, i);
         switch (c.type) {
+        case EventCommandType::Audio:
+            out.push_back(std::make_unique<AudioCommand>(id, c)); break;
         case EventCommandType::CallCommonEvent:
             out.push_back(std::make_unique<CommonEventCommand>(id, c.commonEvent, runScript));
             break;

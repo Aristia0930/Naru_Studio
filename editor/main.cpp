@@ -205,6 +205,10 @@ int main(int argc, char* argv[]) {
         naru::Project project;
         project.commonEvents = {{"recover", "체력 회복", {}}, {"reward", "보상 지급", {}}};
         if (*type == naru::EventCommandType::CallCommonEvent) sample.commonEvent = "recover";
+        if (*type == naru::EventCommandType::Audio) {
+            sample.audioAsset = "test_bgm"; sample.volume = 65;
+            project.assets.push_back({"test_bgm", "테스트 배경 음악 (MP3)", "audio", "assets/test_bgm.mp3", "test_bgm.mp3", std::string(64, '0'), ""});
+        }
         project.database = db;
         project.variables = {{"visits", std::int64_t{0}, "마을에 온 횟수"},
                              {"enemy_hp", std::int64_t{0}, "싸우는 적의 체력"},

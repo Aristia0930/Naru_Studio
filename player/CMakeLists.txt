@@ -1,14 +1,14 @@
 find_package(SDL3 3.4 REQUIRED CONFIG COMPONENTS SDL3-shared)
 find_package(SDL3_ttf 3.2 REQUIRED CONFIG)
 
-add_executable(naru_player main.cpp ImageRenderer.cpp ImageRenderer.h)
+add_executable(naru_player main.cpp ImageRenderer.cpp ImageRenderer.h NameplateRenderer.cpp NameplateRenderer.h)
 target_include_directories(naru_player SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/third_party)
 
 set_target_properties(naru_player PROPERTIES
   OUTPUT_NAME NaruPlayer
   WIN32_EXECUTABLE ON
 )
-target_link_libraries(naru_player PRIVATE naru_engine SDL3::SDL3 SDL3_ttf::SDL3_ttf)
+target_link_libraries(naru_player PRIVATE naru_engine naru_audio SDL3::SDL3 SDL3_ttf::SDL3_ttf)
 
 if(NARU_BUILD_PYTHON)
   target_link_libraries(naru_player PRIVATE naru_python)

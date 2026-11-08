@@ -5,7 +5,7 @@
 
 표시: **읽기** = 값을 볼 수 있음 · **쓰기** = 대입해서 바꿀 수 있음 · *게임 밖* = 에디터의 F5 스크립트 실행, F6 이벤트 테스트
 
-새 스크립트 작성/이벤트 연결은 [작성 안내](guide/SCRIPTING.md), 현재 명령 13종의 입력·대기·중지 규칙은 [이벤트 안내](guide/EVENTS.md)에서 따라 할 수 있습니다.
+새 스크립트 작성/이벤트 연결은 [작성 안내](guide/SCRIPTING.md), 현재 명령 14종의 입력·대기·중지 규칙은 [이벤트 안내](guide/EVENTS.md)에서 따라 할 수 있습니다.
 
 **현재 공개 API 전체를 실행 예제로 연결하는 방법:** [Python 전체 가이드](guide/PYTHON_COOKBOOK.md), [이벤트 함수 완성 코드](examples/python_guide.py), [전역 훅·import 완성 코드](examples/guide_global.py). 이벤트 연결·실행 시점·인자/반환·오류·현재 없는 기능을 함께 구분합니다. 같은 폴더의 미등록 파일을 임의 import하는 기능은 제공하지 않으므로 전역 예제는 python_guide.py를 먼저 등록합니다.
 
@@ -187,6 +187,8 @@ def run(ctx):
 | `color` | str | 읽기·쓰기 | 색 `"#rrggbb"` (예: `"#ff8800"`). 다른 형식은 `ValueError`. 이미지 없음·누락 때의 대체 색이며 정상 이미지에 색을 곱하지 않음 |
 | `image` | str | 읽기·쓰기 | `ctx.scene.object(ID).image`: 객체 이미지 에셋 ID. `""`로 지우면 색 사각형으로 복귀. 등록된 image 에셋만 허용하며 잘못된 ID·다른 종류는 `ValueError`, 문자열 이외는 `TypeError`. 실패 시 기존 값 보존. 그림 크기·배율·오프셋·기준점·회전·불투명도·뒤집기·순서·필터는 인스펙터 설정 유지. 충돌 영역은 바꾸지 않음. 즉시 적용·대기 없음 |
 | `is_player` | bool | 읽기 | 이 장면의 플레이어인가 |
+| `show_name` | bool | 읽기·쓰기 | 게임용 이름표 켜기. 기본 False, bool 이외는 TypeError. visible=False면 이름표도 숨김. F9 테스트 표시는 독립적 |
+| `name_text` | str | 읽기·쓰기 | 이름표 문구, 기본 빈 문자열이면 객체 name 사용. 제어 문자/줄바꿈 없이 UTF-8 512바이트 이하. 타입 오류 TypeError, 길이/형식 오류 ValueError, 실패 시 기존 값 유지. 편집용 name은 바꾸지 않음 |
 | `move(dx, dy)` | bool | | 충돌을 따져 이동 (아래 규칙). 객체를 찾지 못하면 `KeyError` |
 
 ```python
@@ -265,6 +267,40 @@ def on_update(ctx):
 - 대기형 Python에서 이벤트 결과를 직접 기다리기 (`async` 지원은 아직 없음)
 - 데이터베이스 값 바꾸기 (읽기 전용)
 - 게임 변수에 리스트·딕셔너리 저장, 세이브/로드
-- BGM/효과음·애니메이션 재생 API와 `ctx.assets` 같은 에셋 관리 API는 아직 없음. 객체 `image`와 장면 `background_image`는 현재 API이며 [이미지 사용법](guide/IMAGES.md)에 실행 예제가 있음. 그룹은 제작용 분류
+- 애니메이션 재생 API와 `ctx.assets` 같은 에셋 관리 API는 아직 없음. BGM/효과음은 아래 `ctx.audio`로 재생. 객체 `image`와 장면 `background_image`는 현재 API이며 [이미지 사용법](guide/IMAGES.md)에 실행 예제가 있음. 그룹은 제작용 분류
 
 예정은 [ROADMAP](ROADMAP.md)을 보세요.
+
+
+## 게임 소리 — ctx.audio
+
+`audio`는 실제 게임에서 사용하는 소리 재생기입니다. F5/F6에서는 `ctx.audio`가 None입니다. 게임의 on_game_start(첫 장면 전 포함)·on_scene_enter·on_scene_exit·on_update와 이벤트 함수에서 사용합니다. [전체 사용법·예제·수동 확인](guide/AUDIO.md).
+
+| 함수 | 인자·기본값 | 반환·규칙 |
+|---|---|---|
+| `ctx.audio.play_bgm(asset_id, volume=100, loop=True)` | 등록한 WAV/MP3 소리 ID 문자열, 유한한 음량 0~100, 반복 bool | None. 기존 BGM 대신 처음부터 재생. 실패하면 이전 BGM 유지 |
+| `ctx.audio.stop_bgm(fade_seconds=0)` | 유한한 0~60초, 0이면 즉시 | None. 페이드 정지 예약 후 바로 반환 |
+| `ctx.audio.play_se(asset_id, volume=100)` | 등록한 소리 ID 문자열, 유한한 0~100 | None. 한 번 재생하며 앞 효과음과 겹침. 최대 16개 |
+| `ctx.audio.stop_se()` | 없음 | None. 효과음 모두 즉시 정지 |
+
+호출은 재생 완료를 기다리지 않습니다. 장면 전환·이벤트 종료/취소에도 유지하며 게임 종료 시 해제합니다. 같은 곡을 재호출하면 다시 시작합니다. 매 틱 on_update에서 play_bgm을 호출하지 마세요. 페이드 중 새 BGM 재생은 이전 곡을 대신합니다.
+
+없는 ID/소리 이외 종류·범위/NaN/무한대는 ValueError, 타입 오류는 TypeError, 누락/손상 파일·장치·동시 한도 실패는 RuntimeError입니다. 파일·행·traceback이 보존됩니다. 파일당 64 MiB, 디코딩 PCM 128 MiB, 게임 동시 PCM 준비/보유 256 MiB 한도입니다. 현재 동기 전체 디코딩이며 스트리밍·피치·일시정지·위치 음향은 아직 없습니다. 이벤트의 소리 명령은 F6에서 로그만 남깁니다. 복사 가능한 파일은 [audio_demo.py](examples/audio/scripts/audio_demo.py)이며 `run(ctx)`/`fade(ctx)`/`stop_effects(ctx)`를 이벤트 스크립트 호출로 연결합니다.
+
+
+## 객체 이름표와 테스트 표시
+
+`ctx.scene.object(ID).show_name`은 게임용 이름표 bool(기본 False), `.name_text`는 문구 str(기본 빈 글자)입니다. 빈 문구는 객체의 읽기 전용 `.name`을 그대로 표시합니다. 플레이어도 `ctx.scene.object(ctx.player.id)`로 얻어 같은 속성을 사용합니다. 숨긴 객체는 이름표도 숨기며 문구 변경은 name/ID·충돌·이벤트에 영향을 주지 않습니다.
+
+게임 실행 사본에 즉시 적용하고 대기하지 않습니다. 장면 재진입/게임 재시작은 편집값이며 F5/F6과 첫 장면 전 on_game_start의 ctx.scene은 None입니다. show_name은 bool, name_text는 str만 허용하고 타입 오류는 TypeError입니다. 문구는 줄바꿈/제어 문자 없이 UTF-8 512바이트 이하이며 범위/형식 오류 ValueError, UTF-8로 변환 불가능한 문자열은 UnicodeEncodeError입니다. 실패하면 이전 값을 유지합니다. 오래된 객체 핸들은 KeyError가 날 수 있습니다. 이벤트 함수의 ctx·None 반환/호출 설정은 [이름표 가이드](guide/NAMEPLATES.md), 완성 코드는 [nameplates.py](examples/nameplates/scripts/nameplates.py)에 있습니다.
+
+테스트용 전체 표시(F9/--debug-object-names)는 위 두 속성과 별개이며 Python 공개 속성으로 제공하지 않습니다. F9는 게임에서 예약한 키로 ctx.input에 전달하지 않습니다. 제작툴 창 F9의 데이터베이스 기능은 그대로입니다.
+
+
+## 이름표 배경·위치
+
+SceneObject의 `name_background_transparent`(bool, 기본 False), `name_background_color`(str, 기본 "#0c1018"), `name_position`(str, 기본 "above")은 읽기·쓰기가 가능합니다. 색은 #rrggbb 7자, 위치는 "above"/"below"만 허용하며 타입 오류 TypeError, 잘못된 색/위치 ValueError로 이전 값을 유지합니다. 잘못된 Unicode 문자열은 변환 오류가 납니다.
+
+투명은 배경만 없애고 저장된 색을 지우지 않습니다. 색을 바꿔도 투명 여부는 자동으로 바뀌지 않으므로 색 배경을 표시하려면 name_background_transparent=False도 지정합니다. 배경은 알파 210/255, 완전 투명은 True입니다. 위치는 그림의 회전/크기/기준점/오프셋 경계 기준이고 누락 이미지는 충돌 사각형 기준입니다. 화면 가장자리 보정을 우선합니다. F9 테스트 표시에는 개별 스타일을 적용하지 않습니다.
+
+게임 중 즉시 적용·대기 없음·편집 원본 보존·재진입/재시작 때 초기화·F5/F6은 ctx.scene=None 규칙이 같습니다. [API와 완성 예제](guide/NAMEPLATES.md), [스타일 예제 파일](examples/nameplate-style/scripts/nameplates.py)의 transparent_above/colored_below를 스크립트 호출에 연결합니다. ctx 인자·None 반환·전역 등록 불필요입니다.

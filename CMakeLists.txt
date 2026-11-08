@@ -24,6 +24,9 @@ else()
 endif()
 
 add_subdirectory(engine)
+if(NARU_BUILD_PLAYER OR NARU_BUILD_EDITOR)
+  add_subdirectory(audio)
+endif()
 
 if(NARU_BUILD_PYTHON)
   add_subdirectory(scripting/python)

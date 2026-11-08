@@ -17,6 +17,10 @@ for name in ('python_guide.py', 'guide_global.py'):
         if isinstance(node, ast.FunctionDef) and not node.name.startswith('_'):
             assert node.name in text, f'Function missing from cookbook: {node.name}'
 blocks = re.findall(r'```python\s*\n(.*?)```', text, re.S)
+for extra in ('docs/guide/AUDIO.md', 'docs/guide/NAMEPLATES.md'):
+    blocks.extend(re.findall(r'```python\s*\n(.*?)```', (root/extra).read_text(encoding='utf-8'), re.S))
+ast.parse((root/'docs/examples/nameplates/scripts/nameplates.py').read_text(encoding='utf-8'))
+ast.parse((root/'docs/examples/nameplate-style/scripts/nameplates.py').read_text(encoding='utf-8'))
 assert blocks
 for index, code in enumerate(blocks, 1):
     ast.parse(code, filename=f'PYTHON_COOKBOOK.md block {index}')
@@ -34,7 +38,7 @@ def anchors(path):
 
 
 documents = ['README.md', 'docs/SCRIPT_API.md', 'docs/guide/PYTHON_COOKBOOK.md', 'docs/guide/README.md',
-             'docs/guide/SCRIPTING.md', 'docs/guide/EVENTS.md', 'docs/guide/IMAGES.md', 'docs/guide/ASSETS.md',
+             'docs/guide/SCRIPTING.md', 'docs/guide/EVENTS.md', 'docs/guide/IMAGES.md', 'docs/guide/ASSETS.md', 'docs/guide/AUDIO.md', 'docs/guide/AUDIO_TEST.md', 'docs/guide/NAMEPLATES.md', 'docs/examples/nameplates/README.md', 'docs/examples/nameplate-style/README.md', 'docs/examples/audio/README.md',
              'docs/examples/README.md', 'docs/examples/assets/README.md', 'docs/examples/images/README.md']
 checked = 0
 for name in documents:

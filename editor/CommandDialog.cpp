@@ -45,6 +45,7 @@ int kindOf(const Value& v) {
 
 QString CommandDialog::typeLabel(EventCommandType type) {
     switch (type) {
+    case EventCommandType::Audio: return QStringLiteral("소리 재생/정지");
     case EventCommandType::CallCommonEvent: return QStringLiteral("공통 이벤트 호출");
     case EventCommandType::ShowChoices: return QStringLiteral("선택지 표시");
     case EventCommandType::Say: return QStringLiteral("대사 표시");
@@ -197,6 +198,40 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     };
 
     switch (command.type) {
+    case EventCommandType::Audio: {
+        audioAction_ = new QComboBox(this); audioAction_->setObjectName("audioAction");
+        audioAction_->addItem(QStringLiteral("BGM 재생"), "play_bgm");
+        audioAction_->addItem(QStringLiteral("BGM 정지"), "stop_bgm");
+        audioAction_->addItem(QStringLiteral("효과음 재생"), "play_se");
+        audioAction_->addItem(QStringLiteral("효과음 모두 정지"), "stop_se");
+        audioAction_->setCurrentIndex(audioAction_->findData(QString::fromStdString(command.audioAction)));
+        audioAsset_ = new QComboBox(this); audioAsset_->setObjectName("audioAsset");
+        if (project) for (const auto& a : project->assets) if (a.kind == "audio")
+            audioAsset_->addItem(QString::fromStdString(a.name + " (" + a.id + ")"), QString::fromStdString(a.id));
+        int selected = audioAsset_->findData(QString::fromStdString(command.audioAsset));
+        if (selected < 0 && !command.audioAsset.empty()) {
+            audioAsset_->addItem(QString::fromStdString(command.audioAsset) + QStringLiteral(" (누락)"), QString::fromStdString(command.audioAsset));
+            selected = audioAsset_->count()-1;
+        }
+        if (selected >= 0) audioAsset_->setCurrentIndex(selected);
+        audioVolume_ = new QDoubleSpinBox(this); audioVolume_->setObjectName("audioVolume");
+        audioVolume_->setRange(0,100); audioVolume_->setSuffix(" %"); audioVolume_->setValue(command.volume);
+        audioLoop_ = new QCheckBox(QStringLiteral("끝나면 처음부터 반복"), this); audioLoop_->setChecked(command.loop);
+        audioFade_ = new QDoubleSpinBox(this); audioFade_->setRange(0,60); audioFade_->setSuffix(QStringLiteral(" 초")); audioFade_->setValue(command.fadeSeconds);
+        form->addRow(QStringLiteral("동작"), audioAction_); form->addRow(QStringLiteral("소리 에셋"), audioAsset_);
+        form->addRow(QStringLiteral("음량"), audioVolume_); form->addRow(QStringLiteral("BGM 반복"), audioLoop_);
+        form->addRow(QStringLiteral("BGM 정지 페이드"), audioFade_);
+        auto sync = [this] {
+            const auto action = audioAction_->currentData().toString();
+            bool play = action == "play_bgm" || action == "play_se";
+            audioAsset_->setEnabled(play); audioVolume_->setEnabled(play);
+            audioLoop_->setEnabled(action == "play_bgm"); audioFade_->setEnabled(action == "stop_bgm");
+        };
+        connect(audioAction_, &QComboBox::currentIndexChanged, this, sync); sync();
+        auto* hint = new QLabel(QStringLiteral("재생/정지는 기다리지 않고 다음 명령으로 진행합니다.\nF6은 로그만 표시합니다. 실제 소리는 Ctrl+R로 확인하세요."), this);
+        hint->setWordWrap(true); form->addRow(hint);
+        break;
+    }
     case EventCommandType::CallCommonEvent: {
         commonEvent_ = new QComboBox(this);
         commonEvent_->setObjectName(QStringLiteral("commonEventTarget"));
@@ -563,6 +598,14 @@ bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* bo
 void CommandDialog::accept() {
     naru::EventCommand c = command_;
     switch (c.type) {
+    case EventCommandType::Audio:
+        c.audioAction = audioAction_->currentData().toString().toStdString();
+        c.audioAsset = audioAsset_->currentData().toString().toStdString();
+        c.volume = audioVolume_->value(); c.loop = audioLoop_->isChecked(); c.fadeSeconds = audioFade_->value();
+        if ((c.audioAction == "play_bgm" || c.audioAction == "play_se") && c.audioAsset.empty()) {
+            QMessageBox::warning(this, windowTitle(), QStringLiteral("에셋 목록에서 WAV/MP3 소리를 먼저 추가하세요.")); return;
+        }
+        break;
     case EventCommandType::CallCommonEvent:
         c.commonEvent = commonEvent_->currentData().toString().toStdString();
         if (c.commonEvent.empty()) {

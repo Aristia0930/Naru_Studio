@@ -49,7 +49,11 @@ endif()
 if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
   find_package(Python3 3.13 REQUIRED COMPONENTS Interpreter)
   add_test(NAME python_guide_docs COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python_guide_docs.py ${PROJECT_SOURCE_DIR})
+  add_test(NAME player_nameplates COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_nameplates.py $<TARGET_FILE:naru_player>)
+  set_tests_properties(player_nameplates PROPERTIES TIMEOUT 60)
   add_test(NAME player_images COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_images.py $<TARGET_FILE:naru_player>)
+  add_test(NAME player_audio COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_audio.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
+  set_tests_properties(player_audio PROPERTIES TIMEOUT 45)
   set_tests_properties(player_images PROPERTIES TIMEOUT 60)
   add_test(NAME player_choices COMMAND ${Python3_EXECUTABLE}
     ${CMAKE_CURRENT_SOURCE_DIR}/player_choices.py $<TARGET_FILE:naru_player>
@@ -68,12 +72,24 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
   set_tests_properties(player_debug PROPERTIES TIMEOUT 45)
 endif()
 
+if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
+  add_executable(naru_audio_tests audio_tests.cpp)
+  target_link_libraries(naru_audio_tests PRIVATE naru_audio)
+  add_test(NAME audio_prepare COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/prepare_audio.py ${PROJECT_SOURCE_DIR} ${CMAKE_BINARY_DIR}/test_projects/audio)
+  add_test(NAME audio COMMAND naru_audio_tests ${CMAKE_BINARY_DIR}/test_projects/audio)
+  set_tests_properties(audio PROPERTIES DEPENDS audio_prepare TIMEOUT 30)
+endif()
+
 if(NARU_BUILD_EDITOR)
   find_package(Qt6 6.5 REQUIRED COMPONENTS Widgets)
   find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3-shared)
   qt_add_executable(naru_asset_editor_tests
     asset_editor_tests.cpp
+    audio_editor_tests.cpp
+    ../editor/CommandDialog.cpp ../editor/CommandDialog.h
+    ../editor/VariablesDialog.cpp ../editor/VariablesDialog.h
     image_editor_tests.cpp
+    nameplate_editor_tests.cpp
     ../editor/ImageSettingsDialog.cpp ../editor/ImageSettingsDialog.h
     ../editor/Inspector.cpp ../editor/Inspector.h
     ../editor/SceneView.cpp ../editor/SceneView.h
@@ -81,8 +97,9 @@ if(NARU_BUILD_EDITOR)
     ../editor/AssetBrowser.cpp ../editor/AssetBrowser.h
     ../editor/ProjectDocument.cpp ../editor/ProjectDocument.h)
   target_include_directories(naru_asset_editor_tests PRIVATE ../editor)
+  target_compile_definitions(naru_asset_editor_tests PRIVATE NARU_AUDIO_EXAMPLE_DIR="${PROJECT_SOURCE_DIR}/docs/examples/audio")
   set_target_properties(naru_asset_editor_tests PROPERTIES AUTOMOC ON)
-  target_link_libraries(naru_asset_editor_tests PRIVATE naru_engine Qt6::Widgets SDL3::SDL3)
+  target_link_libraries(naru_asset_editor_tests PRIVATE naru_engine naru_audio Qt6::Widgets SDL3::SDL3)
   if(NARU_BUILD_PLAYER)
     target_compile_definitions(naru_asset_editor_tests PRIVATE NARU_TEST_PLAYER_EXE="$<TARGET_FILE:naru_player>")
     add_dependencies(naru_asset_editor_tests naru_player)

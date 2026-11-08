@@ -1,0 +1,26 @@
+{
+  "formatVersion": 1,
+  "name": "BGM·효과음 확인",
+  "startScene": "scene_001",
+  "scenes": [
+    "scene_001"
+  ],
+  "assets": [
+    {
+      "id": "test_bgm",
+      "name": "테스트 BGM",
+      "kind": "audio",
+      "path": "assets/demo_bgm.wav",
+      "sourceName": "demo_bgm.wav",
+      "sha256": "1ac3b280c0ee5fb8607f56a3e0c9d81d5e956abf85c95058026727fe7e9abc6a"
+    },
+    {
+      "id": "test_se",
+      "name": "효과음",
+      "kind": "audio",
+      "path": "assets/effect.wav",
+      "sourceName": "effect.wav",
+      "sha256": "34683d2f940fec174e84cdedc054260847c8fa05af2c71f9e3061157292dd1b5"
+    }
+  ]
+}

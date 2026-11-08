@@ -119,6 +119,7 @@ private:
     QAction* runGameAction_ = nullptr;
     QAction* runCurrentSceneAction_ = nullptr;
     QAction* stopGameAction_ = nullptr;
+    QAction* debugObjectNamesAction_ = nullptr;
 
     QProcess* game_ = nullptr;
     QByteArray gameOutput_;

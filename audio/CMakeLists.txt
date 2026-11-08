@@ -1,0 +1,5 @@
+find_package(SDL3 3.2 REQUIRED CONFIG COMPONENTS SDL3-shared)
+add_library(naru_audio STATIC AudioDecoder.cpp SdlAudio.cpp)
+target_include_directories(naru_audio PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(naru_audio SYSTEM PRIVATE ${PROJECT_SOURCE_DIR}/third_party)
+target_link_libraries(naru_audio PUBLIC naru_engine SDL3::SDL3)

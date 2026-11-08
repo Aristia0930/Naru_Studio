@@ -8,8 +8,10 @@ add_library(naru_engine STATIC
   events/EventData.cpp
   project/Asset.cpp
   project/ImageLayout.cpp
+  project/Nameplate.cpp
   project/Project.cpp
   project/ProjectIO.cpp
+  runtime/Audio.cpp
   runtime/GameWorld.cpp
   runtime/Input.cpp
   runtime/InputSettings.cpp

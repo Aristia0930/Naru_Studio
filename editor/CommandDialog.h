@@ -41,6 +41,11 @@ private:
 
     naru::EventCommand command_;
 
+    QComboBox* audioAction_ = nullptr;
+    QComboBox* audioAsset_ = nullptr;
+    QDoubleSpinBox* audioVolume_ = nullptr;
+    QDoubleSpinBox* audioFade_ = nullptr;
+    QCheckBox* audioLoop_ = nullptr;
     QLineEdit* speaker_ = nullptr;
     QListWidget* choices_ = nullptr;
     QComboBox* defaultChoice_ = nullptr;

@@ -374,6 +374,10 @@ void MainWindow::createActions() {
     game->addAction(runGameAction_);
     game->addAction(runCurrentSceneAction_);
     game->addAction(stopGameAction_);
+    debugObjectNamesAction_ = make(QStringLiteral("게임 시작 시 객체 이름·ID 표시"), {}, [] {});
+    debugObjectNamesAction_->setObjectName("debugObjectNames"); debugObjectNamesAction_->setCheckable(true);
+    debugObjectNamesAction_->setToolTip(QStringLiteral("다음 게임 실행을 테스트 표시로 시작합니다. 실행 중에는 게임 창에서 F9로 켜고 끕니다. 프로젝트에는 저장하지 않습니다."));
+    game->addAction(debugObjectNamesAction_);
     game->addSeparator();
     game->addAction(variables);
     auto* inputSettings = make(QStringLiteral("키 설정..."), {}, &MainWindow::editInputSettings);
@@ -1040,6 +1044,7 @@ bool MainWindow::runGame(bool fromCurrentScene, const QStringList& extraArgs) {
     if (fromCurrentScene && !currentSceneId_.isEmpty()) {
         args << QStringLiteral("--scene") << currentSceneId_;
     }
+    if (debugObjectNamesAction_->isChecked()) args << QStringLiteral("--debug-object-names");
     args << extraArgs;
     QString logDir = qApp->property("gameLogDirectory").toString();
     if (logDir.isEmpty()) logDir = QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation) + QStringLiteral("/logs");
@@ -1772,8 +1777,11 @@ bool MainWindow::runSelfTest() {
     // 게임 실행: 저장 → NaruPlayer가 현재 장면을 연다 → 주인공을 오른쪽으로 움직여 상자 앞에서 결정 키    // → 상자의 조사 이벤트가 실행된다 → 120프레임 뒤 스스로 닫히고 로그가 제작툴에 들어온다
     {
         logMessages_.clear();
+        debugObjectNamesAction_->setChecked(true);
         bool started = runGame(true, {QStringLiteral("--frames"), QStringLiteral("120"), QStringLiteral("--hold"),
                                 QStringLiteral("right:0-80"), QStringLiteral("--hold"), QStringLiteral("confirm:85-85")});
+        check(started && game_ && game_->arguments().contains(QStringLiteral("--debug-object-names")), "전체 객체 이름·ID 메뉴의 게임 시작 인자 전달");
+        debugObjectNamesAction_->setChecked(false);
         QElapsedTimer waited;
         waited.start();
         while (game_ && waited.elapsed() < 15000) {

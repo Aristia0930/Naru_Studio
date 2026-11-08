@@ -13,7 +13,9 @@ bool EventCommand::operator==(const EventCommand& o) const {
            speed == o.speed && waitForEnd == o.waitForEnd && show == o.show && scene == o.scene &&
            setPosition == o.setPosition && x == o.x && y == o.y && thenCommands == o.thenCommands &&
            elseCommands == o.elseCommands && choices == o.choices && defaultChoice == o.defaultChoice &&
-           cancelChoice == o.cancelChoice && commonEvent == o.commonEvent;
+           cancelChoice == o.cancelChoice && commonEvent == o.commonEvent &&
+           audioAction == o.audioAction && audioAsset == o.audioAsset && volume == o.volume &&
+           loop == o.loop && fadeSeconds == o.fadeSeconds;
 }
 
 bool ObjectEvent::operator==(const ObjectEvent& o) const {
@@ -42,7 +44,8 @@ const char* nameOf(const std::array<std::pair<E, const char*>, N>& table, E valu
     return "";
 }
 
-constexpr std::array<std::pair<EventCommandType, const char*>, 13> kTypes{{
+constexpr std::array<std::pair<EventCommandType, const char*>, 14> kTypes{{
+    {EventCommandType::Audio, "audio"},
     {EventCommandType::CallCommonEvent, "call_common_event"},
     {EventCommandType::ShowChoices, "show_choices"},
     {EventCommandType::ChangeScene, "change_scene"},

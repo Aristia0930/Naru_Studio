@@ -336,9 +336,9 @@ def error_example(ctx):
 | `ctx.log`, `ctx.warning`, `print`, stderr | log_examples, error_example |
 | `on_game_start`, `on_scene_enter`, `on_scene_exit`, `on_update` | guide_global 네 훅·모듈 상태·import 연결 |
 
-**현재 직접 Python API가 없는 기능:** 에셋 추가/ID·그룹 편집/내보내기, DB 정의 수정, 객체 이름·충돌 크기 변경/생성·삭제, 그림 배치 수치·애니메이션, 배경 맞춤 수치, 대사·선택지·대기 직접 호출, 게임 소리, 타일맵·카메라, 저장/로드·배포·외부 DB/API. 이 중 편집 기능은 제작툴에서 사용하고 대사/선택지/대기는 공통 이벤트로 연결합니다. 계획 API를 현재 기능처럼 복사하지 마세요.
+**현재 직접 Python API가 없는 기능:** 에셋 추가/ID·그룹 편집/내보내기, DB 정의 수정, 객체 이름·충돌 크기 변경/생성·삭제, 그림 배치 수치·애니메이션, 배경 맞춤 수치, 대사·선택지·대기 직접 호출, 타일맵·카메라, 저장/로드·배포·외부 DB/API. 이 중 편집 기능은 제작툴에서 사용하고 대사/선택지/대기는 공통 이벤트로 연결합니다. 계획 API를 현재 기능처럼 복사하지 마세요.
 
-이벤트 명령 13종의 Python 대응도 다음처럼 구분합니다.
+이벤트 명령 14종의 Python 대응도 다음처럼 구분합니다.
 
 | 이벤트 명령 | Python 연결 |
 |---|---|
@@ -350,6 +350,7 @@ def error_example(ctx):
 | 장면 이동 | ctx.scene.change |
 | 스크립트 호출 | 이벤트 파일·함수 연결, 같은 파일 함수 호출, 등록된 모듈 import |
 | 공통 이벤트 호출 | ctx.run_event |
+| 소리 재생/정지 | ctx.audio.play_bgm / stop_bgm / play_se / stop_se. F5/F6은 ctx.audio=None |
 | 로그·주석 | ctx.log/ctx.warning/print, Python # 주석 |
 
 ## 16. 직접 따라 하는 확인 순서
@@ -364,3 +365,62 @@ def error_example(ctx):
 8. 선택한 경우에만 조작 OFF/ON·runtime 키 교체·달리기·error_example을 시험합니다. 정상화한 뒤 저장·게임 재시작으로 편집 기본값 복원을 확인합니다.
 
 자동 검증은 실제 C++/Python 실행에서 함수·반환·상태·오류를 확인합니다. 사용자 화면·클릭·키보드 확인은 별도 결과로 기록합니다.
+
+
+## 17. BGM·효과음 연결
+
+`ctx.audio`는 게임에서만 사용할 수 있고 F5/F6에서는 None입니다. [소리 안내](AUDIO.md)와 [완성 코드](../examples/audio/scripts/audio_demo.py)를 사용하세요. 프로젝트 scripts/audio_demo.py에 복사하고 이벤트의 스크립트 호출에 파일 audio_demo.py / 함수 run을 지정합니다. 전역 등록 없이 동작하며 반환값은 None입니다. fade는 2초 페이드 정지, stop_effects는 효과음 모두 정지 함수입니다.
+
+```python
+def run(ctx):
+    if ctx.audio is None:
+        ctx.log("게임 실행에서 소리를 확인하세요.")
+        return
+    ctx.audio.play_bgm("test_bgm", volume=35, loop=True)
+    ctx.audio.play_se("test_se", volume=70)
+
+
+def stop(ctx):
+    if ctx.audio is not None:
+        ctx.audio.stop_bgm(fade_seconds=2)
+        ctx.audio.stop_se()
+```
+
+play_bgm(asset_id, volume=100, loop=True), play_se(asset_id, volume=100), stop_bgm(fade_seconds=0), stop_se()는 모두 즉시 None을 반환합니다. 음량은 0~100, 페이드는 0~60초이며 유한한 숫자만 허용합니다. loop는 bool입니다. 잘못된 ID/종류·범위는 ValueError, 타입은 TypeError, 파일·장치·동시 재생 한도 실패는 RuntimeError이며 파일·행·traceback을 보존합니다. ID는 경로가 아닌 에셋 목록의 소리 ID입니다. 같은 BGM 재생은 처음부터 시작하므로 on_update에서 매 틱 호출하지 않습니다. on_game_start 또는 장면의 자동 실행(반복 끔)에서 한 번 시작하세요. 장면 이동에도 유지하며 게임 종료 시 해제합니다. 자세한 한도·실행/대기·수동 확인은 소리 안내를 따릅니다.
+
+
+## 18. NPC·시설 이름표 연결
+
+객체 인스펙터의 게임 이름표로 표시 여부/문구를 저장하고, 실제 게임에서는 `obj.show_name`과 `obj.name_text`로 바꿉니다. F9는 별도의 전체 이름·ID 테스트 표시입니다. [입력 항목·그림·수동 확인](NAMEPLATES.md), [완성 파일](../examples/nameplates/scripts/nameplates.py)을 보세요.
+
+```python
+def run(ctx):
+    if ctx.scene is None:
+        ctx.log("이름표는 게임 실행에서 확인하세요.")
+        return
+    npc = ctx.scene.object("npc")
+    if npc is not None:
+        npc.show_name = True
+        npc.name_text = "여관 주인"
+```
+
+파일은 프로젝트 scripts/nameplates.py, 이벤트 스크립트 호출은 파일 nameplates.py / 함수 run / 결과 변수 빈 칸입니다. 인자 ctx는 엔진이 전달하고 반환 None·대기 없음·전역 등록 불필요입니다. 예제 run은 조사 때 문구를 번갈아 바꾸며 hide_name은 표시를 끄고 use_object_name은 빈 문구로 객체 이름을 사용합니다. show_name은 bool, name_text는 문자열이며 잘못된 타입은 TypeError, 제어 문자/512바이트 초과는 ValueError입니다. 실패하면 이전 값을 유지하고 오류 파일·행·traceback을 보존합니다. F5/F6은 ctx.scene=None 보호로 안내만 내며 게임의 장면 이벤트/훅에서 바꾼 값은 장면 재진입/재시작 때 편집값으로 돌아갑니다. obj.name과 ID 자체는 바꾸지 않습니다.
+
+
+## 19. 이름표 배경과 위·아래 위치
+
+`name_background_transparent`(bool, 기본 False), `name_background_color`(str, 기본 #0c1018), `name_position`(str, 기본 above)을 객체별로 읽고 바꿉니다. [설정·그림·직접 확인 9~13](NAMEPLATES.md), [완성 코드](../examples/nameplate-style/scripts/nameplates.py)를 보세요.
+
+```python
+def run(ctx):
+    if ctx.scene is None:
+        return
+    npc = ctx.scene.object("npc")
+    if npc is not None:
+        npc.show_name = True
+        npc.name_background_color = "#8c3454"
+        npc.name_background_transparent = False
+        npc.name_position = "below"
+```
+
+파일 scripts/nameplates.py, 이벤트 스크립트 호출 함수 run, 결과 변수 빈 칸입니다. ctx 인자·None 반환·대기 없음·전역 등록 불필요입니다. 완성 코드에서는 transparent_above가 투명/위, colored_below가 색/아래를 설정합니다. 색은 #rrggbb, 위치는 above/below이고 타입 오류 TypeError·값 오류 ValueError·실패 시 이전 값 유지입니다. 색만 바꿔도 투명 체크는 자동 해제되지 않습니다. 실행 사본만 변경하며 장면 재진입/재시작은 편집값으로 돌아갑니다. F5/F6은 ctx.scene=None 보호가 필요합니다.

@@ -32,3 +32,12 @@
 ## 에셋 가져오기·목록
 
 [assets](assets/README.md): 자체 생성한 반투명 PNG·짧은 WAV의 목록·미리보기·재가져오기·복구 예제입니다. 객체 이미지/게임 소리 재생은 후속 단계입니다.
+
+
+- [BGM·효과음 WAV/MP3 예제](audio/README.md): 소리 이벤트·Python 재생/페이드/정지와 생성 도구.
+
+
+- [객체 이름표·전체 이름/ID 예제](nameplates/README.md): 게임용 개별 표시, F9 디버그 표시, Python 문구 변경.
+
+
+- [이름표 배경·위아래 예제](nameplate-style/README.md): 투명 위쪽·색상 아래쪽 비교, Python 스타일 전환.

@@ -12,7 +12,9 @@
 
 #include "naru/project/ProjectIO.h"
 #include "naru/runtime/GameWorld.h"
+#include "naru/audio/SdlAudio.h"
 #include "ImageRenderer.h"
+#include "NameplateRenderer.h"
 
 #if NARU_PLAYER_HAS_PYTHON
 #include "naru/python/PythonGameScripts.h"
@@ -59,6 +61,7 @@ struct Options {
     std::string screenshot;
     std::string logFile;
     bool debugState = false;
+    bool debugObjectNames = false;
 };
 
 std::ofstream fileLog;
@@ -134,6 +137,7 @@ std::optional<Options> parseArgs(int argc, char** argv) {
     Options o;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
+        if (arg == "--debug-object-names") { o.debugObjectNames = true; continue; }
         if (arg == "--debug-state") { o.debugState = true; continue; }
         if (arg == "--log-file" && i + 1 < argc) { o.logFile = argv[++i]; continue; }
         auto next = [&]() -> std::optional<std::string> {
@@ -373,7 +377,7 @@ ScriptRunner makeScriptRunner(python::PythonRuntime* python, std::string initErr
     };
 }
 #endif
-TTF_Font* openFont(const std::string& requested) {
+TTF_Font* openFont(const std::string& requested, float size = 26) {
     std::vector<std::string> candidates;
     if (!requested.empty()) {
         candidates.push_back(requested);
@@ -386,7 +390,7 @@ TTF_Font* openFont(const std::string& requested) {
     candidates.emplace_back("C:/Windows/Fonts/malgun.ttf");
 #endif
     for (const std::string& path : candidates) {
-        if (TTF_Font* font = TTF_OpenFont(path.c_str(), 26.0f)) {
+        if (TTF_Font* font = TTF_OpenFont(path.c_str(), size)) {
             return font;
         }
     }
@@ -450,6 +454,8 @@ int main(int argc, char** argv) {
     });
     world.logger().addSink(writeLog);
 #endif
+    SdlAudio audio(world.project(), options->projectDir);
+    world.setAudio(&audio);
     if (!world.startGame(sceneId)) {
         return 1;
     }
@@ -471,6 +477,8 @@ int main(int argc, char** argv) {
     SDL_Renderer* renderer = nullptr;
     if (!SDL_CreateWindowAndRenderer(title.c_str(), winW, winH, SDL_WINDOW_RESIZABLE, &window, &renderer)) {
         writeStartupError(std::string("창을 만들지 못했습니다: ") + SDL_GetError());
+        audio.stopAll();
+        world.setAudio(nullptr);
         SDL_Quit();
         return 1;
     }
@@ -486,6 +494,10 @@ int main(int argc, char** argv) {
         world.logger().warning("한글 글꼴을 열지 못해 대사를 영문 디버그 글꼴로 표시합니다 (--font로 지정)");
     }
 
+    TTF_Font* labelFont = font ? openFont(options->fontPath, 18) : nullptr;
+    NameplateRenderer nameplates;
+    bool debugObjectNames = options->debugObjectNames;
+    bool debugKeyWasHeld = false;
     InputState input;
     // 누르고 있는 실제 키 이름 (SDL 키 이름). 매 프레임 키 배치(전역 스크립트가 바꿀 수 있음)로 동작을 계산한다.
     std::set<std::string> heldKeys;
@@ -520,6 +532,10 @@ int main(int argc, char** argv) {
                 else scriptedHeld.insert(s.action);
             }
         }
+        const bool debugKeyHeld = physicalKeys.contains("F9");
+        if (debugKeyHeld && !debugKeyWasHeld) debugObjectNames = !debugObjectNames;
+        debugKeyWasHeld = debugKeyHeld;
+        physicalKeys.erase("F9"); // Reserved for the player overlay, not game action input.
         // 자동 검사: 대사가 뜬 지 0.5초가 지나면 결정 키를 한 프레임 누른 것으로 친다.
         if (options->autoConfirm && world.message() && frame - messageSince >= 30 && frame % 2 == 0) {
             scriptedHeld.insert(toKey(InputAction::Confirm));
@@ -537,6 +553,7 @@ int main(int argc, char** argv) {
         double dt = fixedFrames ? 1.0 / 60.0 : static_cast<double>(now - last) / 1e9;
         last = now;
         world.update(dt, input);
+        audio.update(dt);
         if (options->debugState && (fixedFrames ? frame % 12 == 0 : now - lastState >= 200000000)) {
             writeState(world);
             lastState = now;
@@ -549,6 +566,7 @@ int main(int argc, char** argv) {
         }
 
         drawScene(renderer, *world.scene(), world.player(), world.facing(), images);
+        nameplates.draw(renderer, labelFont, *world.scene(), debugObjectNames, images);
         if (world.message()) {
             drawMessage(renderer, font, *world.message(), *world.scene(), speakerText, bodyText, frame,
                         world.choices().get(), world.selectedChoice(), choiceText, hintText);
@@ -570,6 +588,8 @@ int main(int argc, char** argv) {
         }
     }
 
+    nameplates.clear();
+    if (labelFont) TTF_CloseFont(labelFont);
     speakerText.reset();
     bodyText.reset();
     for (auto& text : choiceText) text.reset();
@@ -579,6 +599,8 @@ int main(int argc, char** argv) {
     }
     TTF_Quit();
     images.clear();
+    audio.stopAll();
+    world.setAudio(nullptr);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();

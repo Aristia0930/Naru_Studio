@@ -166,3 +166,12 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 - Debug 구성은 Python 디버그 라이브러리(`python3xx_d.lib`)가 필요해 기본 preset은 RelWithDebInfo를 사용한다.
 - Python 스크립트는 격리되지 않은 사용자 로컬 코드로 실행된다. 무한 루프 중단 정책은 아직 없다.
 - `async def run(ctx)`와 대기형 명령(대사·이동 등)은 아직 지원하지 않으며 명확한 오류로 보고한다.
+
+
+### 소리 디코더와 검증 (2026-11-08)
+
+WAV/MP3는 audio/의 공통 naru_audio 라이브러리가 읽고 SDL3로 재생합니다. MP3 디코더는 third_party/dr_libs/dr_mp3.h에 고정 버전으로 포함되어 추가 설치/다운로드가 필요 없습니다. [버전·SHA-256·라이선스](../third_party/dr_libs/README.md). 기존 Qt/Python/SDL3/SDL3_ttf 설치로 빌드합니다.
+
+객체 이름표도 기존 SDL3_ttf로 표시하며 추가 의존성은 없습니다. `player_nameplates` 검사는 실제 게임 화면에서 F9 전환·숨김·개별/사용자 문구·Python 변경·이동 추종을 비교합니다. JSON 기본값/형식/실행 사본은 project, Python 인자/오류는 python, 인스펙터/Undo/저장/재열기는 asset_editor, 제작툴 초기 표시 메뉴의 인자 전달은 editor_selftest에서 함께 검사합니다. [이름표 가이드·그림·직접 확인](guide/NAMEPLATES.md).
+
+`dev.cmd test`는 기존 검사에 audio_prepare/audio/player_audio를 더해 디코딩·더미 장치 재생/반복·페이드·동시 효과음·파일 오류·JSON·실제 플레이어/Python을 검사합니다. asset_editor는 소리 입력창·참조/ID/Undo·저장/재열기를 검사합니다. 실제 스피커 확인은 [수동 확인](guide/AUDIO.md)대로 별도 수행합니다. 개인 MP3는 `python tools/generate_audio_example.py build/my-audio-test --bgm "내 음악.mp3"`로 새 폴더에 복사하여 테스트할 수 있습니다.

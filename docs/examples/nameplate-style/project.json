@@ -1,0 +1,18 @@
+{
+  "formatVersion": 1,
+  "name": "이름표 배경·위치 확인",
+  "startScene": "scene_001",
+  "scenes": [
+    "scene_001"
+  ],
+  "assets": [
+    {
+      "id": "npc_sprite",
+      "name": "이름표 확인 캐릭터",
+      "kind": "image",
+      "path": "assets/npc.png",
+      "sourceName": "npc.png",
+      "sha256": "9da8dff05c852d92aedc682423e4a43711136d9c895661af422961cb4cfc0e13"
+    }
+  ]
+}

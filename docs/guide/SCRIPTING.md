@@ -100,7 +100,7 @@ def run(ctx):
 
 첫 값은 종류 **키**, 다음 값은 항목 **ID**입니다. 표시 이름과 다릅니다. 항목 없음은 None, 종류 없음은 KeyError입니다. `ctx.db.types()`로 종류, `ctx.db.ids("item")`으로 항목 ID를 볼 수 있습니다. DB는 읽기 전용이며 반환한 사전을 수정해도 DB가 수정되는 API가 아닙니다.
 
-[에셋 추가·파일 교체·파일 내보내기·그룹 분류](ASSETS.md)는 제작툴에서 사용할 수 있습니다. 그룹은 제작 자료 분류이며 게임 실행에 영향을 주지 않습니다. [객체 이미지·장면 배경](IMAGES.md)은 인스펙터에서 지정하고 실제 게임에서는 `ctx.scene.object(ID).image`와 `ctx.scene.background_image`에 등록한 이미지 ID 또는 빈 문자열을 넣어 변경합니다. 잘못된 ID·다른 종류는 ValueError, 문자열 이외는 TypeError이며 기존 값을 유지합니다. 실행 사본에 즉시 반영·대기 없음, 장면 재진입·재시작은 편집값으로 초기화합니다. `docs/examples/images/scripts/appearance.py`를 프로젝트 scripts에 두고 이벤트 스크립트 호출에 toggle_background를 연결하면 됩니다. 인자 ctx·반환 bool, 전역 등록 불필요. F5/F6의 ctx.scene은 None이므로 예제는 안내 로그만 남기며 오류 위치·traceback은 기존과 같습니다. `ctx.assets` 같은 관리 API·게임 소리·애니메이션 API는 아직 없습니다.
+[에셋 추가·파일 교체·파일 내보내기·그룹 분류](ASSETS.md)는 제작툴에서 사용할 수 있습니다. 그룹은 제작 자료 분류이며 게임 실행에 영향을 주지 않습니다. [객체 이미지·장면 배경](IMAGES.md)은 인스펙터에서 지정하고 실제 게임에서는 `ctx.scene.object(ID).image`와 `ctx.scene.background_image`에 등록한 이미지 ID 또는 빈 문자열을 넣어 변경합니다. 잘못된 ID·다른 종류는 ValueError, 문자열 이외는 TypeError이며 기존 값을 유지합니다. 실행 사본에 즉시 반영·대기 없음, 장면 재진입·재시작은 편집값으로 초기화합니다. `docs/examples/images/scripts/appearance.py`를 프로젝트 scripts에 두고 이벤트 스크립트 호출에 toggle_background를 연결하면 됩니다. 인자 ctx·반환 bool, 전역 등록 불필요. F5/F6의 ctx.scene은 None이므로 예제는 안내 로그만 남기며 오류 위치·traceback은 기존과 같습니다. `ctx.assets` 같은 관리 API·애니메이션 API는 아직 없습니다. 게임 소리는 [ctx.audio 안내](AUDIO.md)대로 연결합니다.
 
 DB에 스킬을 정의해서 Python 피해 계산·이미지/소리/이펙트로 연결하는 기능은 개발 계획입니다. 현재 스킬/전투 API가 있다고 가정하지 마세요.
 
@@ -148,3 +148,12 @@ F7은 문법, F5는 단독 `run`, F6는 이벤트 연결, Ctrl+R은 실제 게�
 `ctx.log`, `ctx.warning`, `print`는 로그로 확인합니다. Python 오류는 파일·행·traceback을 기록하며 로그의 파일 위치에서 코드를 열 수 있습니다. 실제 게임의 명령 실패 로그를 더블클릭하면 객체/공통 이벤트의 오류 명령으로 이동할 수 있습니다. 오류가 나면 다음 명령이 실행되지 않았는지와 남아 있는 조작/이동도 확인하세요.
 
 새 기능마다 이 안내·이벤트 문서·API·예제를 함께 갱신합니다. 복사 가능한 예제는 [예제 목록](../examples/README.md), 현재 미구현 범위는 [로드맵](../ROADMAP.md)에 있습니다.
+
+
+게임 소리는 [audio_demo.py](../examples/audio/scripts/audio_demo.py)를 scripts/에 복사하고 이벤트 스크립트 호출의 run/fade/stop_effects로 연결합니다. 전역 등록은 필요 없고 반환값은 None이며 대기하지 않습니다. F5/F6에서는 ctx.audio가 None이므로 보호 코드가 필요합니다. 인자·범위·오류와 on_game_start 연결은 [소리 안내](AUDIO.md)를 보세요.
+
+
+이름표는 [nameplates.py](../examples/nameplates/scripts/nameplates.py)의 run/hide_name/use_object_name을 이벤트 스크립트 호출로 연결합니다. 인자 ctx·반환 None·전역 등록 불필요입니다. 객체 show_name(bool)과 name_text(str, 빈 글자면 객체 이름)를 읽고 바꾸며 F5/F6은 ctx.scene=None 보호가 필요합니다. [설정·오류·실행 시점·완성 코드·그림](NAMEPLATES.md).
+
+
+이름표 배경 투명/색/위아래는 SceneObject.name_background_transparent/name_background_color/name_position으로 바꿉니다. [스타일 완성 코드와 연결](../examples/nameplate-style/README.md), [기본값·오류·실행 시점·그림](NAMEPLATES.md).

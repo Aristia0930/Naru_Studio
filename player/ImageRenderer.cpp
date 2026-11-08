@@ -100,6 +100,12 @@ SDL_Texture* ImageRenderer::texture(const std::string& id) {
     return texture;
 }
 
+naru::NameplateAnchor ImageRenderer::nameplateAnchor(const naru::SceneObject& object, bool below) {
+    if (object.visible) if (auto* image = texture(object.image.asset))
+        return naru::objectNameplateAnchor(object, image->w, image->h, below);
+    return naru::objectNameplateAnchor(object, 0, 0, below);
+}
+
 void ImageRenderer::draw(const naru::Scene& scene) {
     if (scene_ != scene.id) { clear(); scene_ = scene.id; }
     SDL_SetRenderLogicalPresentation(renderer_, scene.width, scene.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);

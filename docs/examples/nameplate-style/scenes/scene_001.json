@@ -1,0 +1,89 @@
+{
+  "formatVersion": 1,
+  "id": "scene_001",
+  "name": "투명 위쪽 / 색상 아래쪽 이름표",
+  "width": 800,
+  "height": 480,
+  "player": "hero",
+  "background": "#202830",
+  "objects": [
+    {
+      "id": "hero",
+      "name": "주인공",
+      "x": 80,
+      "y": 380,
+      "width": 32,
+      "height": 32,
+      "color": "#4778a8"
+    },
+    {
+      "id": "npc",
+      "name": "편집용 NPC 이름",
+      "x": 180,
+      "y": 265,
+      "width": 32,
+      "height": 32,
+      "color": "#4778a8",
+      "showName": true,
+      "nameText": "투명 배경 · 위",
+      "image": {
+        "asset": "npc_sprite",
+        "width": 48,
+        "height": 96,
+        "anchorX": 0.5,
+        "anchorY": 1,
+        "offsetX": 16,
+        "offsetY": 32
+      },
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "call_script",
+            "script": "nameplates.py",
+            "function": "run"
+          }
+        ]
+      },
+      "nameBackgroundTransparent": true,
+      "namePosition": "above"
+    },
+    {
+      "id": "inn",
+      "name": "여관",
+      "x": 465,
+      "y": 200,
+      "width": 32,
+      "height": 32,
+      "color": "#4778a8",
+      "showName": true,
+      "nameBackgroundColor": "#8c3454",
+      "namePosition": "below",
+      "nameText": "선택한 배경색 · 아래"
+    },
+    {
+      "id": "plain",
+      "name": "이름표 없는 객체",
+      "x": 600,
+      "y": 340,
+      "width": 32,
+      "height": 32,
+      "color": "#4778a8",
+      "showName": true,
+      "nameBackgroundColor": "#246847",
+      "namePosition": "below",
+      "nameText": "초록 배경 · 아래"
+    },
+    {
+      "id": "hidden",
+      "name": "숨긴 진행 객체",
+      "x": 650,
+      "y": 80,
+      "width": 32,
+      "height": 32,
+      "color": "#4778a8",
+      "visible": false,
+      "showName": true
+    }
+  ]
+}

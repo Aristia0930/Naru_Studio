@@ -1,4 +1,5 @@
 #include "naru/runtime/GameWorld.h"
+#include "naru/project/Nameplate.h"
 #include "naru/project/ImageLayout.h"
 
 #include <algorithm>
@@ -418,6 +419,33 @@ bool GameWorld::setObjectVisible(const std::string& id, bool visible) {
     }
     o->visible = visible;
     return true;
+}
+
+bool GameWorld::setObjectShowName(const std::string& id, bool show) {
+    auto* object = scene_ ? scene_->findObject(id) : nullptr;
+    if (!object) return false;
+    object->showName = show; return true;
+}
+bool GameWorld::setObjectNameText(const std::string& id, const std::string& text) {
+    auto* object = scene_ ? scene_->findObject(id) : nullptr;
+    if (!object || !isValidNameText(text)) return false;
+    object->nameText = text; return true;
+}
+
+bool GameWorld::setObjectNameBackgroundTransparent(const std::string& id, bool transparent) {
+    auto* object = scene_ ? scene_->findObject(id) : nullptr;
+    if (!object) return false;
+    object->nameBackgroundTransparent = transparent; return true;
+}
+bool GameWorld::setObjectNameBackgroundColor(const std::string& id, const std::string& color) {
+    auto* object = scene_ ? scene_->findObject(id) : nullptr;
+    if (!object || !isValidNameBackgroundColor(color)) return false;
+    object->nameBackgroundColor = color; return true;
+}
+bool GameWorld::setObjectNamePosition(const std::string& id, const std::string& position) {
+    auto* object = scene_ ? scene_->findObject(id) : nullptr;
+    if (!object || !isValidNamePosition(position)) return false;
+    object->namePosition = position; return true;
 }
 
 std::string GameWorld::resolveTarget(const std::string& target, const std::string& selfId) const {

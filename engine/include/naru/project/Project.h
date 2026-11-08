@@ -47,6 +47,11 @@ struct SceneObject {
     bool visible = true;
     ObjectEvent event;
     ObjectImage image;
+    bool showName = false; // Game nameplate; editor/debug labels are independent.
+    std::string nameText; // Empty means the object name.
+    bool nameBackgroundTransparent = false;
+    std::string nameBackgroundColor = "#0c1018";
+    std::string namePosition = "above"; // above, below
 
     bool operator==(const SceneObject&) const = default;
 };

@@ -6,6 +6,8 @@ RPG Maker의 데이터베이스·맵·이벤트·전투 등 제작 기능을 출
 
 ## 지금 시작할 곳
 
+새 BGM·효과음 기능은 [단계별 테스트](docs/guide/AUDIO_TEST.md)로 확인하고, 자기 게임에는 [기능 사용 가이드](docs/guide/AUDIO.md)대로 이벤트·Python을 연결합니다. 지정한 MP3 테스트 폴더는 `build/manual-audio`입니다.
+
 현재 기능을 Python으로 연결하려면 [Python 전체 가이드](docs/guide/PYTHON_COOKBOOK.md)를 보세요. 배경/객체/플레이어 이미지부터 변수·DB·입력·이동·장면·공통 이벤트·전역 훅·로그까지 [완성 코드](docs/examples/python_guide.py)와 [전역 연결 코드](docs/examples/guide_global.py)를 제공합니다.
 
 DB를 중심으로 스킬·Python·이미지·음원·프레임 이펙트를 연결하고 투명화 도구를 추가하는 방법은 [DB·에셋·스킬 연결 계획](docs/DATABASE_ASSETS_PLAN.md)에 있습니다.
@@ -20,15 +22,15 @@ DB를 중심으로 스킬·Python·이미지·음원·프레임 이펙트를 연
 
 **객체 이미지·장면 배경(10②)**: 인스펙터 팝업에서 이미지·배치·기준점·회전·뒤집기·불투명도·순서를 설정합니다. 충돌 영역은 독립이며 배경 다섯 표시 방식·사용처/제거 보호와 Python `obj.image`·`ctx.scene.background_image`를 지원합니다. [사용법·예제·수동 확인](docs/guide/IMAGES.md).
 
-**에셋 목록(순서 10①)**: 독립 팝업에서 PNG/JPG/BMP·WAV·TTF/OTF를 관리합니다. **에셋 추가... / 파일 교체... / 파일 내보내기... / 목록에서 제거...**와 그룹 추가·이름 변경·삭제·여러 에셋 그룹 이동을 지원합니다. 썸네일·알파 미리보기·WAV 미리듣기·그룹/종류/검색 필터·Undo·저장/재열기도 제공합니다. [사용법·그림·수동 확인](docs/guide/ASSETS.md), [예제](docs/examples/assets/README.md).
+**에셋 목록(순서 10①)**: 독립 팝업에서 PNG/JPG/BMP·WAV/MP3·TTF/OTF를 관리합니다. **에셋 추가... / 파일 교체... / 파일 내보내기... / 목록에서 제거...**와 그룹 추가·이름 변경·삭제·여러 에셋 그룹 이동을 지원합니다. 썸네일·알파 미리보기·WAV 미리듣기·그룹/종류/검색 필터·Undo·저장/재열기도 제공합니다. [사용법·그림·수동 확인](docs/guide/ASSETS.md), [예제](docs/examples/assets/README.md).
 
 추가할 때 파일별 **에셋 ID**를 직접 입력하고, 기존 항목은 **ID 변경...**으로 수정할 수 있습니다. 중복·형식을 검사하며 객체·배경 참조와 Undo를 함께 처리합니다. Python 코드에 직접 적은 ID 문자열은 직접 수정합니다. [ID 규칙·예제](docs/guide/ASSETS.md#id-직접-지정변경).
 
-**실행 중 확인 도구(순서 9)**: 게임 실행 중 변수·스위치를 읽기 전용 패널에서 보고, 오류 로그를 더블클릭하면 해당 객체·공통 이벤트의 명령으로 이동합니다. 게임 로그는 실행마다 파일로 남깁니다. [사용법·예제·그림](docs/guide/DEBUGGING.md). 자동 테스트는 17종이며 이미지·ID 편집·Python 가이드 실행/문서 검사까지 포함합니다. 다음은 게임 소리 재생입니다.
+**실행 중 확인 도구(순서 9)**: 게임 실행 중 변수·스위치를 읽기 전용 패널에서 보고, 오류 로그를 더블클릭하면 해당 객체·공통 이벤트의 명령으로 이동합니다. 게임 로그는 실행마다 파일로 남깁니다. [사용법·예제·그림](docs/guide/DEBUGGING.md). 자동 테스트는 21종이며 이미지·ID 편집·Python 가이드 실행/문서 검사까지 포함합니다. BGM·효과음과 WAV/MP3 재생을 추가했습니다. [사용법·수동 확인](docs/guide/AUDIO.md).
 
 **키 설정은 화면과 Python이 양방향 동기화됩니다.** 게임 → 키 설정에서 기본 조작 ON/OFF·속도·동작별 키를 바꾸거나 같은 전용 설정 파일을 편집합니다. **동시 키 조합 추가**로 Shift+E 같은 2~4키 입력도 연결합니다. [설정 안내](docs/guide/INPUT_SETTINGS.md), [이벤트 명령 전체](docs/guide/EVENTS.md), [스크립트 작성·연결](docs/guide/SCRIPTING.md)을 참고하세요. 새 기능·동작 변경마다 이 문서들도 함께 갱신합니다.
 
-**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 17종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. **공통 이벤트** 탭에서 여러 장면이 함께 쓸 명령을 편집하고 이벤트 명령 또는 Python `ctx.run_event`로 호출합니다. 이미지·WAV·글꼴 [가져오기·목록·미리보기](docs/guide/ASSETS.md)를 지원합니다. 객체 이미지·장면 배경을 표시하며 게임 소리·배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
+**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 21종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. **공통 이벤트** 탭에서 여러 장면이 함께 쓸 명령을 편집하고 이벤트 명령 또는 Python `ctx.run_event`로 호출합니다. 이미지·WAV·글꼴 [가져오기·목록·미리보기](docs/guide/ASSETS.md)를 지원합니다. 객체 이미지·장면 배경을 표시하며 BGM·효과음은 [소리 안내](docs/guide/AUDIO.md)대로 재생하며 배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 | 위치 | 내용 |
 |---|---|
@@ -73,3 +75,12 @@ Godot 4.7.2 standard Windows x64를 [공식 배포처](https://github.com/godote
 ## 참고 소스
 
 외부 참고 소스의 LICENSE/COPYING과 provenance를 유지합니다. 일부 `refs`는 다른 라이선스의 조사용 소스이므로 제품 코드로 복사하지 않습니다. 원시 Evidence의 절대 경로는 조사 당시 위치의 기록이며, 그 경로가 새 PC에 존재해야 한다는 뜻이 아닙니다.
+
+
+**게임 소리(10③)**: 에셋 WAV/MP3 가져오기·미리듣기, 이벤트 소리 재생/정지, BGM 반복·음량·페이드 정지, 효과음 겹침/모두 정지, Python ctx.audio를 지원합니다. [사용법·그림·수동 확인](docs/guide/AUDIO.md), [예제](docs/examples/audio/README.md). 이미지·ID 수동 확인은 사용자 완료 보고(2026-11-08)를 반영했습니다.
+
+
+**객체 이름표**: 게임 창 F9로 전체 이름·ID를 켜고 끕니다. NPC·시설은 인스펙터의 게임 이름표/표시 문구로 개별 설정하고 Python show_name/name_text로 변경합니다. [그림·사용법·직접 확인](docs/guide/NAMEPLATES.md), [실행 예제](docs/examples/nameplates/README.md).
+
+
+이름표의 배경 투명·배경색·객체 위/아래 위치도 인스펙터에서 설정합니다. [사용법·그림](docs/guide/NAMEPLATES.md), [스타일 비교 예제](docs/examples/nameplate-style/README.md).

@@ -1,6 +1,8 @@
 #include "AssetBrowser.h"
 #include "ProjectDocument.h"
 #include "naru/project/ImageLayout.h"
+#include "naru/audio/AudioDecoder.h"
+#include "naru/runtime/Audio.h"
 
 #include <SDL3/SDL.h>
 #include <QBuffer>
@@ -39,7 +41,7 @@
 
 namespace {
 constexpr qint64 kMaxBytes = 64 * 1024 * 1024;
-const QString kFilter = QStringLiteral("지원 에셋 (*.png *.jpg *.jpeg *.bmp *.wav *.ttf *.otf)");
+const QString kFilter = QStringLiteral("지원 에셋 (*.png *.jpg *.jpeg *.bmp *.wav *.mp3 *.ttf *.otf)");
 
 QString kindName(const std::string& kind) {
     if (kind == "image") return QStringLiteral("이미지");
@@ -66,21 +68,11 @@ bool decode(const QByteArray& bytes, const QString& suffix, std::string& kind, Q
         }
         return true;
     }
-    if (suffix == "wav") {
+    if (suffix == "wav" || suffix == "mp3") {
         kind = "audio";
-        SDL_AudioSpec spec{};
-        Uint8* samples = nullptr;
-        Uint32 length = 0;
-        if (bytes.size() < 44 || bytes.mid(0, 4) != "RIFF" || bytes.mid(8, 4) != "WAVE") {
-            *error = QStringLiteral("WAV 파일이 손상되었습니다.");
-            return false;
-        }
-        bool ok = SDL_LoadWAV_IO(SDL_IOFromConstMem(bytes.constData(), bytes.size()), true, &spec, &samples, &length);
-        SDL_free(samples);
-        if (!ok || !length || spec.freq <= 0 || spec.channels <= 0) {
-            *error = QStringLiteral("읽을 수 없는 WAV입니다: ") + QString::fromUtf8(SDL_GetError());
-            return false;
-        }
+        naru::DecodedAudio decoded;
+        auto message = naru::decodeAudio(bytes.constData(), bytes.size(), suffix.toStdString(), decoded);
+        if (!message.empty()) { *error = QString::fromStdString(message); return false; }
         return true;
     }
     if (suffix == "ttf" || suffix == "otf") {
@@ -89,7 +81,7 @@ bool decode(const QByteArray& bytes, const QString& suffix, std::string& kind, Q
         *error = QStringLiteral("글꼴 파일을 읽을 수 없습니다.");
         return false;
     }
-    *error = QStringLiteral("지원 형식: PNG/JPG/BMP, WAV, TTF/OTF.");
+    *error = QStringLiteral("지원 형식: PNG/JPG/BMP, WAV/MP3, TTF/OTF.");
     return false;
 }
 
@@ -110,19 +102,25 @@ class AssetIdCommand : public QUndoCommand {
 public:
     AssetIdCommand(ProjectDocument* doc, const std::string& before, const std::string& after)
         : QUndoCommand(QStringLiteral("에셋 ID 변경")), doc_(doc), before_(doc->project().assets), after_(before_),
-          beforeScenes_(doc->project().scenes), afterScenes_(beforeScenes_) {
+          beforeScenes_(doc->project().scenes), afterScenes_(beforeScenes_),
+          beforeCommon_(doc->project().commonEvents), afterCommon_(beforeCommon_) {
         for (auto& a : after_) if (a.id == before) a.id = after;
         for (auto& s : afterScenes_) {
             if (s.backgroundImage.asset == before) s.backgroundImage.asset = after;
-            for (auto& o : s.objects) if (o.image.asset == before) o.image.asset = after;
+            for (auto& o : s.objects) {
+                if (o.image.asset == before) o.image.asset = after;
+                naru::renameAudioReferences(o.event.commands, before, after);
+            }
         }
+        for (auto& event : afterCommon_) naru::renameAudioReferences(event.event.commands, before, after);
     }
-    void redo() override { doc_->setAssetIdentity(after_, afterScenes_); }
-    void undo() override { doc_->setAssetIdentity(before_, beforeScenes_); }
+    void redo() override { doc_->setAssetIdentity(after_, afterScenes_, afterCommon_); }
+    void undo() override { doc_->setAssetIdentity(before_, beforeScenes_, beforeCommon_); }
 private:
     ProjectDocument* doc_;
     std::vector<naru::Asset> before_, after_;
     std::vector<naru::Scene> beforeScenes_, afterScenes_;
+    std::vector<naru::CommonEvent> beforeCommon_, afterCommon_;
 };
 }
 
@@ -150,7 +148,7 @@ AssetBrowser::AssetBrowser(ProjectDocument* document, QWidget* parent) : QWidget
     kind_ = new QComboBox(this);
     kind_->addItem(QStringLiteral("모든 종류"), QString());
     kind_->addItem(QStringLiteral("이미지"), "image");
-    kind_->addItem(QStringLiteral("소리 (WAV)"), "audio");
+    kind_->addItem(QStringLiteral("소리 (WAV/MP3)"), "audio");
     kind_->addItem(QStringLiteral("글꼴"), "font");
     layout->addWidget(search_); layout->addWidget(kind_);
     group_ = new QComboBox(this);
@@ -179,14 +177,14 @@ AssetBrowser::AssetBrowser(ProjectDocument* document, QWidget* parent) : QWidget
     layout->addLayout(editTools);
     auto* renameId = new QPushButton(QStringLiteral("ID 변경..."), this);
     renameId->setObjectName(QStringLiteral("assetRenameId"));
-    renameId->setToolTip(QStringLiteral("객체·배경 연결을 함께 변경합니다. Python 코드의 ID 문자열은 직접 수정하세요."));
+    renameId->setToolTip(QStringLiteral("객체·배경·소리 이벤트 연결을 함께 변경합니다. Python 코드의 ID 문자열은 직접 수정하세요."));
     layout->addWidget(renameId);
     connect(renameId, &QPushButton::clicked, this, [this] {
         if (const auto* a = selectedAsset()) {
             const auto id = a->id;
             bool ok = false;
             const auto after = QInputDialog::getText(this, QStringLiteral("에셋 ID 변경"),
-                QStringLiteral("새 ID (영문·숫자·_·-, 1~64자)\n객체·배경 연결은 함께 바꿉니다.\nPython 코드에 직접 쓴 ID는 직접 수정하세요. 실행 중인 게임은 다시 실행하세요."),
+                QStringLiteral("새 ID (영문·숫자·_·-, 1~64자)\n객체·배경·소리 이벤트 연결은 함께 바꿉니다.\nPython 코드에 직접 쓴 ID는 직접 수정하세요. 실행 중인 게임은 다시 실행하세요."),
                 QLineEdit::Normal, QString::fromStdString(id), &ok);
             if (!ok) return;
             QString error;
@@ -288,7 +286,7 @@ AssetBrowser::AssetBrowser(ProjectDocument* document, QWidget* parent) : QWidget
                 QStringList locations;
                 for (const auto& use : uses) locations.append(QString::fromStdString(use));
                 QMessageBox::information(this, QStringLiteral("사용 중인 에셋"),
-                    QStringLiteral("이미지 설정에서 먼저 연결을 지우세요.\n") + locations.join('\n'));
+                    QStringLiteral("이미지 설정 또는 소리 이벤트에서 먼저 연결을 지우세요.\n") + locations.join('\n'));
                 return;
             }
             if (QMessageBox::question(this, QStringLiteral("목록에서 제거"),
@@ -708,7 +706,7 @@ void AssetBrowser::preview() {
         if (!families.isEmpty()) image_->setFont(QFont(families.front(), 20));
         image_->setText(QStringLiteral("가나다 Naru Studio\nABC abc 0123456789"));
     } else {
-        image_->setText(QStringLiteral("WAV 소리\n미리듣기를 눌러 확인하세요."));
+        image_->setText(QStringLiteral("WAV/MP3 소리\n미리듣기를 눌러 확인하세요."));
         play_->setEnabled(true);
     }
 }
@@ -723,16 +721,14 @@ void AssetBrowser::playAudio() {
     const auto* a = selectedAsset();
     if (!a || a->kind != "audio" || assetState(*a) != QStringLiteral("정상")) return;
     if (!audioInitialized_) audioInitialized_ = SDL_InitSubSystem(SDL_INIT_AUDIO);
-    SDL_AudioSpec spec{};
-    Uint8* samples = nullptr;
-    Uint32 length = 0;
-    const auto path = checkedPath(*a).toUtf8();
-    bool ok = audioInitialized_ && SDL_LoadWAV(path.constData(), &spec, &samples, &length);
-    if (ok) audio_ = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec, nullptr, nullptr);
-    ok = ok && audio_ && length <= static_cast<Uint32>(std::numeric_limits<int>::max()) &&
-        SDL_PutAudioStreamData(audio_, samples, static_cast<int>(length)) &&
+    QFile input(checkedPath(*a));
+    if (!input.open(QIODevice::ReadOnly) || input.size() > static_cast<qint64>(naru::kMaxAudioBytes)) return;
+    auto bytes = input.readAll(); naru::DecodedAudio decoded;
+    auto message = naru::decodeAudio(bytes.constData(), bytes.size(), QFileInfo(input.fileName()).suffix().toLower().toStdString(), decoded);
+    if (!message.empty()) { playback_->setText(QString::fromStdString(message)); return; }
+    if (audioInitialized_) audio_ = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &decoded.spec, nullptr, nullptr);
+    bool ok = audio_ && SDL_PutAudioStreamData(audio_, decoded.samples.data(), static_cast<int>(decoded.samples.size() * sizeof(float))) &&
         SDL_FlushAudioStream(audio_) && SDL_ResumeAudioStreamDevice(audio_);
-    SDL_free(samples);
     if (!ok) {
         const auto error = QString::fromUtf8(SDL_GetError());
         stopAudio(); playback_->setText(QStringLiteral("미리듣기 실패: ") + error);
