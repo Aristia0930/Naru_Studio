@@ -63,7 +63,7 @@ KEY_BINDINGS = {
 
 이전 `game.py`가 매 틱 `WALK_SPEED`나 고정 키를 다시 대입한다면 그 코드는 여전히 게임 동작을 바꿉니다. 기본 키/속도는 전용 설정 파일로 옮기고 달리기 같은 임시 변경만 남기세요. 키 설정 화면이 임의 Python 함수의 실행 결과를 해석하거나 코드를 자동 재작성하는 기능은 아닙니다.
 
-F5/F6에서는 `ctx.input/player`가 None입니다. 설정 파일 편집과 F6에서 실제 키로 이동하는 기능을 혼동하지 마세요. 현재 범위는 키보드·프로젝트 기본 설정이며 이용자 개인 설정 메뉴·패드는 이후 개발 범위입니다.
+F5/F6에서는 `ctx.input/player`가 None입니다. 설정 파일 편집과 F6에서 실제 키로 이동하는 기능을 혼동하지 마세요. **게임 창 F9는 전체 이름·ID 표시 예약 키**이며 배치해도 게임 동작에는 전달하지 않습니다. 제작툴 창 F9는 데이터베이스를 엽니다. 현재 범위는 키보드·프로젝트 기본 설정이며 이용자 개인 설정 메뉴·패드는 이후 개발 범위입니다.
 
 ## 5. 8을 눌러 위로 이동한 뒤 오른쪽 보기
 
@@ -84,9 +84,18 @@ F5/F6에서는 `ctx.input/player`가 None입니다. 설정 파일 편집과 F6�
 ![동시 입력 키 선택](images/25-input-combination.png)
 
 ```python
-# KEY_BINDINGS 사전의 항목 예시
-"special_action": ["Shift + E", "F"],
-"step_up_face_right": ["Shift + 8"],
+# 기존 설정 파일의 KEY_BINDINGS를 아래 사전으로 교체합니다.
+# DEFAULT_CONTROL_ENABLED와 PLAYER_SPEED는 기존 값을 유지합니다.
+KEY_BINDINGS = {
+    "up": ["Up", "W"],
+    "down": ["Down", "S"],
+    "left": ["Left", "A"],
+    "right": ["Right", "D"],
+    "confirm": ["Z", "Return", "Space", "Keypad Enter"],
+    "cancel": ["X", "Escape"],
+    "special_action": ["Shift + E", "F"],
+    "step_up_face_right": ["Shift + 8"],
+}
 ```
 
 목록의 항목끼리는 **또는(OR)**, 한 문자열 안에서 `+`로 연결한 키끼리는 **모두(AND)**입니다. 위 예시는 Shift와 E를 함께 누르거나 F만 누르면 실행합니다. `["W", "D"]`는 W 또는 D, `["W + D"]`는 W와 D를 함께 누르기입니다. 기존 키를 남긴 채 조합을 추가하면 기존 키만으로도 실행하므로 필요 없다면 **선택 키 삭제**로 지우세요.

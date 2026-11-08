@@ -1,5 +1,7 @@
 # Naru Studio
 
+문서 위치: [전체 문서 안내](docs/README.md) · [사용 설명서](docs/guide/README.md) · [실행 예제](docs/examples/README.md).
+
 **C++ 자체 게임 엔진 + Qt 제작 UI + Python 게임 확장 스크립트**를 만드는 프로젝트입니다.
 
 RPG Maker의 데이터베이스·맵·이벤트·전투 등 제작 기능을 출발점으로 삼고, Unity·Godot의 유용한 기능/작업 방식을 참고해 UI로 쉽게 제작할 수 있도록 합니다. 지원 목표는 턴제 RPG와 2D 횡스크롤입니다. 기존 엔진을 감싼 편집기가 목표가 아닙니다.
@@ -22,7 +24,7 @@ DB를 중심으로 스킬·Python·이미지·음원·프레임 이펙트를 연
 
 **객체 이미지·장면 배경(10②)**: 인스펙터 팝업에서 이미지·배치·기준점·회전·뒤집기·불투명도·순서를 설정합니다. 충돌 영역은 독립이며 배경 다섯 표시 방식·사용처/제거 보호와 Python `obj.image`·`ctx.scene.background_image`를 지원합니다. [사용법·예제·수동 확인](docs/guide/IMAGES.md).
 
-**에셋 목록(순서 10①)**: 독립 팝업에서 PNG/JPG/BMP·WAV/MP3·TTF/OTF를 관리합니다. **에셋 추가... / 파일 교체... / 파일 내보내기... / 목록에서 제거...**와 그룹 추가·이름 변경·삭제·여러 에셋 그룹 이동을 지원합니다. 썸네일·알파 미리보기·WAV 미리듣기·그룹/종류/검색 필터·Undo·저장/재열기도 제공합니다. [사용법·그림·수동 확인](docs/guide/ASSETS.md), [예제](docs/examples/assets/README.md).
+**에셋 목록(순서 10①)**: 독립 팝업에서 PNG/JPG/BMP·WAV/MP3·TTF/OTF를 관리합니다. **에셋 추가... / 파일 교체... / 파일 내보내기... / 목록에서 제거...**와 그룹 추가·이름 변경·삭제·여러 에셋 그룹 이동을 지원합니다. 썸네일·알파 미리보기·WAV/MP3 미리듣기·그룹/종류/검색 필터·Undo·저장/재열기도 제공합니다. [사용법·그림·수동 확인](docs/guide/ASSETS.md), [예제](docs/examples/assets/README.md).
 
 추가할 때 파일별 **에셋 ID**를 직접 입력하고, 기존 항목은 **ID 변경...**으로 수정할 수 있습니다. 중복·형식을 검사하며 객체·배경 참조와 Undo를 함께 처리합니다. Python 코드에 직접 적은 ID 문자열은 직접 수정합니다. [ID 규칙·예제](docs/guide/ASSETS.md#id-직접-지정변경).
 
@@ -30,7 +32,7 @@ DB를 중심으로 스킬·Python·이미지·음원·프레임 이펙트를 연
 
 **키 설정은 화면과 Python이 양방향 동기화됩니다.** 게임 → 키 설정에서 기본 조작 ON/OFF·속도·동작별 키를 바꾸거나 같은 전용 설정 파일을 편집합니다. **동시 키 조합 추가**로 Shift+E 같은 2~4키 입력도 연결합니다. [설정 안내](docs/guide/INPUT_SETTINGS.md), [이벤트 명령 전체](docs/guide/EVENTS.md), [스크립트 작성·연결](docs/guide/SCRIPTING.md)을 참고하세요. 새 기능·동작 변경마다 이 문서들도 함께 갱신합니다.
 
-**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 21종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. **공통 이벤트** 탭에서 여러 장면이 함께 쓸 명령을 편집하고 이벤트 명령 또는 Python `ctx.run_event`로 호출합니다. 이미지·WAV·글꼴 [가져오기·목록·미리보기](docs/guide/ASSETS.md)를 지원합니다. 객체 이미지·장면 배경을 표시하며 BGM·효과음은 [소리 안내](docs/guide/AUDIO.md)대로 재생하며 배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
+**프로젝트 단위 제작툴의 첫 버전이 동작합니다.** `NaruStudio.exe`를 실행하면 시작 화면에서 프로젝트를 새로 만들거나 열고, 그 프로젝트 안에서 장면 배치·속성 편집·Python 스크립트 편집/실행을 합니다. 자동 테스트 21종(엔진·이벤트·데이터베이스·게임·프로젝트·Python·에디터·실제 플레이어 검사)이 통과합니다. 객체마다 RPG Maker식 **이벤트**(대사·대기·변수·조건 분기·데이터 읽기·스크립트 호출)를 편집하고 바로 테스트 실행할 수 있습니다. **데이터베이스**는 데이터 종류와 속성을 직접 정의하는 방식입니다(캐릭터·아이템·몬스터는 고칠 수 있는 템플릿). **게임 실행(Ctrl+R)** 으로 SDL3 기반 `NaruPlayer`가 장면과 대사 창을 띄웁니다. 플레이어로 지정한 객체를 방향키로 움직이고 결정 키로 조사하며, 실행 조건(조사·접촉·자동 실행·병렬 처리)이 동작합니다. **선택지 표시**로 질문·최대 6개 항목을 만들고 게임 화면·F6 미리보기에서 고른 분기를 실행합니다. **공통 이벤트** 탭에서 여러 장면이 함께 쓸 명령을 편집하고 이벤트 명령 또는 Python `ctx.run_event`로 호출합니다. 이미지·WAV/MP3·글꼴 [가져오기·목록·미리보기](docs/guide/ASSETS.md)를 지원합니다. 객체 이미지·장면 배경을 표시하며 BGM·효과음은 [소리 안내](docs/guide/AUDIO.md)대로 재생하며 배포는 아직 없습니다. **전역 스크립트**(여러 개 등록·순서, `on_game_start`/`on_scene_enter`/`on_update` 훅, 키 배치·기본 조작 변경)로 게임 전체 동작을 Python으로 덧붙입니다. 단축키: [docs/SHORTCUTS.md](docs/SHORTCUTS.md) · 스크립트에서 쓰는 엔진 값: [docs/SCRIPT_API.md](docs/SCRIPT_API.md) · 스크립트 예제: [docs/examples](docs/examples/README.md). **사용 설명서(그림 포함): [docs/guide](docs/guide/README.md)** · 빌드: [docs/BUILD.md](docs/BUILD.md) · **다음 할 일: [docs/ROADMAP.md](docs/ROADMAP.md)**.
 
 | 위치 | 내용 |
 |---|---|
@@ -39,7 +41,7 @@ DB를 중심으로 스킬·Python·이미지·음원·프레임 이펙트를 연
 | `player/` | SDL3 게임 실행 화면 `NaruPlayer.exe`: 장면 그리기, 대사 창, 입력 → 엔진 `GameWorld` |
 | `editor/` | Qt Widgets 제작툴: 시작 화면(새로 만들기/열기/최근), 장면 트리, 2D 캔버스(드래그 배치·휠 확대), 인스펙터, Undo/Redo, 스크립트 탭, 로그 |
 | `tests/` | 엔진·프로젝트·Python 테스트와 테스트용 스크립트 |
-| `third_party/` | nlohmann/json 3.11.3 (MIT) |
+| `third_party/` | nlohmann/json 3.11.3 (MIT), 고정 버전 dr_mp3와 출처·라이선스 |
 
 프로젝트 폴더 구조: `project.json`(이름·형식 버전·시작 장면·장면 순서), `scenes/<id>.json`, `scripts/*.py`, `assets/`.
 | `analysis/rpgmaker/` | RPG Maker 과거 분석 01~07, MV 코어 4파일 REA 재조사 08, 요약/원시 Evidence |

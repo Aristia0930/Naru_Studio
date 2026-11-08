@@ -75,7 +75,7 @@ Expand-Archive $d\SDL3.zip $d; Expand-Archive $d\SDL3_ttf.zip $d
 | SDL3-devel-3.4.18-VC.zip | `78D84602AE616CFE26B33A73B7D3B9B6B56E8A6650E53D92C9C6CA938F747ACD` |
 | SDL3_ttf-devel-3.2.2-VC.zip | `67805C5BABFC49CA0C56882DC9B8CABBCDD1E6F9EDDE10DDAC91DDB38F3AFB8C` |
 
-SDL3·SDL3_ttf는 zlib 라이선스다. 빌드 후 `SDL3.dll`, `SDL3_ttf.dll`이 bin 폴더에 복사된다. SDL3 없이 빌드하려면 `-DNARU_BUILD_PLAYER=OFF` (이 경우 제작툴의 "게임 실행"은 실행 파일이 없다고 알린다).
+SDL3·SDL3_ttf는 zlib 라이선스다. 빌드 후 필요한 DLL이 bin 폴더에 복사된다. `-DNARU_BUILD_PLAYER=OFF`는 player만 제외한다. 제작툴의 WAV/MP3 미리듣기는 SDL3를 사용하므로 제작툴을 빌드하면 SDL3도 필요하다. Qt·SDL3·Python 없이 엔진만 검사하려면 아래 `windows-msvc-engine-only` preset을 사용한다.
 
 ## 3. 빌드
 
@@ -136,7 +136,7 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 | `naru_event_tests.exe` | 이벤트 명령 실행(대사 대기·변수·조건 분기·스크립트 호출·오류 위치) 테스트 |
 | `naru_python_tests.exe` | Python 임베딩·오류 위치·재로드·반환값·전역 스크립트(모듈 유지·import·이름 겹침·오류 훅) 테스트 |
 
-빌드 후 `windeployqt`가 Qt DLL/플러그인을, CMake가 `python3xx.dll`과 SDL3 DLL을 bin 폴더에 복사한다. 에디터의 WAV 미리듣기도 SDL3를 사용하므로 `NARU_BUILD_PLAYER=OFF`여도 에디터 빌드에는 SDL3가 필요하다. 새 `asset_editor` 테스트는 SDL 더미 오디오 장치로 가져오기·Undo·미리듣기·복구·프로젝트 이동을 검사한다.
+빌드 후 `windeployqt`가 Qt DLL/플러그인을, CMake가 `python3xx.dll`과 SDL3 DLL을 bin 폴더에 복사한다. 에디터의 WAV/MP3 미리듣기도 SDL3를 사용하므로 `NARU_BUILD_PLAYER=OFF`여도 에디터 빌드에는 SDL3가 필요하다. 새 `asset_editor` 테스트는 SDL 더미 오디오 장치로 가져오기·Undo·미리듣기·복구·프로젝트 이동을 검사한다.
 
 에셋 목록 촬영: `NaruStudio docs/examples/assets --assets --smoke-test 1200 --screenshot docs/guide/images/27-assets.png`. [지원 형식/예제](guide/ASSETS.md).
 
@@ -151,8 +151,8 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
    - 실행 조건: 조사 / 플레이어 접촉 / 자동 실행 / 이벤트 접촉 / 병렬 처리. 모두 게임 실행 화면에서 동작한다 (이벤트 접촉의 "객체가 움직여 닿을 때"는 객체 이동 기능 이후).
    - 명령 추가: 빈 `◆` 줄을 더블클릭하거나, 명령을 선택하고 "명령 추가"(선택한 명령 위에 들어감). 종류: 대사 표시, 대기, 변수 조작(= += -=), 조건 분기(그렇다면/아니라면, 중첩 가능), 스크립트 호출(scripts/의 파일·함수), 로그, 주석.
    - 명령 더블클릭: 편집. 삭제·위로·아래로 버튼. 모든 편집은 Ctrl+Z로 되돌린다.
-   - 테스트 실행(F6): 실행 중인 명령이 노란색으로 표시되고, 대사는 아래 미리보기 창에서 "다음 ▶"으로 넘긴다. 중지(F8). 오류가 난 명령은 빨간색으로 선택된다. 변수는 매 테스트마다 비어 있는 상태로 시작한다.
-7. **게임 실행(Ctrl+R)**: 저장한 뒤 현재 장면부터 NaruPlayer 창이 뜬다. 인스펙터에서 **플레이어**로 지정한 객체를 방향키로 움직이고 Z/Enter/Space로 조사한다. 게임 로그는 로그 패널에 `[게임]`으로 표시된다.
+   - 테스트 실행(F6): 선택한 객체/공통 이벤트를 첫 명령부터 실행한다. 실행 중인 명령이 노란색으로 표시되고, 대사는 아래 미리보기 창에서 "다음 ▶"으로 넘긴다. 중지(F8). 오류가 난 명령은 빨간색으로 선택된다. 변수는 매 테스트마다 프로젝트의 처음 값으로 시작한다.
+7. **게임 실행(Ctrl+R)**: 저장한 뒤 시작 장면부터 NaruPlayer 창이 뜬다. 현재 편집 장면부터 실행하려면 **Ctrl+Shift+R**을 사용한다. 인스펙터에서 **플레이어**로 지정한 객체를 방향키로 움직이고 Z/Enter/Space로 조사한다. 게임 로그는 로그 패널에 `[게임]`으로 표시된다.
 8. 파일 → 프로젝트 닫기: 시작 화면으로 돌아간다.
 
 **Python 표준 라이브러리 위치:** 개발 빌드는 빌드할 때 찾은 Python 설치 폴더를 사용한다. 실행 시 `NARU_PYTHON_HOME` 환경변수로 바꿀 수 있다. 다른 PC로 실행 파일만 옮기는 배포는 아직 지원하지 않는다(M5).

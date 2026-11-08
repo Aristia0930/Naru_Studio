@@ -47,12 +47,12 @@ def run(ctx):
 
 모든 스크립트 함수는 `def 함수이름(ctx):`처럼 `ctx` 하나를 받습니다.
 
-| 어디서 불렸나 | `ctx.variables` `ctx.db` `ctx.log` | `ctx.input` | `ctx.scene` | `ctx.player` |
-|---|---|---|---|---|
-| 게임 중 — 전역 스크립트 `on_game_start` | 있음 | 있음 | **None** (아직 장면 전) | **None** |
-| 게임 중 — `on_scene_enter` / `on_scene_exit` / `on_update` | 있음 | 있음 | 있음 | 장면에 플레이어가 있으면 있음, 없으면 None |
-| 게임 중 — 이벤트의 "스크립트 호출" | 있음 | 있음 | 있음 | 위와 같음 |
-| 게임 밖 — F5 실행, F6 이벤트 테스트 | 있음 | **None** | **None** | **None** |
+| 어디서 불렸나 | `ctx.variables` `ctx.db` `ctx.log` | `ctx.input` | `ctx.scene` | `ctx.player` | `ctx.audio` |
+|---|---|---|---|---|---|
+| 게임 중 — 전역 스크립트 `on_game_start` | 있음 | 있음 | **None** (아직 장면 전) | **None** | 있음 |
+| 게임 중 — `on_scene_enter` / `on_scene_exit` / `on_update` | 있음 | 있음 | 있음 | 장면에 플레이어가 있으면 있음, 없으면 None | 있음 |
+| 게임 중 — 이벤트의 "스크립트 호출" | 있음 | 있음 | 있음 | 위와 같음 | 있음 |
+| 게임 밖 — F5 실행, F6 이벤트 테스트 | 있음 | **None** | **None** | **None** | **None** |
 
 `ctx.player`를 쓰기 전에는 `if ctx.player:`로 확인하는 것이 안전합니다.
 
@@ -163,12 +163,16 @@ def run(ctx):
 | `name` | str | 읽기 | 장면 이름 |
 | `width`, `height` | int | 읽기 | 장면 크기(픽셀). 플레이어 이동 한계 |
 | `background_image` | str | 읽기·쓰기 | 현재 장면 배경 이미지 에셋 ID. `""`는 이미지 지우기(배경색만 표시). 등록된 image 에셋만 허용하며 잘못된 ID·다른 종류는 `ValueError`, 문자열 이외는 `TypeError`. 맞춤 방식·오프셋·배율·불투명도는 장면 인스펙터 설정을 유지. 즉시 실행 사본에 적용하며 대기 없음 |
-| `change(장면ID, x=None, y=None, facing=None)` | | | 장면 이동을 **예약**. 지금 틱이 끝난 뒤 `on_scene_exit` → 전환 → `on_scene_enter` 순서로 바뀜. 없는 ID면 `KeyError`. `x`, `y`: 도착할 플레이어 위치(왼쪽 위 좌표, 둘 다 주거나 둘 다 생략 — 생략하면 장면 편집의 위치). `facing`: `"up"` `"down"` `"left"` `"right"` (생략하면 아래). 예: `ctx.scene.change("scene_002", 320, 400, "up")`. 이벤트 명령 "장면 이동"과 같음 |
+| `change(장면ID, x=None, y=None, facing=None)` | | | 장면 이동을 **예약**. 지금 틱이 끝난 뒤 `on_scene_exit` → 전환 → `on_scene_enter` 순서로 바뀜. 없는 ID면 `KeyError`. `x`, `y`: 도착할 플레이어 위치(왼쪽 위 좌표, 둘 다 주거나 둘 다 생략 — 생략하면 장면 편집의 위치). `facing`: `"up"` `"down"` `"left"` `"right"` (생략하면 아래). 예: `ctx.scene.change("scene_002", 320, 400, "up")` |
 | `ids()` | list[str] | | 프로젝트의 모든 장면 ID |
 
+| 조회 함수 | 반환 | 설명 |
+|---|---|---|
 | `object(ID)` | SceneObject 또는 None | ID로 객체 찾기 (예: `ctx.scene.object("obj_002")`). ID는 인스펙터 맨 위에 보이는 값 |
 | `find(이름)` | SceneObject 또는 None | 이름으로 찾기. 같은 이름이 여럿이면 장면 목록에서 먼저 나오는 것. 이름은 편집 중 바뀔 수 있으니 오래 쓸 코드는 ID 권장 |
 | `objects()` | list[SceneObject] | 장면의 모든 객체 (장면 트리 순서) |
+
+Python `change(..., facing=None)`는 도착 방향을 아래로 설정합니다. 이벤트 명령의 방향 **그대로**는 이동 전 방향을 유지합니다. 두 경로에서 같은 결과가 필요하면 방향을 명시하세요. x/y 한쪽만 지정하면 ValueError, 숫자로 변환할 수 없는 좌표 형식은 TypeError입니다.
 
 장면에 들어가면 그 장면의 이벤트가 처음부터 다시 시작됩니다. 장면 편집의 원래 상태로 돌아가고, 실행 중 바뀐 위치 등은 이어지지 않습니다.
 
@@ -200,7 +204,7 @@ def on_update(ctx):
 ```
 
 - 바로 쓸 수 있는 예제(따라오기·순찰·밀기·문 열기): [docs/examples](examples/README.md)
-- 장면이 바뀐 뒤 예전 장면의 객체를 쓰면 `KeyError: 장면에 없는 객체입니다`가 납니다. 객체는 쓸 때마다 `ctx.scene.object(...)`로 다시 얻는 것이 안전합니다.
+- 객체 핸들은 ID로 현재 장면을 조회합니다. 장면 전환 뒤 같은 ID가 없으면 `KeyError: 장면에 없는 객체입니다`, 같은 ID가 있으면 새 장면의 객체를 가리킵니다. 장면별 객체는 `on_scene_enter`에서 다시 얻고 오래 보관하지 않는 것이 안전합니다.
 - 바뀐 값은 그 실행에서만 유지되고 프로젝트 파일에는 저장되지 않습니다.
 
 ---

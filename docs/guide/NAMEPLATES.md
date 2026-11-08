@@ -118,7 +118,7 @@ def use_object_name(ctx):
 | `obj.name_background_color` | str, 기본 #0c1018 | #rrggbb 배경색. 투명이 False일 때 보임 |
 | `obj.name_position` | str, 기본 above | above=객체 위, below=객체 아래 |
 
-두 속성은 `ctx.scene.object(ID)`, `find(이름)`, `objects()`로 얻은 SceneObject에서 사용합니다. 플레이어도 `ctx.scene.object(ctx.player.id)`로 얻으면 같은 설정을 사용할 수 있습니다. 별도 Player 속성을 추가한 것은 아닙니다.
+위 다섯 속성은 `ctx.scene.object(ID)`, `find(이름)`, `objects()`로 얻은 SceneObject에서 사용합니다. 플레이어도 `ctx.scene.object(ctx.player.id)`로 얻으면 같은 설정을 사용할 수 있습니다. 별도 Player 속성을 추가한 것은 아닙니다.
 
 객체 이벤트 → **명령 추가 → 스크립트 호출 → 파일 nameplates.py → 함수 run / hide_name / use_object_name → 결과 변수 비움**으로 연결합니다. 함수 칸에는 괄호 없이 이름만 넣습니다. 인자 ctx는 엔진이 넘겨주며 함수는 None을 반환하고 기다리지 않습니다. 이벤트 함수로 쓰면 전역 등록은 필요 없습니다. 제공 예제의 run은 조사할 때마다 `여관 주인`과 `어서 오세요`를 번갈아 표시하고 로그를 남깁니다.
 
