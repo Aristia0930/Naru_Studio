@@ -1,6 +1,16 @@
 # 개발툴 전용 세션 기억 — 2026-10-26
 
-이 파일은 게임 기획/에셋 기록과 별개인 제작툴 전용 기록이다. 개발툴 재개 시 NARU_NEXT_STEPS.md와 이 파일을 먼저 읽고 실제 환경을 확인한다. 최신 사용자 지시가 우선한다.
+이 파일은 게임 기획/에셋 기록과 별개인 제작툴 전용 기록이다. 개발툴 재개 시 `docs/ROADMAP.md` → 이 파일의 최신 항목 → `README.md` 순서로 읽고 실제 환경을 확인한다. `NARU_NEXT_STEPS.md`는 초기 계획이며 최신 사용자 지시가 우선한다.
+
+## 오늘 작업 마감·다음 세션 인계 — 2026-11-08
+
+- **완료 범위:** 10② 이미지·에셋 ID 사용자 확인 후 10③ WAV/MP3 가져오기·미리듣기·BGM/효과음·이벤트/`ctx.audio` 연결을 구현했다. 게임 창 F9 전체 객체 이름/ID, 객체별 게임 이름표, 배경 투명/색·객체 위/아래·Python 변경도 완료했다. 사용자가 소리·이름표 개선까지 완료를 확인했다. 번호별 청취/회귀 항목 전부를 개별 확인했다는 의미로 확대하지 않는다.
+- **오늘 전달한 커밋:** `6002b6c` 소리·이름표 기능, `24951c8` 문서 정합성 수정·전체 문서 위치 안내·문서 검사 범위 확장. 두 커밋은 main에 푸시했으며 마지막 확인에서 로컬 HEAD와 원격 main은 `24951c85c3792f6a34e225d6d5d68d9a709dda76`으로 일치했다. 이 마감 기록은 그 이후 별도 기록 커밋으로 전달한다.
+- **마지막 검증:** `dev.cmd test` 빌드 성공·ctest **21/21 통과(42.75초)**. 문서 검사 **27개 문서·Python 35블록·로컬 링크/앵커 326개 통과**. 이후 변경은 문서 기록뿐이며 제품 코드는 바꾸지 않았다.
+- **문서/예제 위치:** 문서 입구 `docs/README.md`, 사용 설명서 `docs/guide/README.md`, API `docs/SCRIPT_API.md`, 빌드 `docs/BUILD.md`. 소리는 `docs/guide/AUDIO.md`·`AUDIO_TEST.md`와 `docs/examples/audio`, 이름표는 `docs/guide/NAMEPLATES.md`와 `docs/examples/nameplates`·`nameplate-style`. UI 그림 33~39와 재촬영 명령도 가이드에 있다.
+- **반드시 보존:** 미커밋 사용자 변경은 `docs/examples/choices/project.json`, `docs/examples/common-events/project.json`·`scenes/scene_001.json`, `docs/examples/images/project.json`·`scenes/scene_001.json`·`scripts/appearance.py`, 미추적 `docs/examples/choices/scripts/`와 `docs/examples/images/assets/59f1c4965647417684c4ac160314e71b.png`다. 초기화·덮어쓰기·일괄 스테이징하지 않는다. 개인 음악은 `build/manual-audio/assets/user_bgm.mp3`의 로컬 복사본이며 원본과 개인 음원을 커밋하지 않는다. 다른 PC에는 이 build 폴더가 없으므로 저장소의 생성 WAV 예제 또는 생성 도구를 사용한다.
+- **다음 시작 순서:** (1) 위 시작 문서를 읽고 `git status`로 사용자 변경을 확인한다. (2) 사용자 개발 진행 요청이 오면 **10④ DB 이미지·소리 속성**부터 진행한다. `docs/DATABASE_ASSETS_PLAN.md`의 DB 참조 계획과 현재 6형식 DB·에셋 사용처/ID 갱신 구현을 먼저 대조한다. (3) DB 속성 편집·저장/검증·사용처/ID 변경·읽기 API 영향을 함께 다루고 가이드·API·예제·그림·자동/수동 확인 절차를 갱신한다. (4) 빌드/테스트 후 사용자 확인에 필요한 구체적인 조작과 기대 결과를 제공한다.
+- **후속/미구현:** 10⑤ 외부 서버·DB/API, 카메라·타일맵·걷기/프레임 애니메이션·배경 제거·게임 저장/로드·독립 배포는 완료로 표시하지 않는다. 다음 세션에서 환경 재설치나 이미 끝난 소리/이름표 구현을 반복하지 않는다.
 
 ## 사용 가이드 정합성 점검·문서 위치 안내 — 2026-11-08
 
