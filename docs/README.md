@@ -35,6 +35,8 @@
 |---|---|
 | [빌드·설치·검사](BUILD.md) | 다른 PC의 의존성 설치·CMake·`dev check` |
 | [로드맵](ROADMAP.md) | 구현 순서·현재 완료 범위·다음 작업 |
+| [기능 점검과 다음 작업](STATUS_AND_NEXT_STEPS.md) | 현재 가능 범위·자동/수동 확인·남은 작업과 완료 조건 |
+| [배포 후 재검토 목록](POST_RELEASE_REVIEW.md) | 리소스 보호·최적화·디버거·오디오 믹서 요구와 재검토 기준 |
 | [세션 기록](../SESSION_STATE.md) | 최신 작업·검증·보존한 사용자 변경. 최신 항목부터 확인 |
 | [상세 개발 계획](DEVELOPMENT_PLAN.md) | 공통 2D 기반과 RPG·횡스크롤 기능, 게임 완주 검증 기준 |
 | [DB·에셋 확장 계획](DATABASE_ASSETS_PLAN.md) | 현재 구현과 앞으로 개발할 DB·에셋·외부 연결 범위 |

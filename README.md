@@ -6,9 +6,13 @@
 
 **객체 ID 변경**: 객체를 선택한 뒤 인스펙터 ID를 직접 수정합니다. 플레이어와 이벤트 객체 대상도 함께 갱신하며 실행 취소를 지원합니다. [사용법·Python 주의·수동 확인](docs/guide/OBJECT_IDS.md).
 
-**DB 이미지·소리 속성(10④)**: 데이터베이스에서 이미지/WAV/MP3 에셋을 종류별로 선택하고 미리보기·사용처·ID 변경·삭제 보호를 지원합니다. [사용법·그림·Python·수동 확인](docs/guide/DB_ASSETS.md), [실행 예제](docs/examples/database-assets/README.md). 사용자 수동 확인 후 다음 단계로 진행합니다.
+**DB 이미지·소리 속성(10④)**: 데이터베이스에서 이미지/WAV/MP3 에셋을 종류별로 선택하고 미리보기·사용처·ID 변경·삭제 보호를 지원합니다. [사용법·그림·Python·수동 확인](docs/guide/DB_ASSETS.md), [실행 예제](docs/examples/database-assets/README.md). 안내한 수동 테스트 1~6은 사용자 확인을 받았습니다.
 
 문서 위치: [전체 문서 안내](docs/README.md) · [사용 설명서](docs/guide/README.md) · [실행 예제](docs/examples/README.md).
+
+현재 기능과 남은 순서는 [기능 점검과 다음 작업](docs/STATUS_AND_NEXT_STEPS.md)에 정리했습니다.
+
+1차 배포 완료 후 다시 논의할 리소스 보호·최적화·디버깅·오디오 기능은 [배포 후 재검토 목록](docs/POST_RELEASE_REVIEW.md)에 기록했습니다.
 
 **C++ 자체 게임 엔진 + Qt 제작 UI + Python 게임 확장 스크립트**를 만드는 프로젝트입니다.
 
