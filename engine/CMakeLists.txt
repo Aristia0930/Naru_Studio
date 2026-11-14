@@ -3,6 +3,7 @@ add_library(naru_engine STATIC
   core/Value.cpp
   data/Database.cpp
   network/Network.cpp
+  network/NetworkSettings.cpp
   events/EventRunner.cpp
   events/BuiltinCommands.cpp
   events/EventCompiler.cpp

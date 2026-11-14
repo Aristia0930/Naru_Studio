@@ -498,6 +498,7 @@ int main(int argc, char** argv) {
     NameplateRenderer nameplates;
     bool debugObjectNames = options->debugObjectNames;
     bool debugKeyWasHeld = false;
+    bool stopKeyWasHeld = false;
     InputState input;
     // 누르고 있는 실제 키 이름 (SDL 키 이름). 매 프레임 키 배치(전역 스크립트가 바꿀 수 있음)로 동작을 계산한다.
     std::set<std::string> heldKeys;
@@ -536,6 +537,10 @@ int main(int argc, char** argv) {
         if (debugKeyHeld && !debugKeyWasHeld) debugObjectNames = !debugObjectNames;
         debugKeyWasHeld = debugKeyHeld;
         physicalKeys.erase("F9"); // Reserved for the player overlay, not game action input.
+        const bool stopKeyHeld = physicalKeys.contains("F8");
+        if (stopKeyHeld && !stopKeyWasHeld) world.stopEvents();
+        stopKeyWasHeld = stopKeyHeld;
+        physicalKeys.erase("F8"); // Player debug event cancellation.
         // 자동 검사: 대사가 뜬 지 0.5초가 지나면 결정 키를 한 프레임 누른 것으로 친다.
         if (options->autoConfirm && world.message() && frame - messageSince >= 30 && frame % 2 == 0) {
             scriptedHeld.insert(toKey(InputAction::Confirm));

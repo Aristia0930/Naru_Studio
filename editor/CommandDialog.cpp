@@ -1,6 +1,8 @@
 #include "CommandDialog.h"
 
 #include "VariablesDialog.h"
+#include "NetworkFields.h"
+#include "NetworkMappingHelp.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -14,6 +16,8 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QScrollArea>
+#include <QScreen>
 #include <QVBoxLayout>
 
 #include <algorithm>
@@ -45,6 +49,7 @@ int kindOf(const Value& v) {
 
 QString CommandDialog::typeLabel(EventCommandType type) {
     switch (type) {
+    case EventCommandType::NetworkRequest: return QStringLiteral("API 요청 → 변수");
     case EventCommandType::Audio: return QStringLiteral("소리 재생/정지");
     case EventCommandType::CallCommonEvent: return QStringLiteral("공통 이벤트 호출");
     case EventCommandType::ShowChoices: return QStringLiteral("선택지 표시");
@@ -198,6 +203,37 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     };
 
     switch (command.type) {
+    case EventCommandType::NetworkRequest: {
+        const auto& n = command.network;
+        networkConnection_ = new QComboBox(this); networkConnection_->setObjectName("networkConnection");
+        if (project) for (const auto& c : project->networkConnections)
+            networkConnection_->addItem(QString::fromStdString(c.id + " · " + c.baseUrl), QString::fromStdString(c.id));
+        int selected = networkConnection_->findData(QString::fromStdString(n.connection));
+        if (selected < 0 && !n.connection.empty()) {
+            networkConnection_->addItem(QString::fromStdString(n.connection) + QStringLiteral(" (누락)"), QString::fromStdString(n.connection));
+            selected = networkConnection_->count()-1;
+        }
+        if (selected >= 0) networkConnection_->setCurrentIndex(selected);
+        networkMethod_ = new QComboBox(this); networkMethod_->setObjectName("networkMethod"); networkMethod_->addItems({"GET", "POST", "PUT", "PATCH", "DELETE"}); networkMethod_->setCurrentText(QString::fromStdString(n.method));
+        auto line = [this](const std::string& value, const char* name) { auto* edit = new QLineEdit(QString::fromStdString(value), this); edit->setObjectName(name); return edit; };
+        networkPath_ = line(n.path, "networkPath");
+        networkBodyVariable_ = line(n.bodyVariable, "networkBodyVariable");
+        networkOk_ = line(n.okVariable, "networkOk"); networkCode_ = line(n.codeVariable, "networkCode"); networkError_ = line(n.errorVariable, "networkError");
+        networkHeaders_ = new NetworkFields(QStringLiteral("헤더 이름"), QStringLiteral("값"), this); networkHeaders_->setObjectName("networkHeaders"); networkHeaders_->setValues(n.headers);
+        networkMappings_ = new NetworkFields(QStringLiteral("응답 경로 (예: /message)"), QStringLiteral("넣을 변수"), this); networkMappings_->setObjectName("networkMappings"); networkMappings_->setValues(n.mappings);
+        networkBody_ = new QPlainTextEdit(QString::fromStdString(n.body), this); networkBody_->setObjectName("networkBody"); networkBody_->setMaximumHeight(85); networkBody_->setPlaceholderText(QStringLiteral("생략 가능. 예: {\"score\": 100}"));
+        form->addRow(QStringLiteral("접속 설정"), networkConnection_); form->addRow(QStringLiteral("메서드"), networkMethod_); form->addRow(QStringLiteral("경로·쿼리"), networkPath_);
+        form->addRow(QStringLiteral("추가/덮어쓸 헤더"), networkHeaders_); form->addRow(QStringLiteral("보낼 JSON 본문"), networkBody_); form->addRow(QStringLiteral("본문 변수 (선택)"), networkBodyVariable_);
+        form->addRow(QStringLiteral("성공 스위치"), networkOk_); form->addRow(QStringLiteral("HTTP 코드 변수"), networkCode_); form->addRow(QStringLiteral("오류 변수"), networkError_);
+        auto* mappingHelp = new QPushButton(QStringLiteral("응답 → 변수 설정 예시 보기..."), this);
+        mappingHelp->setObjectName(QStringLiteral("networkMappingHelpButton"));
+        connect(mappingHelp, &QPushButton::clicked, this, [this] { NetworkMappingHelp dialog(this); dialog.exec(); });
+        auto* mappingHint = new QLabel(QStringLiteral("서버가 보낸 항목의 경로를 왼쪽에, 값을 저장할 게임 변수 이름을 오른쪽에 입력하세요."), this);
+        mappingHint->setWordWrap(true); form->addRow(mappingHelp); form->addRow(mappingHint);
+        form->addRow(QStringLiteral("응답 → 변수"), networkMappings_);
+        auto* help = new QLabel(QStringLiteral("게임 → 네트워크 접속 설정에서 서버를 등록하세요. 응답 경로 /user/name은 중첩 값, /items/0은 첫 항목입니다.\n요청이 끝나면 다음 명령으로 진행합니다. 조건 분기에서 성공 스위치를 확인하세요.\nF6: 통신/변수 변경 없음. F8·장면 이동: 취소. 병렬 이벤트에서는 이동 가능. 본문 변수가 있으면 위 본문 대신 JSON 문자열을 보냅니다."), this); help->setWordWrap(true); form->addRow(help);
+        break;
+    }
     case EventCommandType::Audio: {
         audioAction_ = new QComboBox(this); audioAction_->setObjectName("audioAction");
         audioAction_->addItem(QStringLiteral("BGM 재생"), "play_bgm");
@@ -565,10 +601,16 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     connect(buttons, &QDialogButtonBox::accepted, this, &CommandDialog::accept);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
     auto* layout = new QVBoxLayout(this);
-    layout->addLayout(form);
+    if (command.type == EventCommandType::NetworkRequest) {
+        auto* scroll = new QScrollArea(this); scroll->setWidgetResizable(true);
+        auto* content = new QWidget(scroll); content->setLayout(form); scroll->setWidget(content);
+        layout->addWidget(scroll, 1);
+    } else layout->addLayout(form);
     layout->addWidget(buttons);
-    resize(command.type == EventCommandType::ShowChoices ? 620 : command.type == EventCommandType::Say ? 520 : command.type == EventCommandType::ChangeScene ? 600 : 440,
+    resize(command.type == EventCommandType::NetworkRequest ? 850 : command.type == EventCommandType::ShowChoices ? 620 : command.type == EventCommandType::Say ? 520 : command.type == EventCommandType::ChangeScene ? 600 : 440,
            sizeHint().height());
+    if (command.type == EventCommandType::NetworkRequest)
+        resize(std::min(850, screen()->availableGeometry().width()-60), std::min(820, screen()->availableGeometry().height()-80));
 }
 
 bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* boolBox, Value& out) {
@@ -598,6 +640,16 @@ bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* bo
 void CommandDialog::accept() {
     naru::EventCommand c = command_;
     switch (c.type) {
+    case EventCommandType::NetworkRequest:
+        try {
+            auto& n = c.network;
+            n.connection = networkConnection_->currentData().toString().toStdString(); n.path = networkPath_->text().trimmed().toStdString(); n.method = networkMethod_->currentText().toStdString();
+            n.body = networkBody_->toPlainText().toStdString(); n.bodyVariable = networkBodyVariable_->text().trimmed().toStdString();
+            n.okVariable = networkOk_->text().trimmed().toStdString(); n.codeVariable = networkCode_->text().trimmed().toStdString(); n.errorVariable = networkError_->text().trimmed().toStdString();
+            n.headers = networkHeaders_->values(true); n.mappings = networkMappings_->values();
+            naru::validateNetworkEvent(n);
+        } catch (const std::exception& e) { QMessageBox::warning(this, windowTitle(), QString::fromUtf8(e.what())); return; }
+        break;
     case EventCommandType::Audio:
         c.audioAction = audioAction_->currentData().toString().toStdString();
         c.audioAsset = audioAsset_->currentData().toString().toStdString();

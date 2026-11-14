@@ -228,6 +228,11 @@ void ProjectDocument::setVariables(const std::vector<naru::VariableDef>& variabl
     emit variablesChanged();
 }
 
+void ProjectDocument::setNetworkConnections(const std::vector<naru::NetworkConnection>& connections) {
+    project_.networkConnections = connections;
+    emit commonEventsChanged(); // Refresh event summaries and stop an active F6 preview.
+}
+
 void ProjectDocument::setInputSettings(const std::string& script, const std::string& source) {
     auto parsed = naru::parseInputSettings(source);
     if (!script.empty() && !parsed.settings) return;

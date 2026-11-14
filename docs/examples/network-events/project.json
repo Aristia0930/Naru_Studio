@@ -1,0 +1,44 @@
+{
+  "formatVersion": 1,
+  "name": "이벤트로 API 요청",
+  "startScene": "start",
+  "scenes": [
+    "start"
+  ],
+  "globalScripts": [],
+  "dataTypes": [],
+  "networkConnections": [
+    {
+      "id": "local",
+      "baseUrl": "http://127.0.0.1:8765",
+      "timeoutMs": 10000,
+      "headers": {}
+    }
+  ],
+  "variables": [
+    {
+      "name": "api_ok",
+      "value": false
+    },
+    {
+      "name": "api_code",
+      "value": 0
+    },
+    {
+      "name": "api_error",
+      "value": ""
+    },
+    {
+      "name": "공지내용",
+      "value": ""
+    },
+    {
+      "name": "점수",
+      "value": 0
+    },
+    {
+      "name": "분기결과",
+      "value": "시작 전"
+    }
+  ]
+}

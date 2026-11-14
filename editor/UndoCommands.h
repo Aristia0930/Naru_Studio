@@ -135,6 +135,16 @@ private:
 };
 
 // 공용 변수·스위치 정의 변경 (변수·스위치 창에서 확인을 누를 때 한 번).
+class SetNetworkConnectionsCommand : public QUndoCommand {
+public:
+    SetNetworkConnectionsCommand(ProjectDocument* doc, std::vector<naru::NetworkConnection> after);
+    void redo() override;
+    void undo() override;
+private:
+    ProjectDocument* doc_;
+    std::vector<naru::NetworkConnection> before_, after_;
+};
+
 class SetVariablesCommand : public QUndoCommand {
 public:
     SetVariablesCommand(ProjectDocument* doc, std::vector<naru::VariableDef> after);

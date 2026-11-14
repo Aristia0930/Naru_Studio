@@ -61,6 +61,8 @@ QString firstLine(const std::string& text) {
 
 QString describe(const EventCommand& c, const naru::Scene* scene, const naru::Project* project) {
     switch (c.type) {
+    case EventCommandType::NetworkRequest:
+        return QStringLiteral("API 요청: %1 · %2 %3 → %4 (응답 대기)").arg(q(c.network.connection), q(c.network.method), q(c.network.path), q(c.network.okVariable));
     case EventCommandType::Audio: {
         const QString action = c.audioAction == "play_bgm" ? QStringLiteral("BGM 재생") :
             c.audioAction == "stop_bgm" ? QStringLiteral("BGM 정지") :
@@ -151,7 +153,7 @@ std::optional<EventCommandType> chooseType(QWidget* parent) {
     for (auto type : {EventCommandType::Say, EventCommandType::ShowChoices, EventCommandType::Wait, EventCommandType::SetVariable,
                       EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::MoveObject,
                       EventCommandType::SetVisible, EventCommandType::ChangeScene, EventCommandType::CallScript,
-                      EventCommandType::CallCommonEvent, EventCommandType::Audio, EventCommandType::Log,
+                      EventCommandType::CallCommonEvent, EventCommandType::Audio, EventCommandType::NetworkRequest, EventCommandType::Log,
                       EventCommandType::Comment}) {
         menu.addAction(CommandDialog::typeLabel(type))->setData(static_cast<int>(type));
     }

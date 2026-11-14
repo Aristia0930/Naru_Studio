@@ -1,5 +1,7 @@
 # 스크립트 예제
 
+[Python 없이 API 요청·응답·성공/실패 분기](network-events/README.md)
+
 [공개 API 예제 프로젝트](network/README.md)는 JSONPlaceholder 응답을 게임 변수에 저장합니다. [요청·오류·수동 확인](../guide/NETWORK.md).
 
 [DB 이미지·소리 예제](database-assets/README.md)는 DB의 기본 그림·항목별 효과음을 Python으로 읽어 상자 조사 때 적용합니다. [설정·수동 확인](../guide/DB_ASSETS.md).

@@ -172,7 +172,7 @@ PC별 경로를 고정하고 싶으면 `CMakeUserPresets.json`(Git 제외)에 `C
 
 스크립트 줄 번호·공백·들여쓰기 검사는 `asset_editor`에, 로그 여러 행/traceback 복사와 상세 일부 선택 검사는 `editor_selftest`에 포함합니다. 스크립트 편집과 로그 복사에는 새 의존성이 필요 없습니다. [사용법](guide/SCRIPTING.md#스크립트-줄-번호와-들여쓰기).
 
-외부 API 요청은 Windows SDK에 포함된 WinHTTP를 사용하며 별도 다운로드가 필요 없습니다. Windows 외 플랫폼에서 전송은 미지원 결과를 반환합니다. `network` 검사는 로컬 HTTP 서버로 GET/POST/PUT/PATCH/DELETE, 한글·빈 응답·HTTP/JSON 오류·크기 제한·지연/취소·장면 전환·Python 및 게임 틱을 확인합니다. [공개 API 예제와 수동 확인](guide/NETWORK.md).
+외부 API 요청은 Windows SDK에 포함된 WinHTTP를 사용하며 별도 다운로드가 필요 없습니다. Windows 외 플랫폼에서 전송은 미지원 결과를 반환합니다. `network` 검사는 로컬 HTTP 서버로 GET/POST/PUT/PATCH/DELETE, 한글·빈 응답·HTTP/JSON 오류·크기 제한·지연/취소·장면 전환·Python 및 게임 틱을 확인합니다. [공개 API 예제와 수동 확인](guide/NETWORK.md). 10⑤-2의 공통 접속 설정·이벤트 요청은 [네트워크 이벤트 가이드](guide/NETWORK_EVENTS.md)를 따릅니다. `network`는 공통 설정의 이벤트/Python 재사용·POST·본문 변수·실패·시간 초과·취소·원본 분리도 검사하며, `asset_editor`는 실제 Qt 설정/명령·Undo·저장/재열기·참조 보호를 검사합니다. `player_network_events`는 실제 player 응답·분기·요청 중 이동·F8·원본 보존을 로컬 서버로 확인합니다. 전체 ctest는 24종입니다.
 
 객체 ID 편집은 추가 의존성이 없습니다. `asset_editor`는 프로젝트 전체 중복·형식 오류, 인스펙터와 선택 상태, 플레이어 지정, 중첩 이벤트·공통 이벤트 참조, Undo/Redo·저장/재열기와 Python 파일 보존을 검사합니다. [객체 ID 수동 확인](guide/OBJECT_IDS.md).
 

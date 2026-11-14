@@ -738,4 +738,10 @@ void GameWorld::stopAll() {
     routes_.clear();
 }
 
+void GameWorld::stopEvents() {
+    stopAll();
+    closeMessage();
+    logger_.info("실행 중인 이벤트 중지");
+}
+
 } // namespace naru

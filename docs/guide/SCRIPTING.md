@@ -47,7 +47,7 @@ Set-Content -Encoding UTF8 build/guide-script/scripts/indent_error.py "def run(c
 & .\build\windows-msvc\bin\NaruStudio.exe build/guide-script --capture-script indent_error.py --capture-log-detail --smoke-test 1200 --screenshot docs/guide/images/45-log-detail.png
 ```
 
-공개 API의 JSON 응답을 게임 변수에 넣는 전역 스크립트 예제와 함수별 오류·실행 시점은 [네트워크 안내](NETWORK.md)를 참고하세요. 게임 실행에서만 실제 통신하며 F5/F6의 `ctx.network`는 None입니다.
+공개 API의 JSON 응답을 게임 변수에 넣는 전역 스크립트 예제와 함수별 오류·실행 시점은 [네트워크 안내](NETWORK.md)를 참고하세요. 게임 실행에서만 실제 통신하며 F5/F6의 `ctx.network`는 None입니다. 공통 서버 설정은 `ctx.network.request_connection`에서 재사용하며 [등록·완성 훅 예제](NETWORK_EVENTS.md#4-python에서-같은-설정-사용)를 따릅니다. 코드 없이 연결하려면 같은 가이드의 API 요청 → 변수 명령을 사용하세요.
 
 인스펙터에서 객체 ID를 변경하면 Python 코드에 직접 적은 `ctx.scene.object("이전 ID")` 문자열은 자동 수정되지 않습니다. 스크립트에서 새 ID로 직접 고치세요. [객체 ID 사용법](OBJECT_IDS.md).
 

@@ -262,6 +262,14 @@ json commandsToJson(const std::vector<EventCommand>& commands);
 json commandToJson(const EventCommand& c) {
     json j = {{"type", toKey(c.type)}};
     switch (c.type) {
+    case EventCommandType::NetworkRequest: {
+        const auto& n = c.network;
+        j["connection"] = n.connection; j["path"] = n.path; j["method"] = n.method;
+        j["headers"] = n.headers; j["body"] = n.body; j["bodyVariable"] = n.bodyVariable;
+        j["okVariable"] = n.okVariable; j["codeVariable"] = n.codeVariable; j["errorVariable"] = n.errorVariable;
+        j["mappings"] = n.mappings;
+        break;
+    }
     case EventCommandType::Audio:
         j["action"] = c.audioAction; j["asset"] = c.audioAsset;
         j["volume"] = c.volume; j["loop"] = c.loop; j["fadeSeconds"] = c.fadeSeconds;
@@ -357,6 +365,17 @@ EventCommand commandFromJson(const json& j, int depth) {
         throw std::runtime_error("알 수 없는 이벤트 명령: " + typeKey);
     }
     c.type = *type;
+    if (c.type == EventCommandType::NetworkRequest) {
+        auto& n = c.network;
+        n.connection = requireString(j, "connection"); n.path = getString(j, "path", "/");
+        n.method = getString(j, "method", "GET"); n.body = getString(j, "body", "");
+        n.bodyVariable = getString(j, "bodyVariable", "");
+        n.okVariable = getString(j, "okVariable", "api_ok"); n.codeVariable = getString(j, "codeVariable", "api_code");
+        n.errorVariable = getString(j, "errorVariable", "api_error");
+        if (j.contains("headers")) n.headers = j.at("headers").get<std::map<std::string, std::string>>();
+        if (j.contains("mappings")) n.mappings = j.at("mappings").get<std::map<std::string, std::string>>();
+        validateNetworkEvent(n);
+    }
     if (c.type == EventCommandType::Audio) {
         c.audioAction = getString(j, "action", c.audioAction);
         c.audioAsset = getString(j, "asset", c.audioAsset);
@@ -919,6 +938,19 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
                 project.variables.push_back(std::move(def));
             }
         }
+        for (const auto& cj : getArray(root, "networkConnections")) {
+            NetworkConnection c;
+            c.id = requireString(cj, "id"); c.baseUrl = requireString(cj, "baseUrl");
+            if (cj.contains("timeoutMs")) {
+                const auto& timeout = cj.at("timeoutMs");
+                if (!timeout.is_number_integer() || timeout < 100 || timeout > 60000)
+                    throw std::runtime_error("네트워크 timeoutMs는 100~60000 정수여야 합니다.");
+                c.timeoutMs = timeout.get<int>();
+            }
+            if (cj.contains("headers")) c.headers = cj.at("headers").get<std::map<std::string, std::string>>();
+            project.networkConnections.push_back(std::move(c));
+        }
+        validateConnections(project.networkConnections);
         for (const auto& cj : getArray(root, "commonEvents")) {
             requireObject(cj, "공통 이벤트");
             CommonEvent event;
@@ -1020,6 +1052,8 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
 }
 
 std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path& dir) {
+    try { validateConnections(project.networkConnections); }
+    catch (const std::exception& e) { return {{kProjectFile, e.what()}}; }
     for (const auto& scene : project.scenes) for (const auto& object : scene.objects) {
         if (!isValidNameText(object.nameText)) return {{kProjectFile, "이름표 문구 형식/길이가 올바르지 않습니다: " + object.id}};
         if (!isValidNameBackgroundColor(object.nameBackgroundColor) || !isValidNamePosition(object.namePosition))
@@ -1106,6 +1140,9 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
         variables.push_back(vj);
     }
     root["variables"] = variables;
+    root["networkConnections"] = json::array();
+    for (const auto& c : project.networkConnections)
+        root["networkConnections"].push_back({{"id", c.id}, {"baseUrl", c.baseUrl}, {"timeoutMs", c.timeoutMs}, {"headers", c.headers}});
     if (!project.inputSettingsScript.empty()) root["inputSettingsScript"] = project.inputSettingsScript;
     root["commonEvents"] = json::array();
     std::set<std::string> commonIds;

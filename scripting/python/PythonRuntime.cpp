@@ -161,6 +161,18 @@ class Audio:
         return _naru.audio_call("stop_se", "", 100, False, 0)
 
 class Network:
+    def request_connection(self, connection, path="/", method="GET", headers=None, json=None):
+        import json as codec
+        if not isinstance(connection, str) or not connection or not isinstance(path, str) or not isinstance(method, str):
+            raise TypeError("connection은 비어 있지 않은 문자열, path와 method는 문자열이어야 합니다")
+        if headers is None:
+            headers = {}
+        if not isinstance(headers, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in headers.items()):
+            raise TypeError("headers는 문자열 키와 값의 dict여야 합니다")
+        if any(chr(0) in value for value in (connection, path, method)):
+            raise ValueError("invalid_connection_request")
+        body = "" if json is None else codec.dumps(json, ensure_ascii=False, allow_nan=False)
+        return _naru.network_request(path, method, headers, body, 10.0, connection)
     def request(self, url, method="GET", headers=None, json=None, timeout=10.0):
         import json as codec
         if not isinstance(url, str) or not isinstance(method, str):
@@ -1022,9 +1034,10 @@ PyObject* networkException(const std::exception& error) {
 }
 PyObject* naruNetworkRequest(PyObject*, PyObject* args) {
     const char *url, *method, *body;
+    const char* connection = "";
     PyObject* headers;
     double timeout;
-    if (!PyArg_ParseTuple(args, "ssOsd", &url, &method, &headers, &body, &timeout)) return nullptr;
+    if (!PyArg_ParseTuple(args, "ssOsd|s", &url, &method, &headers, &body, &timeout, &connection)) return nullptr;
     auto* game = requireGame();
     if (!game) return nullptr;
     if (!std::isfinite(timeout) || timeout < 0.1 || timeout > 60) { PyErr_SetString(PyExc_ValueError, "timeout must be 0.1..60 seconds"); return nullptr; }
@@ -1040,7 +1053,10 @@ PyObject* naruNetworkRequest(PyObject*, PyObject* args) {
         if (PyUnicode_FindChar(key, 0, 0, PyUnicode_GetLength(key), 1) >= 0 || PyUnicode_FindChar(value, 0, 0, PyUnicode_GetLength(value), 1) >= 0) { PyErr_SetString(PyExc_ValueError, "invalid_header"); return nullptr; }
         request.headers.emplace(name, text);
     }
-    try { return PyLong_FromUnsignedLongLong(game->network().request(std::move(request))); }
+    try {
+        if (*connection) request = connectionRequest(game->project().networkConnections, connection, url, method, request.headers, body);
+        return PyLong_FromUnsignedLongLong(game->network().request(std::move(request)));
+    }
     catch (const std::exception& error) { return networkException(error); }
 }
 PyObject* naruNetworkResult(PyObject*, PyObject* args) {

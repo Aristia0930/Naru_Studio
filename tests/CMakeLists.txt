@@ -80,6 +80,8 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
     ${CMAKE_CURRENT_SOURCE_DIR}/player_debug.py $<TARGET_FILE:naru_player>
     ${PROJECT_SOURCE_DIR}/docs/examples/common-events)
   set_tests_properties(player_debug PROPERTIES TIMEOUT 45)
+  add_test(NAME player_network_events COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_network_events.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
+  set_tests_properties(player_network_events PROPERTIES TIMEOUT 45)
 endif()
 
 if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
@@ -98,6 +100,8 @@ if(NARU_BUILD_EDITOR)
     script_editor_tests.cpp
     ../editor/ScriptEditor.cpp ../editor/ScriptEditor.h
     audio_editor_tests.cpp
+    network_editor_tests.cpp
+    ../editor/NetworkSettingsDialog.cpp ../editor/NetworkSettingsDialog.h
     database_asset_editor_tests.cpp
     ../editor/DatabaseEditor.cpp ../editor/DatabaseEditor.h
     ../editor/FieldDialog.cpp ../editor/FieldDialog.h

@@ -45,6 +45,7 @@ public:
     void setGlobalScripts(const std::vector<std::string>& scripts);
     void setCommonEvents(const std::vector<naru::CommonEvent>& events);
     void setVariables(const std::vector<naru::VariableDef>& variables);
+    void setNetworkConnections(const std::vector<naru::NetworkConnection>& connections);
     void setInputSettings(const std::string& script, const std::string& source);
 
     // scripts/ 안의 .py 파일 이름 (이름순).

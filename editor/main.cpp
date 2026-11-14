@@ -6,6 +6,8 @@
 #include "StartDialog.h"
 #include "EventConditionsDialog.h"
 #include "VariablesDialog.h"
+#include "NetworkSettingsDialog.h"
+#include "NetworkMappingHelp.h"
 #include "InputSettingsDialog.h"
 #include "AssetBrowser.h"
 #include "ImageSettingsDialog.h"
@@ -111,6 +113,10 @@ int main(int argc, char* argv[]) {
     QCommandLineOption objectImageOption(QStringLiteral("object-image-dialog"), QStringLiteral("객체 이미지 설정 촬영"), QStringLiteral("object-id"));
     QCommandLineOption backgroundImageOption(QStringLiteral("background-image-dialog"), QStringLiteral("장면 배경 설정 촬영"), QStringLiteral("scene-id"));
     parser.addOptions({objectImageOption, backgroundImageOption});
+    QCommandLineOption networkSettingsOption(QStringLiteral("network-settings-dialog"), QStringLiteral("네트워크 접속 설정 창 촬영"));
+    parser.addOption(networkSettingsOption);
+    QCommandLineOption networkMappingHelpOption(QStringLiteral("network-mapping-help-dialog"), QStringLiteral("응답 변수 설정 예시 창 촬영"));
+    parser.addOption(networkMappingHelpOption);
     parser.process(app);
     if (parser.isSet(gameLogDirectoryOption)) app.setProperty("gameLogDirectory", parser.value(gameLogDirectoryOption));
     else if (parser.isSet(selfTestOption)) app.setProperty("gameLogDirectory", QDir(parser.value(newOption)).absoluteFilePath(QStringLiteral("test-logs")));
@@ -213,6 +219,11 @@ int main(int argc, char* argv[]) {
             project.assets.push_back({"test_bgm", "테스트 배경 음악 (MP3)", "audio", "assets/test_bgm.mp3", "test_bgm.mp3", std::string(64, '0'), ""});
         }
         project.database = db;
+        if (*type == naru::EventCommandType::NetworkRequest) {
+            project.networkConnections.push_back({"notice_server", "https://jsonplaceholder.typicode.com", {}, 10000});
+            sample.network.connection = "notice_server"; sample.network.path = "/todos/1";
+            sample.network.mappings = {{"/title", "notice_text"}, {"/completed", "notice_done"}};
+        }
         project.variables = {{"visits", std::int64_t{0}, "마을에 온 횟수"},
                              {"enemy_hp", std::int64_t{0}, "싸우는 적의 체력"},
                              {"combo", std::int64_t{0}, ""},
@@ -226,6 +237,16 @@ int main(int argc, char* argv[]) {
         project.scenes.push_back(inside);
         CommandDialog dialog(sample, {QStringLiteral("game.py"), QStringLiteral("main.py")}, &project,
                              &project.scenes[0]);
+        return captureDialog(dialog);
+    }
+    if (parser.isSet(networkMappingHelpOption)) {
+        NetworkMappingHelp dialog;
+        return captureDialog(dialog);
+    }
+    if (parser.isSet(networkSettingsOption)) {
+        naru::Project project;
+        project.networkConnections.push_back({"notice_server", "https://jsonplaceholder.typicode.com", {}, 10000});
+        NetworkSettingsDialog dialog(project);
         return captureDialog(dialog);
     }
     if (parser.isSet(inputSettingsOption)) {

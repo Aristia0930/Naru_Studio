@@ -1,6 +1,8 @@
 #include "naru/network/Network.h"
 #include "naru/runtime/GameWorld.h"
 #include "naru/python/PythonRuntime.h"
+#include "naru/events/EventCompiler.h"
+#include "naru/events/EventRunner.h"
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
@@ -28,11 +30,74 @@ struct StartRequest : naru::GameScripts {
         return naru::HookStatus::Ok;
     }
 };
+void eventTests(const std::string& base) {
+    naru::Project project;
+    project.networkConnections = {{"local", base, {{"X-Common", "common"}}, 1000}};
+    project.networkConnections.push_back({"short", base, {}, 100});
+    naru::Scene scene; scene.id = "first"; project.scenes.push_back(scene); scene.id = "second"; project.scenes.push_back(scene);
+    naru::GameWorld world(project, {}); check(world.startGame("first"), "event world start");
+    naru::Variables vars; naru::Logger log;
+    naru::CommandContext ctx{vars, log}; ctx.game = &world; ctx.project = &project;
+    naru::EventCommand c; c.type = naru::EventCommandType::NetworkRequest;
+    c.network.connection = "local"; c.network.path = "/unicode";
+    c.network.mappings = {{"/message", "message"}, {"/value", "value"}};
+    auto run = [&](const naru::EventCommand& command) {
+        naru::EventRunner runner(naru::compileEvent({command}, {})); runner.start(ctx);
+        const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(4);
+        while (!runner.finished() && std::chrono::steady_clock::now() < end) {
+            world.update(1.0/60, {}); runner.update(ctx, 1.0/60);
+            std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        }
+        check(runner.finished() && runner.status() == naru::CommandStatus::Completed, "network event stalled/failed runner");
+    };
+    run(c);
+    check(vars.get("api_ok") == naru::Value{true} && vars.get("message") == naru::Value{std::string("한국어")} && vars.get("value") == naru::Value{std::int64_t{42}}, "event scalar mapping");
+    check(world.tickCount() > 0 && project.variables.empty(), "game ticks or editing data changed");
+    c.network.method = "POST"; c.network.path = "/echo"; c.network.body = R"({"message":"한글","value":7})";
+    run(c); check(vars.get("value") == naru::Value{std::int64_t{7}}, "event POST");
+    vars.set("send_json", std::string(R"({"message":"변수","value":9})")); c.network.bodyVariable = "send_json";
+    run(c); check(vars.get("value") == naru::Value{std::int64_t{9}}, "event body variable");
+    c.network.bodyVariable.clear(); c.network.body.clear(); c.network.method = "GET";
+    for (const auto& [path, error] : {std::pair{"/invalid", "invalid_json"}, {"/unauthorized", "http_error"}}) {
+        c.network.path = path; run(c);
+        check(vars.get("api_ok") == naru::Value{false} && vars.get("api_error") == naru::Value{std::string(error)} && vars.get("value") == naru::Value{}, "event failure/stale mapping");
+    }
+    c.network.path = "/unicode"; c.network.mappings["/missing"] = "missing"; run(c);
+    check(vars.get("api_error") == naru::Value{std::string("mapping_error")} && vars.get("message") == naru::Value{}, "mapping must be atomic");
+    c.network.mappings.clear(); c.network.path = "/empty"; run(c);
+    check(vars.get("api_ok") == naru::Value{true} && vars.get("api_code") == naru::Value{std::int64_t{204}}, "empty response");
+    c.network.path = "/slow";
+    c.network.connection = "short"; run(c);
+    check(vars.get("api_error") == naru::Value{std::string("timeout")}, "event timeout");
+    c.network.connection = "local";
+    naru::EventRunner runner(naru::compileEvent({c}, {})); runner.start(ctx);
+    check(runner.status() == naru::CommandStatus::Waiting, "event did not wait"); runner.cancel(ctx);
+    check(vars.get("api_error") == naru::Value{std::string("cancelled")}, "F8 cancellation");
+    const auto old = vars;
+    ctx.game = nullptr; naru::EventRunner preview(naru::compileEvent({c}, {})); preview.start(ctx);
+    check(preview.finished() && vars == old, "F6 performed network/changed variables"); ctx.game = &world;
+    c.network.connection = "missing"; run(c);
+    check(vars.get("api_error") == naru::Value{std::string("request_error")}, "missing connection should branch failure");
+    c.network.connection = "local";
+    naru::EventRunner transition(naru::compileEvent({c}, {})); transition.start(ctx); world.enterScene("second"); transition.update(ctx, 1.0/60);
+    check(vars.get("api_error") == naru::Value{std::string("cancelled")}, "scene transition request cancellation");
+    auto request = naru::connectionRequest(project.networkConnections, "local", "/echo", "POST", {{"x-common", "override"}}, "{}");
+    check(!request.headers.contains("X-Common") && request.headers.at("x-common") == "override" && request.headers.contains("Content-Type"), "shared headers override");
+    naru::NetworkEvent mapping; mapping.mappings = {{"/a/0", "flag"}, {"/a/1", "empty"}, {"/a/2", "decimal"}};
+    naru::applyNetworkResult(mapping, {"completed", 200, R"({"a":[true,null,1.5]})", ""}, vars);
+    check(vars.get("flag") == naru::Value{true} && vars.get("empty") == naru::Value{} && vars.get("decimal") == naru::Value{1.5}, "nested scalar kinds");
+    mapping.mappings = {{"/a", "bad"}};
+    for (const auto& body : {R"({"a":[]})", R"({"a":18446744073709551615})"}) {
+        naru::applyNetworkResult(mapping, {"completed", 200, body, ""}, vars);
+        check(vars.get("api_error") == naru::Value{std::string("mapping_error")}, "non-scalar or integer overflow accepted");
+    }
+}
 }
 int main(int argc, char** argv) {
     try {
         check(argc == 3, "expected server URL and Python fixture");
         const std::string base = argv[1];
+        eventTests(base);
         naru::Network network;
         for (const auto& [path, status, code, error] : {
             std::tuple{"/unicode", "completed", 200, ""},
@@ -69,6 +134,7 @@ int main(int argc, char** argv) {
         try { network.request(post); } catch (const std::invalid_argument&) { rejected = true; }
         check(rejected, "reserved transport header allowed");
         naru::Project project;
+        project.networkConnections = {{"local", base, {}, 1000}};
         naru::Scene scene; scene.id = "first"; project.scenes.push_back(scene); scene.id = "second"; project.scenes.push_back(scene);
         StartRequest hooks; hooks.url = base + "/slow";
         naru::GameWorld world(project, {});

@@ -154,6 +154,11 @@ bool SetObjectCommand::mergeWith(const QUndoCommand* other) {
     return true;
 }
 
+SetNetworkConnectionsCommand::SetNetworkConnectionsCommand(ProjectDocument* doc, std::vector<naru::NetworkConnection> after)
+    : doc_(doc), before_(doc->project().networkConnections), after_(std::move(after)) { setText(QStringLiteral("네트워크 접속 설정 변경")); }
+void SetNetworkConnectionsCommand::redo() { doc_->setNetworkConnections(after_); }
+void SetNetworkConnectionsCommand::undo() { doc_->setNetworkConnections(before_); }
+
 SetVariablesCommand::SetVariablesCommand(ProjectDocument* doc, std::vector<naru::VariableDef> after)
     : doc_(doc), before_(doc->project().variables), after_(std::move(after)) {
     setText(QStringLiteral("변수·스위치 변경"));

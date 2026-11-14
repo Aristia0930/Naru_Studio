@@ -12,6 +12,7 @@
 #include "ScriptEditor.h"
 #include "UndoCommands.h"
 #include "VariablesDialog.h"
+#include "NetworkSettingsDialog.h"
 #include "InputSettingsDialog.h"
 
 #include "naru/events/BuiltinCommands.h"
@@ -405,6 +406,11 @@ void MainWindow::createActions() {
     game->addAction(debugObjectNamesAction_);
     game->addSeparator();
     game->addAction(variables);
+    game->addAction(make(QStringLiteral("네트워크 접속 설정..."), {}, [this] {
+        NetworkSettingsDialog dialog(doc_->project(), this);
+        if (dialog.exec() == QDialog::Accepted && dialog.connections() != doc_->project().networkConnections)
+            doc_->undoStack()->push(new SetNetworkConnectionsCommand(doc_, dialog.connections()));
+    }));
     auto* inputSettings = make(QStringLiteral("키 설정..."), {}, &MainWindow::editInputSettings);
     inputSettings->setObjectName(QStringLiteral("editInputSettings"));
     game->addAction(inputSettings);

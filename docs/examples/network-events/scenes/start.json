@@ -1,0 +1,81 @@
+{
+  "formatVersion": 1,
+  "id": "start",
+  "name": "병렬 API 요청과 플레이어 이동",
+  "width": 960,
+  "height": 540,
+  "background": "#202830",
+  "player": "hero",
+  "objects": [
+    {
+      "id": "hero",
+      "name": "주인공",
+      "x": 80,
+      "y": 250,
+      "width": 40,
+      "height": 40,
+      "color": "#5fa7cf"
+    },
+    {
+      "id": "notice",
+      "name": "API 요청 (병렬 1회)",
+      "x": 400,
+      "y": 200,
+      "width": 90,
+      "height": 90,
+      "color": "#dbb560",
+      "showName": true,
+      "event": {
+        "trigger": "parallel",
+        "repeat": false,
+        "commands": [
+          {
+            "type": "network_request",
+            "connection": "local",
+            "path": "/hello",
+            "method": "GET",
+            "headers": {},
+            "body": "",
+            "okVariable": "api_ok",
+            "codeVariable": "api_code",
+            "errorVariable": "api_error",
+            "mappings": {
+              "/message": "공지내용",
+              "/score": "점수"
+            }
+          },
+          {
+            "type": "if_variable",
+            "variable": "api_ok",
+            "compare": "==",
+            "value": true,
+            "then": [
+              {
+                "type": "set_variable",
+                "variable": "분기결과",
+                "op": "set",
+                "value": "성공"
+              },
+              {
+                "type": "log",
+                "text": "API 성공: 실행 변수에서 공지내용과 점수를 확인하세요."
+              }
+            ],
+            "else": [
+              {
+                "type": "set_variable",
+                "variable": "분기결과",
+                "op": "set",
+                "value": "실패"
+              },
+              {
+                "type": "log",
+                "text": "API 실패: api_error와 api_code를 확인하세요."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

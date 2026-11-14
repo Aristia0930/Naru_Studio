@@ -5,7 +5,7 @@
 
 표시: **읽기** = 값을 볼 수 있음 · **쓰기** = 대입해서 바꿀 수 있음 · *게임 밖* = 에디터의 F5 스크립트 실행, F6 이벤트 테스트
 
-새 스크립트 작성/이벤트 연결은 [작성 안내](guide/SCRIPTING.md), 현재 명령 14종의 입력·대기·중지 규칙은 [이벤트 안내](guide/EVENTS.md)에서 따라 할 수 있습니다.
+새 스크립트 작성/이벤트 연결은 [작성 안내](guide/SCRIPTING.md), 현재 명령 15종의 입력·대기·중지 규칙은 [이벤트 안내](guide/EVENTS.md)에서 따라 할 수 있습니다.
 
 **현재 공개 API 전체를 실행 예제로 연결하는 방법:** [Python 전체 가이드](guide/PYTHON_COOKBOOK.md), [이벤트 함수 완성 코드](examples/python_guide.py), [전역 훅·import 완성 코드](examples/guide_global.py). 이벤트 연결·실행 시점·인자/반환·오류·현재 없는 기능을 함께 구분합니다. 같은 폴더의 미등록 파일을 임의 import하는 기능은 제공하지 않으므로 전역 예제는 python_guide.py를 먼저 등록합니다.
 
@@ -220,15 +220,16 @@ Windows 게임 실행에서 사용합니다. F5/F6에서는 `None`입니다. 프
 | 함수 | 반환 | 동작 |
 |---|---|---|
 | `request(url, method="GET", headers=None, json=None, timeout=10.0)` | int | 비동기 요청 ID. `method`는 GET/POST/PUT/PATCH/DELETE, `headers`는 문자열 키·값 dict, `json`은 JSON으로 직렬화할 값, `timeout`은 0.1~60초. `json`이 있으면 별도 지정이 없을 때 JSON Content-Type을 설정 |
+| `request_connection(connection, path="/", method="GET", headers=None, json=None)` | int | 프로젝트 공통 접속 ID의 주소·헤더·제한 시간을 재사용. 요청별 헤더는 공통 값을 대소문자 구분 없이 덮어씀. JSON 본문과 응답 ID 규칙은 request와 같음. 없는 접속/잘못된 경로·본문은 ValueError, 인자 형식은 TypeError, 한도는 RuntimeError. F5/F6는 network=None. [등록·훅 완성 예제](guide/NETWORK_EVENTS.md#4-python에서-같은-설정-사용) |
 | `status(id)` | str | `pending`, `completed`, `failed`, `cancelled` 중 하나. 결과는 소비하지 않음 |
 | `result(id, consume=True)` | None 또는 dict | 처리 중이면 None. 종료 시 `ok`(bool), `status_code`(int, 응답 없으면 0), `text`(str), `json`(파싱 값 또는 None), `error`(str). 기본값 `consume=True`는 종료 결과를 읽은 뒤 ID를 제거. `consume=False`는 보존 |
 | `cancel(id)` | None | 진행 중 요청을 취소 상태로 바꾸고 결과를 폐기. 이미 서버에 도착한 요청을 되돌리지는 못함 |
 
 `request`의 잘못된 인자 형식은 `TypeError`, 범위·형식 오류와 없는/이미 소비한 ID는 `ValueError`, 동시 요청 또는 보관 한도 초과는 `RuntimeError`입니다. URL·네트워크 처리 중 발생한 오류는 비동기 결과의 `error`로 확인합니다. 대표 값은 `timeout`, `cancelled`, `http_error`, `invalid_json`, `transport_error`, `response_too_large`, `https_required`, `invalid_url`, `unsupported_platform`입니다. HTTP 2xx가 아닌 응답은 `ok=False`이며 상태 코드를 보존합니다. 빈 응답의 `json`은 None입니다.
 
-HTTPS 인증서 확인은 기본 설정을 유지하고 리디렉션은 자동으로 따르지 않습니다. HTTP는 `127.0.0.1`, `localhost`, `::1`의 로컬 테스트만 허용합니다. 요청/응답 본문은 각 1 MiB, 헤더 총합은 16 KiB까지, 프로세스 전체 작업자 8개와 게임 세션 결과 32개까지 허용합니다. `result()`로 끝난 결과를 소비해 다음 요청을 위한 자리를 확보합니다. 장면 전환·게임 종료 시 진행 중인 요청은 취소 상태가 되며, 취소는 실제 서버 처리의 되돌리기를 보장하지 않습니다. Windows 외 플랫폼의 전송은 미지원입니다. 외부 DB 직접 연결·이벤트 UI·자동 재시도는 아직 없습니다.
+HTTPS 인증서 확인은 기본 설정을 유지하고 리디렉션은 자동으로 따르지 않습니다. HTTP는 `127.0.0.1`, `localhost`, `::1`의 로컬 테스트만 허용합니다. 요청/응답 본문은 각 1 MiB, 헤더 총합은 16 KiB까지, 프로세스 전체 작업자 8개와 게임 세션 결과 32개까지 허용합니다. `result()`로 끝난 결과를 소비해 다음 요청을 위한 자리를 확보합니다. 장면 전환·게임 종료 시 진행 중인 요청은 취소 상태가 되며, 취소는 실제 서버 처리의 되돌리기를 보장하지 않습니다. Windows 외 플랫폼의 전송은 미지원입니다. 이벤트 요청 UI와 공통 설정은 [네트워크 이벤트 안내](guide/NETWORK_EVENTS.md)를 따릅니다. 외부 DB 직접 연결·자동 재시도는 아직 없습니다.
 
-`Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Proxy-Authorization`은 엔진이 관리하는 헤더로 직접 지정할 수 없습니다. `timeout`은 호출자 기준 전체 제한입니다. 취소·시간 초과 후 이미 시작된 OS 호출이 별도로 완료될 때까지 작업자가 남을 수 있으며, 이 기간에도 작업자 한도에 포함됩니다. 이벤트 F8은 요청을 별도로 취소하지 않습니다.
+`Host`, `Content-Length`, `Transfer-Encoding`, `Connection`, `Proxy-Authorization`은 엔진이 관리하는 헤더로 직접 지정할 수 없습니다. `timeout`은 호출자 기준 전체 제한입니다. 취소·시간 초과 후 이미 시작된 OS 호출이 별도로 완료될 때까지 작업자가 남을 수 있으며, 이 기간에도 작업자 한도에 포함됩니다. 게임 창 F8은 실행 중 이벤트·대사·이동 경로와 이벤트 API 요청을 중지합니다. 반복 이벤트는 조건이 맞으면 다음 틱에 재시작할 수 있습니다. F8은 게임 입력에 전달되지 않는 디버그 예약 키입니다. Python 직접 요청과 전역 훅은 F8로 자동 중지하지 않습니다.
 
 응답 `text`는 UTF-8로 해석하며 잘못된 바이트는 대체 문자로 표시합니다. 잘못된 JSON은 `invalid_json`과 `json=None`으로 보고합니다. HTTP 오류 응답도 상태 코드와 가능한 응답 내용을 제공합니다.
 

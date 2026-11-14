@@ -121,6 +121,7 @@ void validate(const HttpRequest& request) {
 struct Network::Impl { std::map<std::uint64_t, std::shared_ptr<Operation>> operations; };
 Network::Network() : impl_(std::make_unique<Impl>()) {}
 Network::~Network() { cancelAll(); }
+void Network::validateRequest(const HttpRequest& request) { validate(request); }
 std::uint64_t Network::request(HttpRequest input) {
     validate(input);
     if (impl_->operations.size() >= 32) throw std::runtime_error("request_limit: consume completed results");

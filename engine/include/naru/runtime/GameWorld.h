@@ -77,6 +77,9 @@ public:
     AudioHost* audio() const { return audio_; }
     // 전역 스크립트를 읽고 on_game_start를 부른 뒤 첫 장면에 들어간다. 장면이 없으면 false.
     bool startGame(const std::string& sceneId);
+    // Player debug action: cancel current events, dialogue, routes and queued calls.
+    // Repeating events may restart on a later tick while their conditions remain true.
+    void stopEvents();
     // 장면에 들어갈 때 플레이어를 놓을 곳. 비어 있는 값은 장면 편집 상태 그대로 (방향은 아래).
     struct Arrival {
         std::optional<double> x, y;

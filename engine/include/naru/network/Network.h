@@ -28,6 +28,7 @@ public:
     Network(const Network&) = delete;
     Network& operator=(const Network&) = delete;
     std::uint64_t request(HttpRequest request);
+    static void validateRequest(const HttpRequest& request);
     HttpResult result(std::uint64_t id, bool consume = false);
     void cancel(std::uint64_t id);
     void cancelAll();

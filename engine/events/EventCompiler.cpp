@@ -501,6 +501,54 @@ private:
     EventRunner runner_;
 };
 
+class NetworkRequestCommand final : public Command {
+public:
+    NetworkRequestCommand(std::string id, NetworkEvent event) : Command(std::move(id)), event_(std::move(event)) {}
+    CommandStatus start(CommandContext& ctx) override {
+        if (!ctx.game) {
+            ctx.logger.info("API 요청 테스트: 실제 통신과 변수 반영은 게임 실행에서만 합니다.");
+            return CommandStatus::Completed;
+        }
+        try {
+            validateNetworkEvent(event_);
+            std::string body = event_.body;
+            if (!event_.bodyVariable.empty()) {
+                const auto value = ctx.variables.get(event_.bodyVariable);
+                if (!value || !std::holds_alternative<std::string>(*value)) throw std::invalid_argument("본문 변수에는 JSON 문자열이 필요합니다.");
+                body = std::get<std::string>(*value);
+            }
+            auto request = connectionRequest(ctx.game->project().networkConnections, event_.connection,
+                                             event_.path, event_.method, event_.headers, body);
+            resetNetworkOutputs(event_, ctx.variables);
+            id_ = ctx.game->network().request(std::move(request));
+            return CommandStatus::Waiting;
+        } catch (const std::exception&) {
+            // Do not include URLs, headers or body in logs/errors.
+            applyNetworkResult(event_, {"failed", 0, "", "request_error"}, ctx.variables);
+            return CommandStatus::Completed;
+        }
+    }
+    CommandStatus update(CommandContext& ctx, double) override {
+        auto result = ctx.game->network().result(id_);
+        if (result.status == "pending") return CommandStatus::Waiting;
+        result = ctx.game->network().result(id_, true);
+        id_ = 0;
+        applyNetworkResult(event_, std::move(result), ctx.variables);
+        return CommandStatus::Completed;
+    }
+    void cancel(CommandContext& ctx) override {
+        if (!id_ || !ctx.game) return;
+        ctx.game->network().cancel(id_);
+        auto result = ctx.game->network().result(id_, true);
+        id_ = 0;
+        result.status = "cancelled"; result.error = "cancelled";
+        applyNetworkResult(event_, std::move(result), ctx.variables);
+    }
+private:
+    NetworkEvent event_;
+    std::uint64_t id_ = 0;
+};
+
 class AudioCommand final : public Command {
 public:
     AudioCommand(std::string id, EventCommand data) : Command(std::move(id)), data_(std::move(data)) {}
@@ -531,6 +579,8 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
         const EventCommand& c = list[i];
         std::string id = commandId(prefix, i);
         switch (c.type) {
+        case EventCommandType::NetworkRequest:
+            out.push_back(std::make_unique<NetworkRequestCommand>(id, c.network)); break;
         case EventCommandType::Audio:
             out.push_back(std::make_unique<AudioCommand>(id, c)); break;
         case EventCommandType::CallCommonEvent:

@@ -2,7 +2,7 @@
 
 공개 HTTP API를 비동기로 호출하고 JSON 응답을 게임 변수에 넣는 예제는 [네트워크 안내](NETWORK.md)와 [실행 프로젝트](../examples/network/README.md)에 있습니다.
 
-`ctx.network.request()`로 요청 ID를 받고 `ctx.network.status()` 또는 `ctx.network.result()`로 진행 상태와 결과를 확인합니다. `ctx.network.cancel()`은 결과 처리를 취소합니다. F5/F6의 `ctx.network`는 `None`이므로 게임 실행(Ctrl+R)에서 확인하세요.
+`ctx.network.request_connection("local", "/hello")`는 제작툴의 공통 접속 설정을 사용합니다. [등록·전역 훅 완성 예제](NETWORK_EVENTS.md#4-python에서-같은-설정-사용)를 참고하세요. 직접 주소를 쓰는 `ctx.network.request()`로 요청 ID를 받고 `ctx.network.status()` 또는 `ctx.network.result()`로 진행 상태와 결과를 확인합니다. `ctx.network.cancel()`은 결과 처리를 취소합니다. F5/F6의 `ctx.network`는 `None`이므로 게임 실행(Ctrl+R)에서 확인하세요.
 
 DB의 이미지·소리 에셋 속성은 `ctx.db.get`에서 ID 문자열 또는 None으로 읽습니다. [완성 코드·연결 순서·F5/F6 보호·오류](DB_ASSETS.md), [실행 프로젝트](../examples/database-assets/README.md)를 함께 제공합니다.
 
@@ -344,7 +344,7 @@ def error_example(ctx):
 
 **현재 직접 Python API가 없는 기능:** 에셋 추가/ID·그룹 편집/내보내기, DB 정의 수정, 객체 이름·충돌 크기 변경/생성·삭제, 그림 배치 수치·애니메이션, 배경 맞춤 수치, 대사·선택지·대기 직접 호출, 타일맵·카메라, 저장/로드·배포·외부 DB 직접 연결. HTTP(S) API는 위 `ctx.network`로 사용합니다. 이 중 편집 기능은 제작툴에서 사용하고 대사/선택지/대기는 공통 이벤트로 연결합니다. 계획 API를 현재 기능처럼 복사하지 마세요.
 
-이벤트 명령 14종의 Python 대응도 다음처럼 구분합니다.
+이벤트 명령 15종의 Python 대응도 다음처럼 구분합니다.
 
 | 이벤트 명령 | Python 연결 |
 |---|---|
@@ -356,6 +356,7 @@ def error_example(ctx):
 | 장면 이동 | ctx.scene.change |
 | 스크립트 호출 | 이벤트 파일·함수 연결, 같은 파일 함수 호출, 등록된 모듈 import |
 | 공통 이벤트 호출 | ctx.run_event |
+| API 요청 → 변수 | ctx.network.request_connection으로 공통 접속 설정 사용, status/result/cancel로 진행·결과·취소 확인. Python은 응답을 자동으로 게임 변수에 넣지 않으므로 명시적으로 set |
 | 소리 재생/정지 | ctx.audio.play_bgm / stop_bgm / play_se / stop_se. F5/F6은 ctx.audio=None |
 | 로그·주석 | ctx.log/ctx.warning/print, Python # 주석 |
 

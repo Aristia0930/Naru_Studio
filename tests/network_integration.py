@@ -53,6 +53,17 @@ def outside_game(ctx):
 
 def run(ctx):
     base = ctx.variables.get("base_url")
+    shared = ctx.network.request_connection("local", "/unicode")
+    deadline = time.monotonic() + 4
+    while ctx.network.status(shared) == "pending":
+        assert time.monotonic() < deadline
+        time.sleep(0.002)
+    assert ctx.network.result(shared)["json"]["value"] == 42
+    try:
+        ctx.network.request_connection("missing", "/unicode")
+        raise AssertionError("missing connection accepted")
+    except ValueError:
+        pass
     request_id = ctx.network.request(base + "/echo", method="POST", json={"message": "한국어", "values": [1, True, None]})
     deadline = time.monotonic() + 4
     while ctx.network.status(request_id) == "pending":

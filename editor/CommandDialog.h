@@ -14,6 +14,7 @@ class QLineEdit;
 class QListWidget;
 class QPlainTextEdit;
 class QStackedWidget;
+class NetworkFields;
 
 // 이벤트 명령 하나의 입력 폼. 명령 종류에 맞는 칸만 보여 준다.
 class CommandDialog : public QDialog {
@@ -40,6 +41,16 @@ private:
     bool readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* boolBox, naru::Value& out);
 
     naru::EventCommand command_;
+    QComboBox* networkConnection_ = nullptr;
+    QComboBox* networkMethod_ = nullptr;
+    QLineEdit* networkPath_ = nullptr;
+    QLineEdit* networkBodyVariable_ = nullptr;
+    QLineEdit* networkOk_ = nullptr;
+    QLineEdit* networkCode_ = nullptr;
+    QLineEdit* networkError_ = nullptr;
+    QPlainTextEdit* networkBody_ = nullptr;
+    NetworkFields* networkHeaders_ = nullptr;
+    NetworkFields* networkMappings_ = nullptr;
 
     QComboBox* audioAction_ = nullptr;
     QComboBox* audioAsset_ = nullptr;

@@ -12,6 +12,10 @@ qt_add_executable(naru_editor
   AssetBrowser.h
   CommandDialog.cpp
   CommandDialog.h
+  NetworkSettingsDialog.cpp
+  NetworkSettingsDialog.h
+  NetworkFields.h
+  NetworkMappingHelp.h
   DatabaseEditor.cpp
   DatabaseEditor.h
   FieldDialog.cpp

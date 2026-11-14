@@ -1,6 +1,7 @@
 #pragma once
 
 #include "naru/core/Value.h"
+#include "naru/network/NetworkSettings.h"
 
 #include <optional>
 #include <string>
@@ -10,7 +11,7 @@ namespace naru {
 
 // 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
 enum class EventCommandType {
-    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene, ShowChoices, CallCommonEvent, Audio
+    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene, ShowChoices, CallCommonEvent, Audio, NetworkRequest
 };
 enum class VariableOp { Set, Add, Subtract };
 enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
@@ -24,6 +25,7 @@ struct ChoiceBranch {
 inline constexpr int kMaxChoices = 6;
 
 struct EventCommand {
+    NetworkEvent network;
     EventCommandType type = EventCommandType::Comment;
 
     std::string audioAction = "play_bgm"; // play_bgm, stop_bgm, play_se, stop_se
