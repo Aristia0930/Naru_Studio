@@ -261,8 +261,8 @@ void drawScene(SDL_Renderer* r, const Scene& scene, const SceneObject* player, F
     // 플레이어가 바라보는 쪽 가장자리에 작은 표시 (이미지가 생기기 전 임시 표현)
     if (player && player->visible && player->image.asset.empty()) {
         const float s = 8.0f;
-        float x = static_cast<float>(player->x);
-        float y = static_cast<float>(player->y);
+        float x = static_cast<float>(player->x-images.camera.x);
+        float y = static_cast<float>(player->y-images.camera.y);
         float w = static_cast<float>(player->width);
         float h = static_cast<float>(player->height);
         SDL_FRect mark{x + (w - s) / 2, y + (h - s) / 2, s, s};
@@ -275,6 +275,7 @@ void drawScene(SDL_Renderer* r, const Scene& scene, const SceneObject* player, F
         SDL_SetRenderDrawColor(r, 255, 255, 255, 255);
         SDL_RenderFillRect(r, &mark);
     }
+    images.drawForeground(scene);
 }
 
 void drawMessage(SDL_Renderer* r, TTF_Font* font, const GameWorld::Message& message, const Scene& scene,
@@ -467,8 +468,8 @@ int main(int argc, char** argv) {
         return 1;
     }
     // 창은 장면 크기로 열되, 큰 장면은 화면에 들어가도록 줄인다. 그리기 좌표는 항상 장면 좌표다.
-    int winW = scene.width;
-    int winH = scene.height;
+    int winW = scene.cameraWidth ? scene.cameraWidth : scene.width;
+    int winH = scene.cameraHeight ? scene.cameraHeight : scene.height;
     while (winW > 1600 || winH > 900) {
         winW = winW * 3 / 4;
         winH = winH * 3 / 4;
@@ -482,7 +483,7 @@ int main(int argc, char** argv) {
         SDL_Quit();
         return 1;
     }
-    SDL_SetRenderLogicalPresentation(renderer, scene.width, scene.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_SetRenderLogicalPresentation(renderer, scene.cameraWidth ? scene.cameraWidth : scene.width, scene.cameraHeight ? scene.cameraHeight : scene.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     SDL_SetRenderVSync(renderer, 1);
     ImageRenderer images(renderer, world.project(), options->projectDir, world.logger());
 
@@ -573,7 +574,8 @@ int main(int argc, char** argv) {
         drawScene(renderer, *world.scene(), world.player(), world.facing(), images);
         nameplates.draw(renderer, labelFont, *world.scene(), debugObjectNames, images);
         if (world.message()) {
-            drawMessage(renderer, font, *world.message(), *world.scene(), speakerText, bodyText, frame,
+            Scene screen;screen.width=images.camera.width;screen.height=images.camera.height;
+            drawMessage(renderer, font, *world.message(), screen, speakerText, bodyText, frame,
                         world.choices().get(), world.selectedChoice(), choiceText, hintText);
         }
 

@@ -108,25 +108,27 @@ naru::NameplateAnchor ImageRenderer::nameplateAnchor(const naru::SceneObject& ob
 
 void ImageRenderer::draw(const naru::Scene& scene) {
     if (scene_ != scene.id) { clear(); scene_ = scene.id; }
-    SDL_SetRenderLogicalPresentation(renderer_, scene.width, scene.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
-    SDL_Rect clip{0, 0, scene.width, scene.height}; SDL_SetRenderClipRect(renderer_, &clip);
+    camera = naru::mapCamera(scene);
+    SDL_SetRenderLogicalPresentation(renderer_, camera.width, camera.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
+    SDL_Rect clip{0, 0, std::min(camera.width, scene.width), std::min(camera.height, scene.height)}; SDL_SetRenderClipRect(renderer_, &clip);
     if (auto* image = texture(scene.backgroundImage.asset)) {
         const auto r = naru::backgroundImageRect(scene, image->w, image->h);
         const auto& b = scene.backgroundImage;
         SDL_SetTextureAlphaModFloat(image, static_cast<float>(b.opacity));
         SDL_SetTextureScaleMode(image, b.smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
-        SDL_FRect rect{static_cast<float>(r.x), static_cast<float>(r.y), static_cast<float>(r.width), static_cast<float>(r.height)};
+        SDL_FRect rect{static_cast<float>(r.x-camera.x), static_cast<float>(r.y-camera.y), static_cast<float>(r.width), static_cast<float>(r.height)};
         if (b.mode == "repeat") {
             rect.w = static_cast<float>(scene.width - r.x); rect.h = static_cast<float>(scene.height - r.y);
             SDL_RenderTextureTiled(renderer_, image, nullptr, static_cast<float>(b.scale), &rect);
         } else SDL_RenderTexture(renderer_, image, nullptr, &rect);
     }
+    drawTileLayers(scene, false);
     for (const auto* object : naru::drawingOrder(scene)) {
         if (!object->visible) continue;
         const auto& o = *object;
         if (auto* image = texture(o.image.asset)) {
             const auto r = naru::objectImageRect(o, image->w, image->h);
-            SDL_FRect rect{static_cast<float>(r.x), static_cast<float>(r.y), static_cast<float>(r.width), static_cast<float>(r.height)};
+            SDL_FRect rect{static_cast<float>(r.x-camera.x), static_cast<float>(r.y-camera.y), static_cast<float>(r.width), static_cast<float>(r.height)};
             SDL_FPoint pivot{static_cast<float>(r.width * o.image.anchorX), static_cast<float>(r.height * o.image.anchorY)};
             SDL_SetTextureAlphaModFloat(image, static_cast<float>(o.image.opacity));
             SDL_SetTextureScaleMode(image, o.image.smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
@@ -134,9 +136,30 @@ void ImageRenderer::draw(const naru::Scene& scene) {
             SDL_RenderTextureRotated(renderer_, image, nullptr, &rect, o.image.rotation, &pivot, flip);
         } else {
             const auto c = color(o.color); SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
-            const SDL_FRect rect{static_cast<float>(o.x), static_cast<float>(o.y), static_cast<float>(o.width), static_cast<float>(o.height)};
+            const SDL_FRect rect{static_cast<float>(o.x-camera.x), static_cast<float>(o.y-camera.y), static_cast<float>(o.width), static_cast<float>(o.height)};
             SDL_RenderFillRect(renderer_, &rect);
         }
     }
     SDL_SetRenderClipRect(renderer_, nullptr);
+}
+void ImageRenderer::drawForeground(const naru::Scene& scene) {
+    SDL_Rect clip{0, 0, std::min(camera.width, scene.width), std::min(camera.height, scene.height)};
+    SDL_SetRenderClipRect(renderer_, &clip);
+    drawTileLayers(scene, true);
+    SDL_SetRenderClipRect(renderer_, nullptr);
+}
+void ImageRenderer::drawTileLayers(const naru::Scene& scene, bool above) {
+        int size=scene.tileSize, columns=(scene.width+size-1)/size;
+        for (const auto& layer : scene.tileLayers) if (layer.visible && layer.above==above) {
+            auto* image=texture(layer.asset);if(!image || image->w<size || image->h<size)continue;
+            int atlasColumns=image->w/size;
+            SDL_SetTextureAlphaModFloat(image,1);SDL_SetTextureScaleMode(image,SDL_SCALEMODE_NEAREST);
+            for(const auto& [cell,tile]:layer.cells) {
+                float x=float((cell%columns)*size-camera.x),y=float((cell/columns)*size-camera.y);
+                if(x+size<=0||y+size<=0||x>=camera.width||y>=camera.height)continue;
+                SDL_FRect src{float(tile%atlasColumns*size),float(tile/atlasColumns*size),float(size),float(size)};
+                if(src.y+size>image->h)continue;
+                SDL_FRect dest{x,y,float(size),float(size)};SDL_RenderTexture(renderer_,image,&src,&dest);
+            }
+        }
 }

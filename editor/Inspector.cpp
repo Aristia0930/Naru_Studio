@@ -1,4 +1,5 @@
 #include "Inspector.h"
+#include "naru/project/TileMap.h"
 
 #include "ProjectDocument.h"
 #include "UndoCommands.h"
@@ -143,8 +144,9 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     sceneName_ = new QLineEdit(scenePage);
     sceneW_ = new QSpinBox(scenePage);
     sceneH_ = new QSpinBox(scenePage);
+    sceneW_->setObjectName(QStringLiteral("sceneWidth"));sceneH_->setObjectName(QStringLiteral("sceneHeight"));
     for (QSpinBox* box : {sceneW_, sceneH_}) {
-        box->setRange(16, 16384);
+        box->setRange(16, 32768);
         box->setKeyboardTracking(false);
     }
     sceneColor_ = new QPushButton(scenePage);
@@ -226,6 +228,11 @@ void Inspector::refresh() {
         sceneName_->setText(QString::fromStdString(scene->name));
         sceneW_->setValue(scene->width);
         sceneH_->setValue(scene->height);
+        bool painted = false;
+        for (const auto& layer : scene->tileLayers) painted |= !layer.cells.empty();
+        sceneW_->setEnabled(true);sceneH_->setEnabled(true);
+        sceneW_->setToolTip(painted ? QStringLiteral("크기 변경 시 잘릴 타일과 영역 밖 객체를 확인합니다. 실행 취소로 복원할 수 있습니다.") : QString());
+        sceneH_->setToolTip(sceneW_->toolTip());
         showColor(sceneColor_, scene->background);
         backgroundImage_->setIcon(QPixmap::fromImage(loadProjectImage(doc_, scene->backgroundImage.asset)).scaled(48, 32, Qt::KeepAspectRatio));
         backgroundImage_->setToolTip(scene->backgroundImage.asset.empty() ? QStringLiteral("이미지 없음 (배경색)") : QString::fromStdString(scene->backgroundImage.asset));
@@ -320,7 +327,15 @@ void Inspector::commitScene(int field) {
     if (after.name == current->name && after.width == current->width && after.height == current->height) {
         return;
     }
-    doc_->undoStack()->push(new SetSceneInfoCommand(doc_, *current, after, field));
+    bool painted=false;for(const auto& layer:current->tileLayers)painted|=!layer.cells.empty();
+    if(painted && (field==Width || field==Height)) {
+        const auto before=*current;
+        const int width=std::max(32,after.width),height=std::max(32,after.height);
+        after.width=before.width;after.height=before.height;
+        const auto summary=naru::resizeTileMap(after,width,height);
+        if(QMessageBox::question(this,QStringLiteral("맵 크기 변경 확인"),QStringLiteral("%1 × %2 → %3 × %4 픽셀\n잘릴 타일: %5개\n새 영역 밖 객체: %6개 (위치는 유지)\n좌상단 기준으로 칸 좌표를 유지합니다. 적용할까요?").arg(before.width).arg(before.height).arg(after.width).arg(after.height).arg(qulonglong(summary.croppedTiles)).arg(qulonglong(summary.outsideObjects)),QMessageBox::Yes|QMessageBox::No,QMessageBox::No)!=QMessageBox::Yes){refresh();return;}
+        doc_->undoStack()->push(new SetSceneInfoCommand(doc_,before,after,-1));
+    } else doc_->undoStack()->push(new SetSceneInfoCommand(doc_, *current, after, field));
 }
 
 void Inspector::setPlayer(bool on) {

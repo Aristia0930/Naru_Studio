@@ -56,6 +56,15 @@ struct SceneObject {
     bool operator==(const SceneObject&) const = default;
 };
 
+struct TileLayer {
+    std::string name = "레이어";
+    std::string asset;
+    bool visible = true, locked = false, above = false;
+    std::map<int, int> cells; // cell y * ceil(scene.width / tileSize) + x -> atlas index
+    std::vector<int> solidTiles;
+    bool operator==(const TileLayer&) const = default;
+};
+
 struct Scene {
     std::string id;
     std::string name;
@@ -66,6 +75,9 @@ struct Scene {
     std::string playerObjectId;
     std::vector<SceneObject> objects;
     BackgroundImage backgroundImage;
+    int tileSize = 32;
+    std::vector<TileLayer> tileLayers; // bottom to top within each below/above group
+    int cameraWidth = 0, cameraHeight = 0; // 0 retains the legacy full-scene view
 
     SceneObject* findObject(const std::string& objectId);
     const SceneObject* findObject(const std::string& objectId) const;

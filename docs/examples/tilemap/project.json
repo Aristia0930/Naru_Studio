@@ -1,0 +1,18 @@
+{
+  "formatVersion": 1,
+  "name": "레이어 맵 예제",
+  "startScene": "map",
+  "scenes": [
+    "map"
+  ],
+  "assets": [
+    {
+      "id": "tiles",
+      "name": "예제 타일",
+      "kind": "image",
+      "path": "assets/tiles.png",
+      "sourceName": "tiles.png",
+      "sha256": "3c97b4c8a15f37c5319077f7c4b4a554898181139ad3e6ee59067179a8397577"
+    }
+  ]
+}

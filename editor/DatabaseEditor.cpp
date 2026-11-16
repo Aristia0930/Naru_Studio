@@ -22,6 +22,17 @@
 #include <QTableWidget>
 #include <QToolButton>
 #include <QVBoxLayout>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
+#include <QPlainTextEdit>
+#include <QTimer>
+#include "naru/network/NetworkSettings.h"
+#include <limits>
+#include <QSet>
+#include <stdexcept>
 
 #include <algorithm>
 #include <cmath>
@@ -168,6 +179,9 @@ DatabaseEditor::DatabaseEditor(ProjectDocument* doc, QWidget* parent) : QWidget(
     recordButtons->addWidget(duplicateButton);
     recordButtons->addWidget(removeRecordButton);
     recordLayout->addLayout(recordButtons);
+    auto* importButton = smallButton(QStringLiteral("API에서 가져오기..."), this);
+    recordLayout->addWidget(importButton);
+    connect(importButton, &QPushButton::clicked, this, &DatabaseEditor::importApiData);
 
     // 3단: 값 편집 / 속성 정의
     formArea_ = new QScrollArea(this);
@@ -266,6 +280,190 @@ DatabaseEditor::DatabaseEditor(ProjectDocument* doc, QWidget* parent) : QWidget(
 }
 
 // ---------------------------------------------------------------- 공통
+
+void DatabaseEditor::importApiData() {
+    if (!currentType()) return;
+    const auto target = typeKey_;
+    QDialog dialog(this);
+    dialog.setWindowTitle(QStringLiteral("API 데이터 가져오기 — %1").arg(target));
+    dialog.resize(940, 740);
+    auto* layout = new QVBoxLayout(&dialog);
+    auto* form = new QFormLayout;
+    auto* connection = new QComboBox(&dialog);
+    for (const auto& c : doc_->project().networkConnections) connection->addItem(q(c.id));
+    auto* path = new QLineEdit(QStringLiteral("/"), &dialog);
+    path->setObjectName(QStringLiteral("apiImportPath"));
+    auto* arrayKey = new QLineEdit(&dialog);
+    arrayKey->setPlaceholderText(QStringLiteral("빈 칸: 응답 자체가 배열 / 예: items"));
+    auto* idKey = new QLineEdit(QStringLiteral("id"), &dialog);
+    auto* nameKey = new QLineEdit(QStringLiteral("name"), &dialog);
+    auto* update = new QCheckBox(QStringLiteral("같은 ID의 기존 항목 갱신 허용"), &dialog);
+    update->setObjectName(QStringLiteral("apiImportUpdate"));
+    form->addRow(QStringLiteral("공통 접속 설정"), connection);
+    form->addRow(QStringLiteral("GET 경로"), path);
+    form->addRow(QStringLiteral("배열 필드 (최상위 키)"), arrayKey);
+    form->addRow(QStringLiteral("ID 필드"), idKey);
+    form->addRow(QStringLiteral("표시 이름 필드"), nameKey);
+    form->addRow(update);
+    layout->addLayout(form);
+    auto* mapping = new QTableWidget(0, 2, &dialog);
+    mapping->setHorizontalHeaderLabels({QStringLiteral("DB 속성"), QStringLiteral("응답 필드 (빈 칸: 유지/기본값)")});
+    mapping->horizontalHeader()->setStretchLastSection(true);
+    for (const auto& f : currentType()->fields) {
+        int row = mapping->rowCount(); mapping->insertRow(row);
+        auto* key = new QTableWidgetItem(q(f.key)); key->setFlags(key->flags() & ~Qt::ItemIsEditable);
+        mapping->setItem(row, 0, key); mapping->setItem(row, 1, new QTableWidgetItem(q(f.key)));
+    }
+    layout->addWidget(mapping);
+    auto* fetch = new QPushButton(QStringLiteral("조회"), &dialog);
+    auto* preview = new QPushButton(QStringLiteral("변경 미리보기"), &dialog);
+    auto* applyButton = new QPushButton(QStringLiteral("프로젝트 DB에 적용"), &dialog);
+    auto* close = new QPushButton(QStringLiteral("닫기"), &dialog);
+    auto* buttons = new QHBoxLayout;
+    for (auto* b : {fetch, preview, applyButton, close}) buttons->addWidget(b);
+    layout->addLayout(buttons);
+    auto* report = new QPlainTextEdit(&dialog); report->setReadOnly(true);
+    report->setObjectName(QStringLiteral("apiImportReport"));
+    fetch->setObjectName(QStringLiteral("apiImportFetch"));
+    preview->setObjectName(QStringLiteral("apiImportPreview"));
+    applyButton->setObjectName(QStringLiteral("apiImportApply"));
+    layout->addWidget(report, 1);
+    report->setPlainText(QStringLiteral("조회 후 미리보기를 확인하고 적용하세요. 조회만으로 프로젝트는 변경되지 않습니다.\n인증이 필요한 경우 이번 요청용 토큰만 입력하세요. 프로젝트에는 저장하지 않습니다."));
+    auto* token = new QLineEdit(&dialog); token->setEchoMode(QLineEdit::Password);
+    token->setPlaceholderText(QStringLiteral("선택: 이번 조회용 Bearer 토큰")); layout->insertWidget(1, token);
+    naru::Network network;
+    std::uint64_t requestId = 0;
+    QTimer timer(&dialog);
+    QByteArray response;
+    naru::Database before, after;
+    bool valid = false;
+    applyButton->setEnabled(false);
+    auto invalidate = [&] { valid = false; applyButton->setEnabled(false); };
+    for (auto* edit : {path, arrayKey, idKey, nameKey, token}) connect(edit, &QLineEdit::textChanged, &dialog, invalidate);
+    connect(connection, &QComboBox::currentTextChanged, &dialog, invalidate);
+    connect(update, &QCheckBox::toggled, &dialog, invalidate);
+    connect(mapping, &QTableWidget::cellChanged, &dialog, invalidate);
+    auto clearResponse = [&] { response.clear(); invalidate(); };
+    connect(path, &QLineEdit::textChanged, &dialog, clearResponse);
+    connect(token, &QLineEdit::textChanged, &dialog, clearResponse);
+    connect(connection, &QComboBox::currentTextChanged, &dialog, clearResponse);
+    connect(close, &QPushButton::clicked, &dialog, &QDialog::reject);
+    connect(fetch, &QPushButton::clicked, &dialog, [&] {
+        network.cancelAll(); response.clear(); invalidate();
+        try {
+            std::map<std::string, std::string> headers;
+            if (!token->text().isEmpty()) headers["Authorization"] = "Bearer " + token->text().toStdString();
+            requestId = network.request(naru::connectionRequest(doc_->project().networkConnections,
+                connection->currentText().toStdString(), path->text().toStdString(), "GET", headers, ""));
+            fetch->setEnabled(false); preview->setEnabled(false);
+            connection->setEnabled(false); path->setEnabled(false); token->setEnabled(false);
+            report->setPlainText(QStringLiteral("응답을 기다리는 중입니다. 닫으면 취소됩니다."));
+            timer.start(50);
+        } catch (...) { report->setPlainText(QStringLiteral("조회 시작 실패: 접속 설정·경로·헤더를 확인하세요.")); }
+    });
+    connect(&timer, &QTimer::timeout, &dialog, [&] {
+        auto result = network.result(requestId);
+        if (result.status == "pending") return;
+        timer.stop(); fetch->setEnabled(true); preview->setEnabled(true);
+        network.result(requestId, true);
+        connection->setEnabled(true); path->setEnabled(true); token->setEnabled(true);
+        if (result.status != "completed" || result.statusCode < 200 || result.statusCode >= 300) {
+            report->setPlainText(QStringLiteral("조회 실패 (HTTP %1). 접속·인증·서버 응답을 확인하세요.").arg(result.statusCode)); return;
+        }
+        response = QByteArray::fromStdString(result.text);
+        report->setPlainText(QStringLiteral("조회 완료. 변경 미리보기를 누르세요."));
+    });
+    connect(preview, &QPushButton::clicked, &dialog, [&] {
+        invalidate();
+        try {
+            QString location = QStringLiteral("응답");
+            auto fail = [&](const QString& reason) { throw location + QStringLiteral(": ") + reason; };
+            QJsonParseError error;
+            auto json = QJsonDocument::fromJson(response, &error);
+            if (response.isEmpty()) fail(QStringLiteral("조회 결과가 없습니다. 먼저 조회하세요."));
+            if (error.error != QJsonParseError::NoError) fail(QStringLiteral("JSON 형식 오류 (바이트 %1): %2").arg(error.offset).arg(error.errorString()));
+            QJsonValue source = json.isArray() ? QJsonValue(json.array()) : QJsonValue(json.object());
+            if (!arrayKey->text().isEmpty()) source = source.toObject().value(arrayKey->text());
+            if (!source.isArray()) fail(QStringLiteral("배열 필드가 없거나 배열이 아닙니다."));
+            if (source.toArray().isEmpty() || source.toArray().size() > 10000) fail(QStringLiteral("배열은 1~10000항목이어야 합니다."));
+            before = doc_->project().database; after = before;
+            auto* type = after.findType(target.toStdString()); if (!type) fail(QStringLiteral("대상 DB 종류가 없습니다."));
+            QStringList lines; QSet<QString> ids;
+            int rowNumber=0;
+            for (const auto& row : source.toArray()) {
+                location=QStringLiteral("항목 %1").arg(++rowNumber);
+                if (!row.isObject()) fail(QStringLiteral("JSON 객체여야 합니다."));
+                auto object = row.toObject(); auto id = object.value(idKey->text());
+                if (!id.isString() || !naru::isValidDataId(id.toString().toStdString())) fail(QStringLiteral("ID 필드 '%1'에 유효한 문자열 ID가 필요합니다.").arg(idKey->text()));
+                location+=QStringLiteral(" [%1]").arg(id.toString());
+                if (ids.contains(id.toString())) fail(QStringLiteral("응답 내 중복 ID입니다."));
+                ids.insert(id.toString());
+                auto* existing = type->findRecord(id.toString().toStdString());
+                if (existing && !update->isChecked()) fail(QStringLiteral("기존 ID와 충돌합니다. 변경 미리보기를 하려면 기존 항목 갱신 허용을 켜세요."));
+                naru::DataRecord record = existing ? *existing : naru::DataRecord{};
+                record.id = id.toString().toStdString();
+                auto name = object.value(nameKey->text());
+                if (!name.isString() || name.toString().trimmed().isEmpty()) fail(QStringLiteral("이름 필드 '%1'에 비어 있지 않은 문자열이 필요합니다.").arg(nameKey->text()));
+                record.name = name.toString().toStdString();
+                lines << QStringLiteral("%1 %2: %3 → %4").arg(existing ? QStringLiteral("갱신") : QStringLiteral("추가"), id.toString(), existing ? q(existing->name) : QStringLiteral("(없음)"), q(record.name));
+                for (int i = 0; i < mapping->rowCount(); ++i) {
+                    auto key = mapping->item(i, 0)->text().toStdString();
+                    auto remote = mapping->item(i, 1)->text(); if (remote.isEmpty()) continue;
+                    const auto itemLocation=QStringLiteral("항목 %1 [%2]").arg(rowNumber).arg(id.toString());
+                    location=itemLocation+QStringLiteral(" / 응답 '%1' → DB '%2'").arg(remote,q(key));
+                    const auto* field = type->findField(key); auto value = object.value(remote);
+                    if (!field) fail(QStringLiteral("DB 속성이 없습니다."));
+                    if (value.isUndefined()) fail(QStringLiteral("응답 필드가 누락되었습니다."));
+                    if (value.isArray() || value.isObject()) fail(QStringLiteral("배열/객체는 속성 값으로 가져올 수 없습니다."));
+                    naru::Value converted;
+                    if (value.isString()) converted = value.toString().toStdString();
+                    else if (value.isBool()) converted = value.toBool();
+                    else if (value.isDouble()) {
+                        double n = value.toDouble();
+                        if (field->type == FieldType::Integer) {
+                            if (std::floor(n) != n || n < -9007199254740991.0 || n > 9007199254740991.0) fail(QStringLiteral("정확하게 표현할 수 있는 정수 범위를 벗어났습니다."));
+                            converted = static_cast<std::int64_t>(n);
+                        } else converted = n;
+                    }
+                    if (auto reason=naru::checkValue(converted, *field)) fail(q(*reason));
+                    lines << QStringLiteral("  %1: %2 → %3").arg(q(key), q(naru::toDisplayString(type->valueOf(record, *field))), q(naru::toDisplayString(converted)));
+                    record.values[key] = converted;
+                }
+                if (existing) *existing = record; else type->records.push_back(record);
+            }
+            for (const auto& issue : after.validate(&doc_->project().assets)) {
+                if (issue.location.starts_with(target.toStdString() + "/") || issue.location.starts_with(target.toStdString() + ".")) {
+                    report->setPlainText(q(issue.location + ": " + issue.message));
+                    return;
+                }
+            }
+            for (const auto& record : type->records) for (const auto& field : type->fields) {
+                if (field.type != FieldType::Reference) continue;
+                auto value = type->valueOf(record, field);
+                if (auto* id = std::get_if<std::string>(&value)) {
+                    auto* referenced = after.findType(field.refType);
+                    if (!referenced || !referenced->findRecord(*id)) {
+                        location=q(type->key+"/"+record.id+"."+field.key);
+                        fail(QStringLiteral("기본값 또는 항목 값이 존재하지 않는 DB 항목을 참조합니다."));
+                    }
+                }
+            }
+            report->setPlainText(lines.join('\n')); valid = true; applyButton->setEnabled(after != before);
+        } catch (const QString& reason) {
+            report->setPlainText(reason+QStringLiteral("\n전체 요청은 적용되지 않았습니다. 입력을 고친 뒤 다시 미리보기를 확인하세요."));
+        } catch (...) {
+            report->setPlainText(QStringLiteral("적용할 수 없습니다. 배열(1~10000개), ID·이름 필드, 중복 ID, 기존 ID 갱신 허용, 속성 형식·범위·선택지·참조를 확인하세요. 전체 요청은 적용되지 않았습니다."));
+        }
+    });
+    connect(applyButton, &QPushButton::clicked, &dialog, [&] {
+        if (!valid) return;
+        if (doc_->project().database != before) { invalidate(); report->setPlainText(QStringLiteral("DB가 변경되었습니다. 다시 미리보기를 확인하세요.")); return; }
+        doc_->undoStack()->push(new SetDatabaseCommand(doc_, before, after, QStringLiteral("API 데이터 가져오기")));
+        dialog.accept();
+    });
+    dialog.exec();
+    network.cancelAll();
+}
 
 bool DatabaseEditor::apply(const std::function<bool(naru::Database&)>& change, const QString& text,
                            const QString& mergeKey) {

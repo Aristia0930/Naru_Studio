@@ -1,4 +1,5 @@
 #include "naru/runtime/GameWorld.h"
+#include "naru/project/TileMap.h"
 #include "naru/project/Nameplate.h"
 #include "naru/project/ImageLayout.h"
 
@@ -584,6 +585,14 @@ void GameWorld::moveAxis(SceneObject& mover, double dx, double dy, std::vector<s
             }
         }
     }
+    if (!mover.passable && mover.visible) visitSolidTiles(*scene_, swept.x, swept.y, swept.w, swept.h, [&](int x, int y, int size) {
+        Rect wall{double(x), double(y), double(size), double(size)};
+        if (!overlaps(swept, wall) || overlaps(before, wall)) return;
+        if (dx > 0) after.x = std::min(after.x, wall.x - after.w);
+        else if (dx < 0) after.x = std::max(after.x, wall.x + wall.w);
+        else if (dy > 0) after.y = std::min(after.y, wall.y - after.h);
+        else if (dy < 0) after.y = std::max(after.y, wall.y + wall.h);
+    });
     mover.x = after.x;
     mover.y = after.y;
 }

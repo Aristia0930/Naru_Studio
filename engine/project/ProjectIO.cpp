@@ -535,6 +535,17 @@ json sceneToJson(const Scene& s) {
         j["player"] = s.playerObjectId;
     }
     const auto& b = s.backgroundImage;
+    if (!s.tileLayers.empty() || s.cameraWidth || s.cameraHeight) {
+        j["tileSize"] = s.tileSize;
+        j["cameraWidth"] = s.cameraWidth; j["cameraHeight"] = s.cameraHeight;
+        j["tileLayers"] = json::array();
+        for (const auto& layer : s.tileLayers) {
+            json cells = json::array();
+            for (const auto& [cell, tile] : layer.cells) cells.push_back({cell, tile});
+            j["tileLayers"].push_back({{"name", layer.name}, {"asset", layer.asset}, {"visible", layer.visible},
+                {"locked", layer.locked}, {"above", layer.above}, {"cells", cells}, {"solidTiles", layer.solidTiles}});
+        }
+    }
     if (!(b == BackgroundImage{})) j["backgroundImage"] = {{"asset", b.asset}, {"mode", b.mode}, {"offsetX", b.offsetX},
         {"offsetY", b.offsetY}, {"scale", b.scale}, {"opacity", b.opacity}, {"smooth", b.smooth}};
     return j;
@@ -548,6 +559,30 @@ Scene sceneFromJson(const json& j) {
     s.width = getInt(j, "width", s.width);
     s.height = getInt(j, "height", s.height);
     s.background = getString(j, "background", s.background);
+    s.tileSize = getInt(j, "tileSize", 32);
+    s.cameraWidth = getInt(j, "cameraWidth", 0); s.cameraHeight = getInt(j, "cameraHeight", 0);
+    if (s.width <= 0 || s.height <= 0 || s.tileSize < 8 || s.tileSize > 256 ||
+        s.cameraWidth < 0 || s.cameraWidth > 4096 || s.cameraHeight < 0 || s.cameraHeight > 4096 ||
+        (s.cameraWidth == 0) != (s.cameraHeight == 0)) throw std::runtime_error("맵/카메라 크기가 올바르지 않습니다");
+    const auto columns = (static_cast<std::int64_t>(s.width) + s.tileSize - 1) / s.tileSize;
+    const auto cellCount = columns * ((static_cast<std::int64_t>(s.height) + s.tileSize - 1) / s.tileSize);
+    for (const auto& lj : getArray(j, "tileLayers")) {
+        if (s.tileLayers.size() >= 32) throw std::runtime_error("타일 레이어는 최대 32개입니다");
+        TileLayer layer;
+        layer.name = requireString(lj, "name"); layer.asset = getString(lj, "asset", "");
+        layer.visible = getBool(lj, "visible", true); layer.locked = getBool(lj, "locked", false); layer.above = getBool(lj, "above", false);
+        for (const auto& pair : getArray(lj, "cells")) {
+            if (!pair.is_array() || pair.size() != 2 || !pair[0].is_number_integer() || !pair[1].is_number_integer()) throw std::runtime_error("잘못된 타일 셀");
+            const auto cell = pair[0].get<std::int64_t>(), tile = pair[1].get<std::int64_t>();
+            if (cell < 0 || cell >= cellCount || cell > 2147483647 || tile < 0 || tile > 1048575 || layer.cells.size() >= 262144 || layer.cells.contains(static_cast<int>(cell))) throw std::runtime_error("타일 셀 범위/중복 오류");
+            layer.cells.emplace(static_cast<int>(cell), static_cast<int>(tile));
+        }
+        for (const auto& value : getArray(lj, "solidTiles")) {
+            if (!value.is_number_integer() || value.get<std::int64_t>() < 0 || value.get<std::int64_t>() > 1048575 || layer.solidTiles.size() >= 1048576) throw std::runtime_error("타일 충돌 범위 오류");
+            layer.solidTiles.push_back(value.get<int>());
+        }
+        s.tileLayers.push_back(std::move(layer));
+    }
     if (auto it = j.find("backgroundImage"); it != j.end()) {
         const auto& bj = requireObject(*it, "장면 배경 이미지");
         auto& b = s.backgroundImage;

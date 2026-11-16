@@ -1,5 +1,7 @@
 # Naru Studio 개발 환경·빌드 가이드 (Windows)
 
+2026-11-16: 자동 테스트는 25종이며 `player_tilemap`은 실제 SDL 픽셀로 레이어 위/아래·숨김과 카메라 좌표를 검사합니다. `asset_editor`에는 실제 Qt 타일맵 편집·레이어 관리·Undo·에셋 참조·저장 재열기를 포함합니다. 새 타일맵 예제 생성기는 Python 표준 라이브러리만 사용하며 추가 의존성이 없습니다.
+
 다른 PC에서 clone한 뒤 이 순서대로 configure → build → test 한다. 버전은 2026-10-27에 실제 빌드를 확인한 조합이다.
 
 2026-11-07 이미지 표시 추가: player는 SDL3 **3.4 이상**이 필요하며 검증 버전 3.4.18을 그대로 사용한다. PNG 디코딩은 SDL3, JPG/JPEG/BMP는 Windows 기본 WIC를 사용한다. Windows SDK의 `windowscodecs`·`ole32`를 링크하며 추가 이미지 DLL·코덱 설치는 필요 없다. 엔진 배치·검증 코드는 Qt/SDL 비의존이고 제작툴은 Qt 이미지 읽기를 사용한다. Windows 이외 player의 JPG/BMP는 아직 미지원이다. 검증은 `dev.cmd test`의 `player_images`(실제 PNG 픽셀)와 `asset_editor`(실제 JPG/BMP 플레이어·인스펙터·캔버스)를 포함한다.

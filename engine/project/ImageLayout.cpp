@@ -39,6 +39,7 @@ std::vector<std::string> imageUses(const Project& p, const std::string& id) {
     uses.insert(uses.end(), dbUses.begin(), dbUses.end());
     if (id.empty()) return uses;
     for (const auto& s : p.scenes) {
+        for (const auto& layer : s.tileLayers) if (layer.asset == id) uses.push_back(s.name + " / 타일 레이어 " + layer.name);
         if (s.backgroundImage.asset == id) uses.push_back(s.name + " / 장면 배경");
         for (const auto& o : s.objects) if (o.image.asset == id) uses.push_back(s.name + " / " + o.name + " / 객체 이미지");
     }
@@ -53,6 +54,15 @@ std::string validateImages(const Project& p) {
     };
     for (const auto& s : p.scenes) {
         const auto& b = s.backgroundImage;
+        if (s.tileSize < 8 || s.tileSize > 256 || s.tileLayers.size() > 32 ||
+            s.cameraWidth < 0 || s.cameraWidth > 4096 || s.cameraHeight < 0 || s.cameraHeight > 4096 ||
+            ((s.cameraWidth == 0) != (s.cameraHeight == 0))) return s.id + ": 타일맵/카메라 설정 오류";
+        for (const auto& layer : s.tileLayers) {
+            if (!reference(layer.asset) || layer.cells.size() > 262144 || layer.name.empty()) return s.id + ": 타일 레이어 오류";
+            const auto count = ((std::int64_t(s.width) + s.tileSize - 1) / s.tileSize) * ((std::int64_t(s.height) + s.tileSize - 1) / s.tileSize);
+            for (const auto& [cell,tile] : layer.cells) if (cell < 0 || cell >= count || tile < 0 || tile > 1048575) return s.id + ": 타일 셀 범위 오류";
+            for (int tile : layer.solidTiles) if (tile < 0 || tile > 1048575) return s.id + ": 타일 충돌 범위 오류";
+        }
         if (!reference(b.asset) || (b.mode != "fit" && b.mode != "fill" && b.mode != "stretch" && b.mode != "original" && b.mode != "repeat") ||
             !range(b.offsetX, -100000, 100000) || !range(b.offsetY, -100000, 100000) || !range(b.scale, .01, 100) || !range(b.opacity, 0, 1))
             return s.id + ": 장면 배경 이미지 설정이 올바르지 않습니다.";

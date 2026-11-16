@@ -31,6 +31,7 @@ public:
     bool setField(const QString& typeKey, int index, const naru::FieldDef& field, bool askBeforeReset);
     void select(const QString& typeKey, const QString& recordId = {});
     void showFieldsTab();
+    void importApiData();
 
     QString currentTypeKey() const { return typeKey_; }
     QString currentRecordId() const { return recordId_; }

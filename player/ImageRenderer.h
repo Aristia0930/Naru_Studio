@@ -1,6 +1,7 @@
 #pragma once
 #include "naru/project/ImageLayout.h"
 #include "naru/project/Nameplate.h"
+#include "naru/project/TileMap.h"
 #include "naru/core/Log.h"
 #include <SDL3/SDL.h>
 #include <filesystem>
@@ -13,9 +14,12 @@ public:
     ImageRenderer(const ImageRenderer&) = delete;
     ImageRenderer& operator=(const ImageRenderer&) = delete;
     void draw(const naru::Scene& scene);
+    void drawForeground(const naru::Scene& scene);
     void clear();
+    naru::MapCamera camera;
     naru::NameplateAnchor nameplateAnchor(const naru::SceneObject& object, bool below = false);
 private:
+    void drawTileLayers(const naru::Scene& scene, bool above);
     SDL_Texture* texture(const std::string& id);
     SDL_Renderer* renderer_;
     const naru::Project& project_;

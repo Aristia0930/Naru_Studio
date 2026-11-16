@@ -108,6 +108,7 @@ public:
         for (auto& a : after_) if (a.id == before) a.id = after;
         for (auto& s : afterScenes_) {
             if (s.backgroundImage.asset == before) s.backgroundImage.asset = after;
+            for (auto& layer : s.tileLayers) if (layer.asset == before) layer.asset = after;
             for (auto& o : s.objects) {
                 if (o.image.asset == before) o.image.asset = after;
                 naru::renameAudioReferences(o.event.commands, before, after);

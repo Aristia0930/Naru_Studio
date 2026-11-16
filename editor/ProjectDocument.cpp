@@ -123,6 +123,10 @@ void ProjectDocument::setSceneInfo(const naru::Scene& info) {
     scene->height = info.height;
     scene->background = info.background;
     scene->backgroundImage = info.backgroundImage;
+    scene->tileSize = info.tileSize;
+    scene->tileLayers = info.tileLayers;
+    scene->cameraWidth = info.cameraWidth;
+    scene->cameraHeight = info.cameraHeight;
     scene->playerObjectId = info.playerObjectId;
     emit sceneChanged(QString::fromStdString(info.id));
     emit scenesChanged();
@@ -175,6 +179,7 @@ void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, c
         auto* scene = project_.findScene(reference.id);
         if (!scene) continue;
         bool changed = false;
+        if (scene->tileLayers != reference.tileLayers) { scene->tileLayers = reference.tileLayers; changed = true; }
         if (scene->backgroundImage.asset != reference.backgroundImage.asset) {
             scene->backgroundImage.asset = reference.backgroundImage.asset; changed = true;
         }

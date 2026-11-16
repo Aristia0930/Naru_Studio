@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "TileMapEditor.h"
 #include "AssetBrowser.h"
 
 #include "DatabaseEditor.h"
@@ -377,6 +378,10 @@ void MainWindow::createActions() {
 
     auto* scene = menuBar()->addMenu(QStringLiteral("장면(&S)"));
     scene->addAction(addScene);
+    scene->addAction(make(QStringLiteral("타일맵·레이어 편집..."), {}, [this] {
+        if (!doc_->project().findScene(sceneView_->sceneId().toStdString())) return;
+        TileMapEditor dialog(doc_, sceneView_->sceneId(), this); dialog.exec();
+    }));
     scene->addAction(addObjectAction_);
     scene->addSeparator();
     scene->addAction(startScene);

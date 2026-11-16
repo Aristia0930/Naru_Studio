@@ -45,14 +45,16 @@ void NameplateRenderer::clear() { cache_.clear(); }
 void NameplateRenderer::draw(SDL_Renderer* renderer, TTF_Font* font, const naru::Scene& scene, bool debug, ImageRenderer& images) {
     if (scene_ != scene.id) { clear(); scene_=scene.id; }
     std::set<std::string> used;
-    const int limit=std::max(1,std::min(240,scene.width-16));
+    const auto camera=images.camera;
+    const int limit=std::max(1,std::min(240,camera.width-16));
     for (const auto* o : naru::drawingOrder(scene)) {
         const auto source=naru::objectNameplateText(*o,debug);
         if (source.empty()) continue;
         const bool below = !debug && o->namePosition == "below";
         auto anchor=images.nameplateAnchor(*o, below);
+        anchor.x-=camera.x;anchor.y-=camera.y;
         // Completely offscreen objects do not pile labels onto the screen edge.
-        if (anchor.x < 0 || anchor.x > scene.width || o->y+o->height < 0 || o->y > scene.height) continue;
+        if (anchor.x < 0 || anchor.x > camera.width || o->y+o->height < camera.y || o->y > camera.y+camera.height) continue;
         used.insert(o->id);
         auto& entry=cache_[o->id];
         if (!entry || entry->source != source || entry->debug != debug || entry->hidden != !o->visible || entry->limit != limit) {
@@ -73,8 +75,8 @@ void NameplateRenderer::draw(SDL_Renderer* renderer, TTF_Font* font, const naru:
             }
         }
         const float w=static_cast<float>(entry->width+8), h=static_cast<float>(entry->height+6);
-        const float x=static_cast<float>(std::clamp(anchor.x-w/2,0.0,std::max<double>(0.0,scene.width-w)));
-        const float y=static_cast<float>(std::clamp(below ? anchor.y : anchor.y-h,0.0,std::max<double>(0.0,scene.height-h)));
+        const float x=static_cast<float>(std::clamp(anchor.x-w/2,0.0,std::max<double>(0.0,camera.width-w)));
+        const float y=static_cast<float>(std::clamp(below ? anchor.y : anchor.y-h,0.0,std::max<double>(0.0,camera.height-h)));
         SDL_BlendMode previous; SDL_GetRenderDrawBlendMode(renderer,&previous); SDL_SetRenderDrawBlendMode(renderer,SDL_BLENDMODE_BLEND);
         if (debug || !o->nameBackgroundTransparent) {
             const auto hex = std::stoul(debug ? "0c1018" : o->nameBackgroundColor.substr(1), nullptr, 16);

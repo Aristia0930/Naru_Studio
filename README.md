@@ -1,10 +1,20 @@
 # Naru Studio
 
+2026-11-16: API 가져오기·레이어 타일맵·카메라·맵 크기 변경/인스펙터 수정의 안내한 수동 테스트 전체 통과 보고를 받았습니다. [결과 기록](docs/guide/MANUAL_TESTS.md). 다음 개발은 순서 12 캐릭터 애니메이션입니다.
+
+[오늘 개발한 기능과 전체 수동 테스트 방법](docs/guide/2026-11-16_TEST_GUIDE.md)에서 API 가져오기 → 오류·취소 → 레이어 맵 → 충돌·카메라 → 맵 크기 변경을 순서대로 확인합니다.
+
+[API 가져오기·맵 수동 테스트 결과](docs/guide/MANUAL_TESTS.md), [현재 고도화 계획](docs/REFINEMENT_PLAN.md). 칠한 맵의 크기 변경과 API 항목/필드별 오류 설명을 추가했습니다.
+
+**레이어 타일맵·카메라**: 장면 → 타일맵·레이어 편집에서 바닥·장식·지붕을 칠하고 레이어 순서·표시·잠금·충돌을 설정합니다. 넓은 맵에서 카메라가 플레이어를 따라갑니다. [사용법·그림·예제](docs/guide/TILEMAP.md).
+
+**API 데이터 가져오기**: 데이터베이스에서 HTTPS JSON 응답을 항목에 연결하고 변경 미리보기·충돌 검사 후 명시적으로 적용합니다. Undo와 저장을 지원합니다. [사용법·예제·수동 확인](docs/guide/API_IMPORT.md).
+
 **스크립트 편집과 로그 복사**: 스크립트 줄 번호·공백 표시, 자동 들여쓰기와 Tab/Shift+Tab, 로그 선택 복사를 지원합니다. [사용법과 그림](docs/guide/SCRIPTING.md#스크립트-줄-번호와-들여쓰기).
 
-**네트워크 접속 설정·이벤트(10⑤-2)**: 게임 → 네트워크 접속 설정에서 서버를 등록하고 **API 요청 → 변수** 명령으로 응답을 연결합니다. Python `ctx.network.request_connection`도 같은 설정을 사용합니다. [사용법·그림·수동 확인](docs/guide/NETWORK_EVENTS.md), [실행 예제](docs/examples/network-events/README.md). 외부 DB 직접 연결은 다음 단계입니다.
+**네트워크 접속 설정·이벤트(10⑤-2)**: 게임 → 네트워크 접속 설정에서 서버를 등록하고 **API 요청 → 변수** 명령으로 응답을 연결합니다. Python `ctx.network.request_connection`도 같은 설정을 사용합니다. [사용법·그림·수동 확인](docs/guide/NETWORK_EVENTS.md), [실행 예제](docs/examples/network-events/README.md). 외부 DB 직접 연결은 지원 범위에서 제외했습니다.
 
-**외부 API 연결 첫 단계(10⑤-1)**: 게임 Python의 `ctx.network`로 Windows에서 HTTP(S) JSON 요청을 비동기로 보내고 응답을 게임 변수에 연결합니다. [공개 API 실행 예제와 사용법](docs/guide/NETWORK.md). 외부 DB 직접 연결은 후속입니다.
+**외부 API 연결 첫 단계(10⑤-1)**: 게임 Python의 `ctx.network`로 Windows에서 HTTP(S) JSON 요청을 비동기로 보내고 응답을 게임 변수에 연결합니다. [공개 API 실행 예제와 사용법](docs/guide/NETWORK.md). 외부 DB 직접 연결은 지원 범위에서 제외했습니다.
 
 **객체 ID 변경**: 객체를 선택한 뒤 인스펙터 ID를 직접 수정합니다. 플레이어와 이벤트 객체 대상도 함께 갱신하며 실행 취소를 지원합니다. [사용법·Python 주의·수동 확인](docs/guide/OBJECT_IDS.md).
 

@@ -1,6 +1,20 @@
 #include "TestMain.h"
 
 #include "naru/runtime/GameWorld.h"
+#include "naru/project/TileMap.h"
+
+TEST_CASE("타일 충돌은 큰 이동과 양축에서 벽을 막고 숨김·통과와 카메라 경계를 지킨다") {
+    naru::Project p; naru::Scene scene; scene.id="map";scene.width=2048;scene.height=1024;scene.tileSize=32;scene.cameraWidth=640;scene.cameraHeight=360;scene.playerObjectId="hero";
+    naru::SceneObject hero;hero.id="hero";hero.x=32;hero.y=32;hero.width=16;hero.height=16;scene.objects={hero};
+    naru::TileLayer wall;wall.cells={{4+64,0},{1+4*64,0}};wall.solidTiles={0};scene.tileLayers={wall};p.scenes={scene};
+    naru::GameWorld world(p,naru::ScriptRunner{});CHECK(world.startGame("map"));
+    CHECK(world.movePlayer(1000,0));CHECK(world.player()->x==112);
+    CHECK(world.enterScene("map"));CHECK(world.movePlayer(0,1000));CHECK(world.player()->y==112);
+    CHECK(world.setObjectPassable("hero",true));CHECK(world.movePlayer(1000,0));CHECK(world.player()->x==1032);
+    auto camera=naru::mapCamera(*world.scene());CHECK(camera.x==720);CHECK(camera.y==0);
+    CHECK(world.movePlayer(10000,10000));camera=naru::mapCamera(*world.scene());CHECK(camera.x==1408);CHECK(camera.y==664);
+    p.scenes[0].tileLayers[0].visible=false;naru::GameWorld hidden(p,naru::ScriptRunner{});CHECK(hidden.startGame("map"));CHECK(hidden.movePlayer(1000,0));CHECK(hidden.player()->x==1032);
+}
 
 #include <algorithm>
 #include <cmath>

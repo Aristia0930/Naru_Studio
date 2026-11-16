@@ -1,4 +1,5 @@
 #include "SceneView.h"
+#include "TileMapEditor.h"
 
 #include "ProjectDocument.h"
 #include "ImageAssets.h"
@@ -189,6 +190,17 @@ void SceneView::rebuild() {
         frame_ = new SceneFrameItem(*scene, imageFor(scene->backgroundImage.asset));
         canvas_->addItem(frame_);
         frame_->setZValue(-10001);
+        class LayersItem : public QGraphicsRectItem {
+        public:
+            naru::Scene data; std::vector<QImage> images; bool above;
+            LayersItem(const naru::Scene& s, std::vector<QImage> list, bool top) : QGraphicsRectItem(0,0,s.width,s.height),data(s),images(std::move(list)),above(top) {}
+            void paint(QPainter* p,const QStyleOptionGraphicsItem*,QWidget*) override {p->save();p->setClipRect(rect());paintMapTiles(p,data,images,above);p->restore();}
+        };
+        std::vector<QImage> tiles;
+        for (const auto& layer : scene->tileLayers) tiles.push_back(imageFor(layer.asset));
+        for (bool above : {false,true}) {
+            auto* layer = new LayersItem(*scene,tiles,above);canvas_->addItem(layer);layer->setZValue(above?10001:-10000);
+        }
         canvas_->setSceneRect(QRectF(0, 0, scene->width, scene->height).adjusted(-2000, -2000, 2000, 2000));
         for (const auto& object : scene->objects) {
             auto* item = new SceneObjectItem(object, object.id == scene->playerObjectId, imageFor(object.image.asset));

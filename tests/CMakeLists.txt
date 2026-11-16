@@ -60,6 +60,8 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
   add_test(NAME player_nameplates COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_nameplates.py $<TARGET_FILE:naru_player>)
   set_tests_properties(player_nameplates PROPERTIES TIMEOUT 60)
   add_test(NAME player_images COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_images.py $<TARGET_FILE:naru_player>)
+  add_test(NAME player_tilemap COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_tilemap.py $<TARGET_FILE:naru_player>)
+  set_tests_properties(player_tilemap PROPERTIES TIMEOUT 60)
   add_test(NAME player_audio COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_audio.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
   add_test(NAME player_db_assets COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_db_assets.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
   set_tests_properties(player_db_assets PROPERTIES TIMEOUT 60)
@@ -103,6 +105,8 @@ if(NARU_BUILD_EDITOR)
     network_editor_tests.cpp
     ../editor/NetworkSettingsDialog.cpp ../editor/NetworkSettingsDialog.h
     database_asset_editor_tests.cpp
+    api_import_tests.cpp
+    tilemap_editor_tests.cpp
     ../editor/DatabaseEditor.cpp ../editor/DatabaseEditor.h
     ../editor/FieldDialog.cpp ../editor/FieldDialog.h
     ../editor/ValueEditor.cpp ../editor/ValueEditor.h
@@ -119,6 +123,7 @@ if(NARU_BUILD_EDITOR)
     ../editor/ProjectDocument.cpp ../editor/ProjectDocument.h)
   target_include_directories(naru_asset_editor_tests PRIVATE ../editor)
   target_compile_definitions(naru_asset_editor_tests PRIVATE NARU_AUDIO_EXAMPLE_DIR="${PROJECT_SOURCE_DIR}/docs/examples/audio")
+  target_compile_definitions(naru_asset_editor_tests PRIVATE NARU_TEST_PYTHON="${Python3_EXECUTABLE}" NARU_IMPORT_SERVER="${PROJECT_SOURCE_DIR}/docs/examples/api-import/server.py")
   set_target_properties(naru_asset_editor_tests PROPERTIES AUTOMOC ON)
   target_link_libraries(naru_asset_editor_tests PRIVATE naru_engine naru_audio Qt6::Widgets SDL3::SDL3)
   if(NARU_BUILD_PLAYER)
