@@ -21,7 +21,7 @@ def create(destination):
     project["scenes"]=["stage","other"]
     project["assets"].append(dict(id="effect_sound",name="effect.wav",kind="audio",path="assets/effect.wav",sourceName="effect.wav",sha256=hashlib.sha256(sound.read_bytes()).hexdigest()))
     project["effects"]=[dict(id="spark",name="불꽃 이펙트",frames=[
-        dict(image="sheet",x=i*32,y=0,width=32,height=32,seconds=.25,offsetX=0,offsetY=-28,scale=2,rotation=0,opacity=1,blend="normal",sound="effect_sound" if i==1 else "",targetFlash=i==1,screenFlash=i==2,screenShake=i==2)
+        dict(image="sheet",x=i*32,y=0,width=32,height=32,seconds=1.0,offsetX=0,offsetY=-28,scale=2,rotation=0,opacity=1,blend="normal",sound="effect_sound" if i==1 else "",targetFlash=i==1,screenFlash=i==2,screenShake=i==2)
         for i in range(3)])]
     project_path.write_text(json.dumps(project,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     scene_path=destination/"scenes/stage.json";scene=json.loads(scene_path.read_text(encoding="utf-8"))

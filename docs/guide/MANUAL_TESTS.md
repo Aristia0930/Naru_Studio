@@ -51,7 +51,7 @@
 
 ## 4. 공용 이펙트 (순서 13) — 사용자 확인 대기
 
-준비: `python tools/create_effect_example.py build/manual-effect`로 새 사본을 만들고 제작툴에서 엽니다. 같은 경로가 이미 있으면 새 폴더 이름을 사용합니다. [화면·입력 규칙](EFFECTS.md).
+준비: `python tools/create_effect_example.py build/manual-effect`로 새 사본을 만들고 제작툴에서 엽니다. 같은 경로가 이미 있으면 새 폴더 이름을 사용합니다. [단계별 클릭 경로와 기대 결과](EFFECT_MANUAL_TEST.md), [화면·입력 규칙](EFFECTS.md). 사용자가 수동 테스트를 다음에 진행하기로 했으므로 E1~E6 결과는 모두 미실시 상태입니다.
 
 | 번호 | 조작 | 기대 결과 | 사용자 결과 |
 |---|---|---|---|

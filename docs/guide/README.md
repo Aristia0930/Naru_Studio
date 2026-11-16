@@ -3,6 +3,7 @@
 [캐릭터 애니메이션 편집·방향별 idle/walk·이벤트/Python·수동 확인](ANIMATION.md)
 
 [공용 이펙트 편집·이벤트·Python 재생](EFFECTS.md)
+[공용 이펙트 E1~E6 수동 테스트 절차](EFFECT_MANUAL_TEST.md)
 
 [2026-11-16 오늘 개발 기능·준비 명령·전체 수동 테스트 순서](2026-11-16_TEST_GUIDE.md)
 
