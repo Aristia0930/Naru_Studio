@@ -1,0 +1,378 @@
+{
+  "formatVersion": 1,
+  "id": "stage",
+  "name": "동작 확인",
+  "width": 640,
+  "height": 360,
+  "background": "#202830",
+  "player": "hero",
+  "objects": [
+    {
+      "id": "hero",
+      "name": "동작 캐릭터",
+      "x": 120,
+      "y": 150,
+      "width": 16,
+      "height": 16,
+      "color": "#ffcc44",
+      "image": {
+        "scaleX": 2,
+        "scaleY": 2
+      },
+      "animations": [
+        {
+          "name": "idle_down",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "walk_down",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 32,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 64,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "idle_left",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 32,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "walk_left",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 32,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 32,
+              "y": 32,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 64,
+              "y": 32,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "idle_right",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 64,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "walk_right",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 64,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 32,
+              "y": 64,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 64,
+              "y": 64,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "idle_up",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 96,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "walk_up",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 96,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 32,
+              "y": 96,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 64,
+              "y": 96,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "attack",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "sheet",
+              "x": 32,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": "hit"
+            },
+            {
+              "asset": "sheet",
+              "x": 64,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "cast",
+          "loop": false,
+          "frames": [
+            {
+              "asset": "pose",
+              "x": 0,
+              "y": 0,
+              "width": 32,
+              "height": 48,
+              "seconds": 0.4,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": "cast"
+            }
+          ]
+        },
+        {
+          "name": "victory",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 0,
+              "y": 0,
+              "width": 32,
+              "height": 32,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            },
+            {
+              "asset": "pose",
+              "x": 0,
+              "y": 0,
+              "width": 32,
+              "height": 48,
+              "seconds": 0.12,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        },
+        {
+          "name": "atlas",
+          "loop": true,
+          "frames": [
+            {
+              "asset": "sheet",
+              "x": 32,
+              "y": 0,
+              "width": 64,
+              "height": 32,
+              "seconds": 0.3,
+              "anchorX": 0.5,
+              "anchorY": 1,
+              "signal": ""
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sign",
+      "name": "동작 이벤트",
+      "x": 240,
+      "y": 150,
+      "width": 32,
+      "height": 32,
+      "color": "#887744",
+      "showName": true,
+      "event": {
+        "trigger": "action",
+        "commands": [
+          {
+            "type": "object_animation",
+            "target": "@player",
+            "animation": "attack",
+            "wait": true,
+            "animationLock": true
+          },
+          {
+            "type": "say",
+            "speaker": "안내",
+            "text": "공격 동작 완료 후 실행된 대사입니다."
+          }
+        ]
+      }
+    }
+  ]
+}

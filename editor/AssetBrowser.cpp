@@ -111,6 +111,7 @@ public:
             for (auto& layer : s.tileLayers) if (layer.asset == before) layer.asset = after;
             for (auto& o : s.objects) {
                 if (o.image.asset == before) o.image.asset = after;
+                for(auto& clip:o.animations)for(auto& frame:clip.frames)if(frame.asset==before)frame.asset=after;
                 naru::renameAudioReferences(o.event.commands, before, after);
             }
         }

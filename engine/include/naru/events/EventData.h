@@ -11,7 +11,7 @@ namespace naru {
 
 // 편집·저장되는 이벤트 명령 데이터. 실행할 때 EventCompiler가 Command 목록으로 바꾼다.
 enum class EventCommandType {
-    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene, ShowChoices, CallCommonEvent, Audio, NetworkRequest
+    Say, Wait, SetVariable, IfVariable, Log, CallScript, Comment, GetData, MoveObject, SetVisible, ChangeScene, ShowChoices, CallCommonEvent, Audio, NetworkRequest, ObjectAnimation
 };
 enum class VariableOp { Set, Add, Subtract };
 enum class CompareOp { Equal, NotEqual, Less, LessEqual, Greater, GreaterEqual };
@@ -26,6 +26,8 @@ inline constexpr int kMaxChoices = 6;
 
 struct EventCommand {
     NetworkEvent network;
+    std::string animation="attack";
+    bool animationLoop=false,animationLock=false,animationStop=false;
     EventCommandType type = EventCommandType::Comment;
 
     std::string audioAction = "play_bgm"; // play_bgm, stop_bgm, play_se, stop_se

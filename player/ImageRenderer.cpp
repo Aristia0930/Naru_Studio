@@ -1,4 +1,5 @@
 #include "ImageRenderer.h"
+#include "naru/project/AnimationVisual.h"
 #include <cstdio>
 #include <charconv>
 #include <fstream>
@@ -101,8 +102,9 @@ SDL_Texture* ImageRenderer::texture(const std::string& id) {
 }
 
 naru::NameplateAnchor ImageRenderer::nameplateAnchor(const naru::SceneObject& object, bool below) {
-    if (object.visible) if (auto* image = texture(object.image.asset))
-        return naru::objectNameplateAnchor(object, image->w, image->h, below);
+    const auto visual=naru::animationVisual(object);
+    if (object.visible) if (auto* image = texture(visual.image.asset))
+        return naru::objectNameplateAnchor(visual, image->w, image->h, below);
     return naru::objectNameplateAnchor(object, 0, 0, below);
 }
 
@@ -125,7 +127,7 @@ void ImageRenderer::draw(const naru::Scene& scene) {
     drawTileLayers(scene, false);
     for (const auto* object : naru::drawingOrder(scene)) {
         if (!object->visible) continue;
-        const auto& o = *object;
+        const auto o = naru::animationVisual(*object);
         if (auto* image = texture(o.image.asset)) {
             const auto r = naru::objectImageRect(o, image->w, image->h);
             SDL_FRect rect{static_cast<float>(r.x-camera.x), static_cast<float>(r.y-camera.y), static_cast<float>(r.width), static_cast<float>(r.height)};
@@ -133,7 +135,12 @@ void ImageRenderer::draw(const naru::Scene& scene) {
             SDL_SetTextureAlphaModFloat(image, static_cast<float>(o.image.opacity));
             SDL_SetTextureScaleMode(image, o.image.smooth ? SDL_SCALEMODE_LINEAR : SDL_SCALEMODE_NEAREST);
             auto flip = static_cast<SDL_FlipMode>((o.image.flipX ? SDL_FLIP_HORIZONTAL : 0) | (o.image.flipY ? SDL_FLIP_VERTICAL : 0));
-            SDL_RenderTextureRotated(renderer_, image, nullptr, &rect, o.image.rotation, &pivot, flip);
+            SDL_FRect source;const SDL_FRect* crop=nullptr;
+            if(const auto* f=naru::animationFrame(*object)){
+                if(f->x+f->width>image->w||f->y+f->height>image->h)continue;
+                source={float(f->x),float(f->y),float(f->width),float(f->height)};crop=&source;
+            }
+            SDL_RenderTextureRotated(renderer_, image, crop, &rect, o.image.rotation, &pivot, flip);
         } else {
             const auto c = color(o.color); SDL_SetRenderDrawColor(renderer_, c.r, c.g, c.b, c.a);
             const SDL_FRect rect{static_cast<float>(o.x-camera.x), static_cast<float>(o.y-camera.y), static_cast<float>(o.width), static_cast<float>(o.height)};

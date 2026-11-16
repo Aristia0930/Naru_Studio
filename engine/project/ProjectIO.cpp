@@ -262,6 +262,8 @@ json commandsToJson(const std::vector<EventCommand>& commands);
 json commandToJson(const EventCommand& c) {
     json j = {{"type", toKey(c.type)}};
     switch (c.type) {
+    case EventCommandType::ObjectAnimation:
+        j["target"]=c.target;j["animation"]=c.animation;j["animationLoop"]=c.animationLoop;j["animationLock"]=c.animationLock;j["animationStop"]=c.animationStop;j["wait"]=c.waitForEnd;break;
     case EventCommandType::NetworkRequest: {
         const auto& n = c.network;
         j["connection"] = n.connection; j["path"] = n.path; j["method"] = n.method;
@@ -438,6 +440,7 @@ EventCommand commandFromJson(const json& j, int depth) {
     c.distance = getNumber(j, "distance", c.distance);
     c.speed = getNumber(j, "speed", c.speed);
     c.waitForEnd = getBool(j, "wait", c.waitForEnd);
+    c.animation=getString(j,"animation","attack");c.animationLoop=getBool(j,"animationLoop",false);c.animationLock=getBool(j,"animationLock",false);c.animationStop=getBool(j,"animationStop",false);
     c.show = getBool(j, "visible", c.show);
     if (c.type == EventCommandType::IfVariable) {
         c.thenCommands = commandsFromJson(getArray(j, "then"), depth + 1);
@@ -495,6 +498,12 @@ json objectToJson(const SceneObject& o) {
     if (o.nameBackgroundColor != "#0c1018") j["nameBackgroundColor"] = o.nameBackgroundColor;
     if (o.namePosition != "above") j["namePosition"] = o.namePosition;
     if (!(o.image == ObjectImage{})) j["image"] = imageToJson(o.image);
+    if(!o.automaticAnimation)j["automaticAnimation"]=false;
+    if(!o.animations.empty()) {
+        j["automaticAnimation"]=o.automaticAnimation;j["animations"]=json::array();
+        for(const auto& c:o.animations){json frames=json::array();for(const auto& f:c.frames)frames.push_back({{"asset",f.asset},{"x",f.x},{"y",f.y},{"width",f.width},{"height",f.height},{"seconds",f.seconds},{"anchorX",f.anchorX},{"anchorY",f.anchorY},{"signal",f.signal}});
+            j["animations"].push_back({{"name",c.name},{"loop",c.loop},{"frames",frames}});}
+    }
     if (o.passable) {
         j["passable"] = true;
     }
@@ -600,6 +609,15 @@ Scene sceneFromJson(const json& j) {
         o.width = getNumber(oj, "width", o.width);
         o.height = getNumber(oj, "height", o.height);
         o.color = getString(oj, "color", o.color);
+        o.automaticAnimation=getBool(oj,"automaticAnimation",true);
+        for(const auto& cj:getArray(oj,"animations")) {
+            if(o.animations.size()>=256)throw std::runtime_error("애니메이션 클립이 너무 많습니다");
+            AnimationClip c;c.name=requireString(cj,"name");c.loop=getBool(cj,"loop",true);
+            for(const auto& fj:getArray(cj,"frames")){
+                if(c.frames.size()>=4096)throw std::runtime_error("애니메이션 프레임이 너무 많습니다");
+                AnimationFrame f;f.asset=requireString(fj,"asset");f.x=getInt(fj,"x",0);f.y=getInt(fj,"y",0);f.width=getInt(fj,"width",32);f.height=getInt(fj,"height",32);f.seconds=getNumber(fj,"seconds",.1);f.anchorX=getNumber(fj,"anchorX",.5);f.anchorY=getNumber(fj,"anchorY",1);f.signal=getString(fj,"signal","");c.frames.push_back(f);
+            }o.animations.push_back(std::move(c));
+        }validateAnimations(o.animations);
         o.passable = getBool(oj, "passable", false);
         o.visible = getBool(oj, "visible", true);
         o.showName = getBool(oj, "showName", false);

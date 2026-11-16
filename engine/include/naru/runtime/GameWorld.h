@@ -151,6 +151,11 @@ public:
     bool setObjectNamePosition(const std::string& id, const std::string& position);
     bool setObjectImage(const std::string& id, const std::string& asset);
     bool setBackgroundImage(const std::string& asset);
+    struct AnimationSignal {std::string object,clip,signal;std::size_t frame=0;};
+    std::uint64_t playObjectAnimation(const std::string& id,const std::string& clip,bool loop=false,bool lock=false);
+    bool objectAnimating(const std::string& id,std::uint64_t token=0) const;
+    void stopObjectAnimation(const std::string& id);
+    std::vector<AnimationSignal> takeAnimationSignals();
     // "@self"(selfId)·"@player"·객체 ID를 실제 객체 ID로 바꾼다. 장면에 없으면 빈 문자열.
     std::string resolveTarget(const std::string& target, const std::string& selfId) const;
 
@@ -192,6 +197,10 @@ private:
     void startAutoEvents();
     void drainCommonEvents();
     void advanceRoutes(double dt);
+    void advanceAnimations(double dt);
+    void emitAnimationSignal(const SceneObject& object);
+    std::vector<AnimationSignal> animationSignals_;
+    std::uint64_t animationToken_=0;
 
     Project project_;
     Network network_;

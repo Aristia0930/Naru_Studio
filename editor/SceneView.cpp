@@ -1,5 +1,6 @@
 #include "SceneView.h"
 #include "TileMapEditor.h"
+#include "naru/project/AnimationVisual.h"
 
 #include "ProjectDocument.h"
 #include "ImageAssets.h"
@@ -28,8 +29,9 @@ public:
     // 플레이어는 이름 앞에 ★, 통과 가능한 객체는 점선 테두리, 숨긴 객체는 흐리게 표시한다.
     void apply(const naru::SceneObject& object, bool isPlayer, const QImage& image) {
         prepareGeometryChange();
-        image_ = image; settings_ = object.image;
-        imageRect_ = naru::objectImageRect(object, image.width(), image.height());
+        image_ = image; const auto visual=naru::animationVisual(object);settings_ = visual.image;
+        if(const auto* f=naru::animationFrame(object))image_=image.copy(f->x,f->y,f->width,f->height);
+        imageRect_ = naru::objectImageRect(visual, image_.width(), image_.height());
         imageRect_.x -= object.x; imageRect_.y -= object.y;
         id_ = QString::fromStdString(object.id);
         setRect(0, 0, object.width, object.height);
@@ -203,7 +205,7 @@ void SceneView::rebuild() {
         }
         canvas_->setSceneRect(QRectF(0, 0, scene->width, scene->height).adjusted(-2000, -2000, 2000, 2000));
         for (const auto& object : scene->objects) {
-            auto* item = new SceneObjectItem(object, object.id == scene->playerObjectId, imageFor(object.image.asset));
+            auto* item = new SceneObjectItem(object, object.id == scene->playerObjectId, imageFor(naru::animationVisual(object).image.asset));
             canvas_->addItem(item);
             items_.insert(item->id(), item);
         }
@@ -224,7 +226,7 @@ void SceneView::updateObject(const QString& sceneId, const QString& objectId) {
     const naru::Scene* scene = doc_->project().findScene(sceneId.toStdString());
     const naru::SceneObject* object = scene ? scene->findObject(objectId.toStdString()) : nullptr;
     if (auto* item = items_.value(objectId); item && object) {
-        item->apply(*object, object->id == scene->playerObjectId, imageFor(object->image.asset));
+        item->apply(*object, object->id == scene->playerObjectId, imageFor(naru::animationVisual(*object).image.asset));
     }
 }
 

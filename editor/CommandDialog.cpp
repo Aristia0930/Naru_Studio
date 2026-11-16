@@ -49,6 +49,7 @@ int kindOf(const Value& v) {
 
 QString CommandDialog::typeLabel(EventCommandType type) {
     switch (type) {
+    case EventCommandType::ObjectAnimation:return QStringLiteral("객체 애니메이션");
     case EventCommandType::NetworkRequest: return QStringLiteral("API 요청 → 변수");
     case EventCommandType::Audio: return QStringLiteral("소리 재생/정지");
     case EventCommandType::CallCommonEvent: return QStringLiteral("공통 이벤트 호출");
@@ -203,6 +204,15 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     };
 
     switch (command.type) {
+    case EventCommandType::ObjectAnimation: {
+        addTargetRow();animationName_=new QLineEdit(QString::fromStdString(command.animation),this);
+        animationLoop_=new QCheckBox(QStringLiteral("반복"),this);animationLoop_->setChecked(command.animationLoop);
+        animationLock_=new QCheckBox(QStringLiteral("재생 중 이동 잠금"),this);animationLock_->setChecked(command.animationLock);
+        animationStop_=new QCheckBox(QStringLiteral("재생 중지 (평소 동작 복귀)"),this);animationStop_->setChecked(command.animationStop);
+        waitForEnd_=new QCheckBox(QStringLiteral("끝날 때까지 기다리기"),this);waitForEnd_->setChecked(command.waitForEnd);
+        form->addRow(QStringLiteral("동작 이름"),animationName_);form->addRow(animationLoop_);form->addRow(animationLock_);form->addRow(waitForEnd_);form->addRow(animationStop_);
+        form->addRow(new QLabel(QStringLiteral("방향별 클립을 먼저 찾고 없으면 같은 이름을 사용합니다. 반복+기다리기는 함께 사용할 수 없습니다. F6은 실제 재생하지 않습니다."),this));break;
+    }
     case EventCommandType::NetworkRequest: {
         const auto& n = command.network;
         networkConnection_ = new QComboBox(this); networkConnection_->setObjectName("networkConnection");
@@ -640,6 +650,9 @@ bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* bo
 void CommandDialog::accept() {
     naru::EventCommand c = command_;
     switch (c.type) {
+    case EventCommandType::ObjectAnimation:
+        c.target=target_->currentData().toString().toStdString();c.animation=animationName_->text().trimmed().toStdString();c.animationLoop=animationLoop_->isChecked();c.animationLock=animationLock_->isChecked();c.animationStop=animationStop_->isChecked();c.waitForEnd=waitForEnd_->isChecked();
+        if(!c.animationStop&&(c.animation.empty()||(c.animationLoop&&c.waitForEnd))){QMessageBox::warning(this,QStringLiteral("애니메이션"),QStringLiteral("동작 이름을 입력하고 반복+기다리기 조합을 해제하세요."));return;}break;
     case EventCommandType::NetworkRequest:
         try {
             auto& n = c.network;

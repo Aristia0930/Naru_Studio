@@ -5,7 +5,7 @@
 namespace {
 void renameObjectTargets(std::vector<naru::EventCommand>& commands, const std::string& before, const std::string& after) {
     for (auto& command : commands) {
-        if ((command.type == naru::EventCommandType::MoveObject || command.type == naru::EventCommandType::SetVisible)
+        if ((command.type == naru::EventCommandType::MoveObject || command.type == naru::EventCommandType::SetVisible || command.type == naru::EventCommandType::ObjectAnimation)
             && command.target == before) command.target = after;
         renameObjectTargets(command.thenCommands, before, after);
         renameObjectTargets(command.elseCommands, before, after);

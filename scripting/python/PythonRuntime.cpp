@@ -127,6 +127,12 @@ class SceneObject:
                      lambda self, v: _naru.object_set(self._id, "image", v))
     def move(self, dx, dy):
         return _naru.object_move(self._id, float(dx), float(dy))
+    def play(self, clip, loop=False, lock=False):
+        return _naru.object_animation(self._id, "play", clip, bool(loop), bool(lock))
+    def stop_animation(self):
+        return _naru.object_animation(self._id, "stop", "", False, False)
+    def is_animating(self):
+        return _naru.object_animation(self._id, "playing", "", False, False)
 
 class Scene:
     """현재 장면 (게임 실행 중). change("scene_002", x, y, facing)로 장면 이동 (이번 틱이 끝난 뒤 바뀐다. 위치·방향은 생략 가능).
@@ -137,6 +143,8 @@ class Scene:
     height = _ro(_naru.scene_get, "height")
     background_image = property(lambda self: _naru.scene_get("background_image"),
                                 lambda self, v: _naru.scene_set_background(v))
+    def animation_signals(self):
+        return _naru.animation_signals()
     def change(self, scene_id, x=None, y=None, facing=None):
         _naru.scene_change(scene_id, x, y, facing)
     def ids(self):
@@ -942,6 +950,24 @@ PyObject* naruObjectSet(PyObject*, PyObject* args) {
     Py_RETURN_NONE;
 }
 
+PyObject* naruObjectAnimation(PyObject*,PyObject* args) {
+    const char *id,*action,*clip;int loop,lock;
+    if(!PyArg_ParseTuple(args,"ssspp",&id,&action,&clip,&loop,&lock))return nullptr;
+    auto* game=requireGame();if(!game||!requireSceneObject(game,id))return nullptr;
+    try{
+        if(std::string(action)=="play")return PyLong_FromUnsignedLongLong(game->playObjectAnimation(id,clip,loop!=0,lock!=0));
+        if(std::string(action)=="playing")return PyBool_FromLong(game->objectAnimating(id));
+        game->stopObjectAnimation(id);Py_RETURN_NONE;
+    }catch(const std::exception& e){PyErr_SetString(PyExc_ValueError,e.what());return nullptr;}
+}
+PyObject* naruAnimationSignals(PyObject*,PyObject*) {
+    auto* game=requireGame();if(!game)return nullptr;
+    auto* list=PyList_New(0);if(!list)return nullptr;
+    for(const auto& s:game->takeAnimationSignals()){
+        auto* item=Py_BuildValue("{s:s,s:s,s:s,s:K}","object",s.object.c_str(),"clip",s.clip.c_str(),"signal",s.signal.c_str(),"frame",static_cast<unsigned long long>(s.frame));
+        if(!item||PyList_Append(list,item)<0){Py_XDECREF(item);Py_DECREF(list);return nullptr;}Py_DECREF(item);
+    }return list;
+}
 PyObject* naruObjectMove(PyObject*, PyObject* args) {
     const char* id = nullptr;
     double dx = 0;
@@ -1113,6 +1139,8 @@ PyMethodDef kMethods[] = {
     {"object_get", naruObjectGet, METH_VARARGS, "object_get(id, name)"},
     {"object_set", naruObjectSet, METH_VARARGS, "object_set(id, name, value)"},
     {"object_move", naruObjectMove, METH_VARARGS, "object_move(id, dx, dy)"},
+    {"object_animation",naruObjectAnimation,METH_VARARGS,"object_animation(id, action, clip, loop, lock)"},
+    {"animation_signals",naruAnimationSignals,METH_NOARGS,"animation_signals()"},
     {nullptr, nullptr, 0, nullptr},
 };
 

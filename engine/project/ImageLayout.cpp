@@ -42,6 +42,7 @@ std::vector<std::string> imageUses(const Project& p, const std::string& id) {
         for (const auto& layer : s.tileLayers) if (layer.asset == id) uses.push_back(s.name + " / 타일 레이어 " + layer.name);
         if (s.backgroundImage.asset == id) uses.push_back(s.name + " / 장면 배경");
         for (const auto& o : s.objects) if (o.image.asset == id) uses.push_back(s.name + " / " + o.name + " / 객체 이미지");
+        for(const auto& o:s.objects)for(const auto& c:o.animations)for(const auto& f:c.frames)if(f.asset==id)uses.push_back(s.name+" / "+o.name+" / 애니메이션 "+c.name);
     }
     return uses;
 }
@@ -67,6 +68,8 @@ std::string validateImages(const Project& p) {
             !range(b.offsetX, -100000, 100000) || !range(b.offsetY, -100000, 100000) || !range(b.scale, .01, 100) || !range(b.opacity, 0, 1))
             return s.id + ": 장면 배경 이미지 설정이 올바르지 않습니다.";
         for (const auto& o : s.objects) {
+            try{validateAnimations(o.animations);}catch(const std::exception& error){return s.id+"/"+o.id+": "+error.what();}
+            for(const auto& c:o.animations)for(const auto& f:c.frames)if(!reference(f.asset))return s.id+"/"+o.id+": 애니메이션에는 이미지 에셋이 필요합니다";
             const auto& i = o.image;
             if (!reference(i.asset) || !range(i.width, 0, 100000) || !range(i.height, 0, 100000) ||
                 !range(i.offsetX, -100000, 100000) || !range(i.offsetY, -100000, 100000) ||

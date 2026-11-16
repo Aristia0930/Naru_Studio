@@ -185,6 +185,7 @@ void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, c
         }
         for (const auto& objectReference : reference.objects) {
             auto* object = scene->findObject(objectReference.id);
+            if(object && object->animations!=objectReference.animations){object->animations=objectReference.animations;changed=true;}
             if (object && object->image.asset != objectReference.image.asset) {
                 object->image.asset = objectReference.image.asset; changed = true;
             }

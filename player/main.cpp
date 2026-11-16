@@ -259,7 +259,7 @@ void drawScene(SDL_Renderer* r, const Scene& scene, const SceneObject* player, F
     SDL_RenderClear(r);
     images.draw(scene);
     // 플레이어가 바라보는 쪽 가장자리에 작은 표시 (이미지가 생기기 전 임시 표현)
-    if (player && player->visible && player->image.asset.empty()) {
+    if (player && player->visible && player->image.asset.empty() && player->animations.empty()) {
         const float s = 8.0f;
         float x = static_cast<float>(player->x-images.camera.x);
         float y = static_cast<float>(player->y-images.camera.y);

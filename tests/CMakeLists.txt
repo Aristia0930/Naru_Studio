@@ -14,7 +14,7 @@ add_executable(naru_database_tests database_tests.cpp)
 target_link_libraries(naru_database_tests PRIVATE naru_engine)
 add_test(NAME database COMMAND naru_database_tests)
 
-add_executable(naru_game_tests game_tests.cpp)
+add_executable(naru_game_tests game_tests.cpp animation_tests.cpp)
 target_link_libraries(naru_game_tests PRIVATE naru_engine)
 add_test(NAME game COMMAND naru_game_tests)
 
@@ -61,6 +61,8 @@ if(NARU_BUILD_PLAYER AND NARU_BUILD_PYTHON)
   set_tests_properties(player_nameplates PROPERTIES TIMEOUT 60)
   add_test(NAME player_images COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_images.py $<TARGET_FILE:naru_player>)
   add_test(NAME player_tilemap COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_tilemap.py $<TARGET_FILE:naru_player>)
+  add_test(NAME player_animation COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_animation.py $<TARGET_FILE:naru_player>)
+  set_tests_properties(player_animation PROPERTIES TIMEOUT 60)
   set_tests_properties(player_tilemap PROPERTIES TIMEOUT 60)
   add_test(NAME player_audio COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_audio.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
   add_test(NAME player_db_assets COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/player_db_assets.py $<TARGET_FILE:naru_player> ${PROJECT_SOURCE_DIR})
@@ -107,6 +109,7 @@ if(NARU_BUILD_EDITOR)
     database_asset_editor_tests.cpp
     api_import_tests.cpp
     tilemap_editor_tests.cpp
+    animation_editor_tests.cpp
     ../editor/DatabaseEditor.cpp ../editor/DatabaseEditor.h
     ../editor/FieldDialog.cpp ../editor/FieldDialog.h
     ../editor/ValueEditor.cpp ../editor/ValueEditor.h

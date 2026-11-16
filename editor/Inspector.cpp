@@ -1,4 +1,5 @@
 #include "Inspector.h"
+#include "AnimationEditor.h"
 #include "naru/project/TileMap.h"
 
 #include "ProjectDocument.h"
@@ -102,6 +103,8 @@ Inspector::Inspector(ProjectDocument* doc, QWidget* parent) : QWidget(parent), d
     objectImage_ = new QPushButton(QStringLiteral("이미지 설정..."), objectPage);
     objectImage_->setObjectName(QStringLiteral("objectImageSettings"));
     objectForm->addRow(QStringLiteral("객체 그림"), objectImage_);
+    auto* animationButton=new QPushButton(QStringLiteral("애니메이션 편집..."),objectPage);animationButton->setObjectName("objectAnimations");objectForm->addRow(QStringLiteral("동작 클립"),animationButton);
+    connect(animationButton,&QPushButton::clicked,this,[this]{const auto* scene=doc_->project().findScene(sceneId_.toStdString());const auto* object=scene?scene->findObject(objectId_.toStdString()):nullptr;if(!object)return;auto before=*object;AnimationEditor dialog(doc_,before,this);if(dialog.exec()==QDialog::Accepted&&dialog.object()!=before)doc_->undoStack()->push(new SetObjectCommand(doc_,sceneId_.toStdString(),before,dialog.object()));});
     connect(objectImage_, &QPushButton::clicked, this, [this] {
         const auto* scene = doc_->project().findScene(sceneId_.toStdString());
         const auto* current = scene ? scene->findObject(objectId_.toStdString()) : nullptr;

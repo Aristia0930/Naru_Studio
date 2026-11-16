@@ -133,6 +133,8 @@ bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
     playerMovedThisTick_ = false;
     facing_ = arrival.facing.value_or(Facing::Down);
     scene_ = *source;
+    animationSignals_.clear();
+    advanceAnimations(0);
     logger_.info("장면 시작: " + scene_->name);
     if (!scene_->playerObjectId.empty() && !playerObject()) {
         logger_.warning("플레이어 객체가 장면에 없습니다: " + scene_->playerObjectId);
@@ -236,6 +238,7 @@ void GameWorld::update(double realSeconds, const InputState& input) {
                 ++i;
             }
         }
+        advanceAnimations(fixedStep_);
         // "새로 누름"은 프레임당 한 번이므로 첫 틱에서만 쓴다 (이벤트 중에 누른 키로 조사하지 않는다).
         actionPressed = false;
         tickInput_.endFrame();
@@ -348,6 +351,7 @@ bool GameWorld::movePlayer(double dx, double dy) {
     if (!player) {
         return false;
     }
+    if(player->animationState.overrideClip && player->animationState.lock)return false;
     // 바라보는 방향: 한 방향만 움직이면 그쪽, 대각선이면 지금 방향이 그중 하나일 때 유지하고 아니면 가로.
     if (dx != 0 || dy != 0) {
         Facing horizontal = dx > 0 ? Facing::Right : Facing::Left;
@@ -381,6 +385,7 @@ bool GameWorld::moveObject(const std::string& id, double dx, double dy) {
     if (!o) {
         return false;
     }
+    if(o->animationState.overrideClip && o->animationState.lock)return false;
     if (o->id == scene_->playerObjectId) {
         return movePlayer(dx, dy);
     }
@@ -490,6 +495,7 @@ void GameWorld::advanceRoutes(double dt) {
         const SceneObject* o = object(route.objectId);
         bool done = o == nullptr;
         if (o) {
+            if(o->animationState.overrideClip && o->animationState.lock){++i;continue;}
             double step = std::min(route.speed * dt, route.remaining);
             double x = o->x;
             double y = o->y;
@@ -593,6 +599,8 @@ void GameWorld::moveAxis(SceneObject& mover, double dx, double dy, std::vector<s
         else if (dy > 0) after.y = std::min(after.y, wall.y - after.h);
         else if (dy < 0) after.y = std::max(after.y, wall.y + wall.h);
     });
+    if(dx!=0||dy!=0) mover.animationState.facing=dy==0?(dx>0?"right":"left"):(dy>0?"down":"up");
+    mover.animationState.moved|=after.x!=before.x||after.y!=before.y;
     mover.x = after.x;
     mover.y = after.y;
 }
@@ -734,6 +742,8 @@ bool GameWorld::tickEvent(RunningEvent& event, double dt) {
 }
 
 void GameWorld::stopAll() {
+    if(scene_)for(auto& o:scene_->objects)stopObjectAnimation(o.id);
+    animationSignals_.clear();
     if (blocking_) {
         blocking_->runner.cancel(blocking_->ctx);
         blocking_.reset();
@@ -751,6 +761,52 @@ void GameWorld::stopEvents() {
     stopAll();
     closeMessage();
     logger_.info("실행 중인 이벤트 중지");
+}
+
+void GameWorld::emitAnimationSignal(const SceneObject& object) {
+    const auto& state=object.animationState;
+    const auto* clip=findAnimation(object.animations,state.clip);
+    if(!clip||state.frame>=clip->frames.size()||clip->frames[state.frame].signal.empty())return;
+    if(animationSignals_.size()>=256){logger_.warning("애니메이션 신호 한도 256개 초과: 오래된 신호를 폐기합니다");animationSignals_.erase(animationSignals_.begin());}
+    animationSignals_.push_back({object.id,clip->name,clip->frames[state.frame].signal,state.frame});
+}
+std::vector<GameWorld::AnimationSignal> GameWorld::takeAnimationSignals(){auto result=std::move(animationSignals_);animationSignals_.clear();return result;}
+std::uint64_t GameWorld::playObjectAnimation(const std::string& id,const std::string& name,bool loop,bool lock) {
+    auto* o=scene_?scene_->findObject(id):nullptr;if(!o)throw std::invalid_argument("애니메이션 대상 객체가 없습니다: "+id);
+    const auto* clip=findAnimation(o->animations,name,id==scene_->playerObjectId?toKey(facing_):o->animationState.facing);
+    if(!clip||clip->frames.empty())throw std::invalid_argument("애니메이션 클립이 없거나 프레임이 비었습니다: "+name);
+    auto facing=o->animationState.facing;
+    o->animationState={};auto& s=o->animationState;s.facing=facing;s.clip=clip->name;s.overrideClip=true;s.loop=loop;s.lock=lock;s.token=++animationToken_;
+    emitAnimationSignal(*o);return s.token;
+}
+bool GameWorld::objectAnimating(const std::string& id,std::uint64_t token) const {const auto* o=object(id);return o&&o->animationState.overrideClip&&(!token||o->animationState.token==token);}
+void GameWorld::stopObjectAnimation(const std::string& id){if(auto* o=scene_?scene_->findObject(id):nullptr){auto facing=o->animationState.facing;o->animationState={};o->animationState.facing=facing;}}
+void GameWorld::advanceAnimations(double dt) {
+    if(!scene_)return;
+    for(auto& o:scene_->objects){
+        auto& s=o.animationState;
+        if(o.id==scene_->playerObjectId)s.facing=toKey(facing_);
+        if(!s.overrideClip){
+            const auto* automatic=o.automaticAnimation?findAnimation(o.animations,s.moved?"walk":"idle",s.facing):nullptr;
+            if(!automatic&&o.automaticAnimation)automatic=findAnimation(o.animations,"idle",s.facing);
+            std::string name=automatic?automatic->name:"";
+            if(s.clip!=name){s.clip=name;s.frame=0;s.elapsed=0;emitAnimationSignal(o);}
+            s.loop=automatic&&automatic->loop;
+        }
+        s.moved=false;
+        const auto* clip=findAnimation(o.animations,s.clip);if(!clip||clip->frames.empty())continue;
+        s.elapsed+=dt;
+        int steps=0;
+        while(s.elapsed+1e-12>=clip->frames[s.frame].seconds&&steps++<4096){
+            s.elapsed-=clip->frames[s.frame].seconds;
+            if(++s.frame>=clip->frames.size()){
+                if(s.loop)s.frame=0;
+                else if(s.overrideClip){stopObjectAnimation(o.id);const auto* idle=o.automaticAnimation?findAnimation(o.animations,"idle",s.facing):nullptr;if(idle){s.clip=idle->name;s.loop=idle->loop;emitAnimationSignal(o);}break;}
+                else{s.frame=clip->frames.size()-1;s.elapsed=0;break;}
+            }
+            emitAnimationSignal(o);
+        }
+    }
 }
 
 } // namespace naru

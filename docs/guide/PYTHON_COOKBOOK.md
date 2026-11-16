@@ -1,5 +1,7 @@
 # 현재 기능을 Python으로 연결하는 전체 가이드
 
+캐릭터 동작은 `ctx.scene.object(ID).play(clip, loop=False, lock=False)`, `is_animating()`, `stop_animation()`으로 연결합니다. `ctx.scene.animation_signals()`는 프레임 신호 목록을 한 번 소비합니다. [클립 편집·완성 전역 스크립트·이벤트와 F5/F6 차이](ANIMATION.md)를 따르세요.
+
 공개 HTTP API를 비동기로 호출하고 JSON 응답을 게임 변수에 넣는 예제는 [네트워크 안내](NETWORK.md)와 [실행 프로젝트](../examples/network/README.md)에 있습니다.
 
 `ctx.network.request_connection("local", "/hello")`는 제작툴의 공통 접속 설정을 사용합니다. [등록·전역 훅 완성 예제](NETWORK_EVENTS.md#4-python에서-같은-설정-사용)를 참고하세요. 직접 주소를 쓰는 `ctx.network.request()`로 요청 ID를 받고 `ctx.network.status()` 또는 `ctx.network.result()`로 진행 상태와 결과를 확인합니다. `ctx.network.cancel()`은 결과 처리를 취소합니다. F5/F6의 `ctx.network`는 `None`이므로 게임 실행(Ctrl+R)에서 확인하세요.

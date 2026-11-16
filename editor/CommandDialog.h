@@ -41,6 +41,8 @@ private:
     bool readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* boolBox, naru::Value& out);
 
     naru::EventCommand command_;
+    QLineEdit* animationName_=nullptr;
+    QCheckBox *animationLoop_=nullptr,*animationLock_=nullptr,*animationStop_=nullptr;
     QComboBox* networkConnection_ = nullptr;
     QComboBox* networkMethod_ = nullptr;
     QLineEdit* networkPath_ = nullptr;

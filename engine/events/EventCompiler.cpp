@@ -194,6 +194,23 @@ std::string targetLabel(const std::string& target) {
 }
 
 // 객체를 정한 방향·거리만큼 움직인다 (GameWorld의 이동 경로). 게임 밖(에디터 테스트 실행)에서는 로그만 남긴다.
+class ObjectAnimationCommand : public Command {
+public:
+    ObjectAnimationCommand(std::string id,const EventCommand& c):Command(std::move(id)),data_(c){}
+    CommandStatus start(CommandContext& ctx) override {
+        if(!data_.animationStop&&data_.animationLoop&&data_.waitForEnd){setError("반복 애니메이션은 끝날 때까지 기다릴 수 없습니다");return CommandStatus::Failed;}
+        if(!ctx.game){ctx.logger.info("객체 애니메이션 미리보기: 실제 재생하지 않음");return CommandStatus::Completed;}
+        target_=ctx.game->resolveTarget(data_.target,ctx.selfObjectId);
+        if(target_.empty()){setError("애니메이션 대상 객체가 없습니다");return CommandStatus::Failed;}
+        if(data_.animationStop){ctx.game->stopObjectAnimation(target_);return CommandStatus::Completed;}
+        try{token_=ctx.game->playObjectAnimation(target_,data_.animation,data_.animationLoop,data_.animationLock);}
+        catch(const std::exception& e){setError(e.what());return CommandStatus::Failed;}
+        return data_.waitForEnd?CommandStatus::Waiting:CommandStatus::Completed;
+    }
+    CommandStatus update(CommandContext& ctx,double) override{return ctx.game&&ctx.game->objectAnimating(target_,token_)?CommandStatus::Waiting:CommandStatus::Completed;}
+    void cancel(CommandContext& ctx) override{if(ctx.game&&ctx.game->objectAnimating(target_,token_))ctx.game->stopObjectAnimation(target_);}
+private:EventCommand data_;std::string target_;std::uint64_t token_=0;
+};
 class MoveObjectCommand : public Command {
 public:
     MoveObjectCommand(std::string id, const EventCommand& c)
@@ -639,6 +656,8 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
         case EventCommandType::MoveObject:
             out.push_back(std::make_unique<MoveObjectCommand>(id, c));
             break;
+        case EventCommandType::ObjectAnimation:
+            out.push_back(std::make_unique<ObjectAnimationCommand>(id,c));break;
         case EventCommandType::SetVisible:
             out.push_back(std::make_unique<SetVisibleCommand>(id, c.target, c.show));
             break;

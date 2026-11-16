@@ -1,6 +1,7 @@
 #pragma once
 
 #include "naru/core/Value.h"
+#include "naru/project/Animation.h"
 #include "naru/project/Asset.h"
 #include "naru/data/Database.h"
 #include "naru/events/EventData.h"
@@ -47,6 +48,9 @@ struct SceneObject {
     bool visible = true;
     ObjectEvent event;
     ObjectImage image;
+    std::vector<AnimationClip> animations;
+    bool automaticAnimation = true;
+    AnimationState animationState; // runtime only; never serialized
     bool showName = false; // Game nameplate; editor/debug labels are independent.
     std::string nameText; // Empty means the object name.
     bool nameBackgroundTransparent = false;
