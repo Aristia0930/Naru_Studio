@@ -571,7 +571,14 @@ int main(int argc, char** argv) {
             messageSince = frame;
         }
 
+        images.shakeX=images.shakeY=0;
+        for(const auto& active:world.activeEffects()){
+            const auto& effects=world.project().effects;
+            auto effect=std::find_if(effects.begin(),effects.end(),[&](const naru::Effect& e){return e.id==active.id;});
+            if(effect!=effects.end()&&active.frame<effect->frames.size()&&effect->frames[active.frame].screenShake){images.shakeX=world.tickCount()%2?4:-4;images.shakeY=world.tickCount()%4<2?3:-3;break;}
+        }
         drawScene(renderer, *world.scene(), world.player(), world.facing(), images);
+        images.drawEffects(world);
         nameplates.draw(renderer, labelFont, *world.scene(), debugObjectNames, images);
         if (world.message()) {
             Scene screen;screen.width=images.camera.width;screen.height=images.camera.height;

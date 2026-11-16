@@ -171,8 +171,9 @@ void ProjectDocument::setAssetCatalog(const std::vector<naru::Asset>& assets, co
     emit assetsChanged();
 }
 
-void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents, const naru::Database& database) {
+void ProjectDocument::setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents, const naru::Database& database,const std::vector<naru::Effect>& effects) {
     project_.database = database;
+    project_.effects=effects;
     project_.assets = assets;
     QStringList changedScenes;
     for (const auto& reference : references) {
@@ -238,6 +239,7 @@ void ProjectDocument::setNetworkConnections(const std::vector<naru::NetworkConne
     project_.networkConnections = connections;
     emit commonEventsChanged(); // Refresh event summaries and stop an active F6 preview.
 }
+void ProjectDocument::setEffects(const std::vector<naru::Effect>& effects){project_.effects=effects;emit commonEventsChanged();}
 
 void ProjectDocument::setInputSettings(const std::string& script, const std::string& source) {
     auto parsed = naru::parseInputSettings(source);

@@ -14,7 +14,7 @@ namespace naru {
 // "데이터 종류"(DataType)가 속성 목록(스키마)을 갖고, 각 항목(DataRecord)이 속성 값을 가진다.
 // 캐릭터·아이템·몬스터 같은 구조를 엔진이 고정하지 않는다 (템플릿은 미리 만든 정의일 뿐).
 
-enum class FieldType { Integer, Number, Text, Boolean, Choice, Reference, Image, Audio };
+enum class FieldType { Integer, Number, Text, Boolean, Choice, Reference, Image, Audio, Effect };
 
 struct FieldDef {
     std::string key;   // 스크립트·저장용 키. 만든 뒤 바꾸지 않는다 (예: "hp")

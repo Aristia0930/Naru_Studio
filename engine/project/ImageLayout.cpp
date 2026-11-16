@@ -38,6 +38,7 @@ std::vector<std::string> imageUses(const Project& p, const std::string& id) {
     const auto dbUses = databaseAssetUses(p.database, id);
     uses.insert(uses.end(), dbUses.begin(), dbUses.end());
     if (id.empty()) return uses;
+    for(const auto& effect:p.effects)for(const auto& frame:effect.frames)if(frame.image==id||frame.sound==id)uses.push_back("이펙트 "+effect.name);
     for (const auto& s : p.scenes) {
         for (const auto& layer : s.tileLayers) if (layer.asset == id) uses.push_back(s.name + " / 타일 레이어 " + layer.name);
         if (s.backgroundImage.asset == id) uses.push_back(s.name + " / 장면 배경");
@@ -48,6 +49,17 @@ std::vector<std::string> imageUses(const Project& p, const std::string& id) {
 }
 
 std::string validateImages(const Project& p) {
+    try{validateEffects(p.effects);}catch(const std::exception& error){return error.what();}
+    for(const auto& effect:p.effects)for(const auto& frame:effect.frames){
+        auto image=std::find_if(p.assets.begin(),p.assets.end(),[&](const Asset& a){return a.id==frame.image&&a.kind=="image";});
+        if(image==p.assets.end())return "이펙트 이미지 에셋이 없습니다: "+effect.id;
+        if(!frame.sound.empty()&&std::none_of(p.assets.begin(),p.assets.end(),[&](const Asset& a){return a.id==frame.sound&&a.kind=="audio";}))return "이펙트 소리 에셋이 없습니다: "+effect.id;
+    }
+    for(const auto& type:p.database.types)for(const auto& field:type.fields)if(field.type==FieldType::Effect){
+        auto exists=[&](const Value& value){const auto* id=std::get_if<std::string>(&value);return !id||std::any_of(p.effects.begin(),p.effects.end(),[&](const Effect& e){return e.id==*id;});};
+        if(!exists(field.defaultValue))return "DB 이펙트 기본값이 없습니다: "+type.key+"."+field.key;
+        for(const auto& record:type.records)if(auto it=record.values.find(field.key);it!=record.values.end()&&!exists(it->second))return "DB 이펙트 항목 값이 없습니다: "+type.key+"/"+record.id+"."+field.key;
+    }
     const auto range = [](double v, double lo, double hi) { return std::isfinite(v) && v >= lo && v <= hi; };
     const auto reference = [&](const std::string& id) {
         for (const auto& a : p.assets) if (a.id == id && a.kind != "image") return false;

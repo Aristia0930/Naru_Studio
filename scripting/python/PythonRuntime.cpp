@@ -168,6 +168,14 @@ class Audio:
     def stop_se(self):
         return _naru.audio_call("stop_se", "", 100, False, 0)
 
+class Effects:
+    def play(self, effect_id, target="@player", x=0, y=0):
+        return _naru.effect_call("play", effect_id, target, float(x), float(y))
+    def is_playing(self, token):
+        return _naru.effect_call("playing", int(token), "", 0, 0)
+    def stop(self, token):
+        return _naru.effect_call("stop", int(token), "", 0, 0)
+
 class Network:
     def request_connection(self, connection, path="/", method="GET", headers=None, json=None):
         import json as codec
@@ -221,6 +229,7 @@ class Context:
         self.network = Network() if game else None
         # 게임 밖(에디터 테스트 실행, 단독 스크립트 실행)에서는 None
         self.audio = Audio() if game else None
+        self.effects = Effects() if game else None
         self.input = Input() if game else None
         self.scene = Scene() if game and _naru.has_scene() else None
         self.player = Player() if game and _naru.has_player() else None
@@ -960,6 +969,22 @@ PyObject* naruObjectAnimation(PyObject*,PyObject* args) {
         game->stopObjectAnimation(id);Py_RETURN_NONE;
     }catch(const std::exception& e){PyErr_SetString(PyExc_ValueError,e.what());return nullptr;}
 }
+PyObject* naruEffectCall(PyObject*,PyObject* args){
+    const char* action=nullptr;PyObject* value=nullptr;const char* target=nullptr;double x=0,y=0;
+    if(!PyArg_ParseTuple(args,"sOsdd",&action,&value,&target,&x,&y))return nullptr;
+    auto* game=requireGame();if(!game)return nullptr;
+    try{
+        if(std::string(action)=="play"){
+            if(!PyUnicode_Check(value)){PyErr_SetString(PyExc_TypeError,"effect_id는 문자열이어야 합니다");return nullptr;}
+            const char* id=PyUnicode_AsUTF8(value);if(!id)return nullptr;
+            return PyLong_FromUnsignedLongLong(game->playEffect(id,target,x,y));
+        }
+        auto token=PyLong_AsUnsignedLongLong(value);if(PyErr_Occurred())return nullptr;
+        if(std::string(action)=="playing")return PyBool_FromLong(game->effectPlaying(token));
+        game->stopEffect(token);Py_RETURN_NONE;
+    }catch(const std::invalid_argument& e){PyErr_SetString(PyExc_ValueError,e.what());return nullptr;}
+    catch(const std::exception& e){PyErr_SetString(PyExc_RuntimeError,e.what());return nullptr;}
+}
 PyObject* naruAnimationSignals(PyObject*,PyObject*) {
     auto* game=requireGame();if(!game)return nullptr;
     auto* list=PyList_New(0);if(!list)return nullptr;
@@ -1140,6 +1165,7 @@ PyMethodDef kMethods[] = {
     {"object_set", naruObjectSet, METH_VARARGS, "object_set(id, name, value)"},
     {"object_move", naruObjectMove, METH_VARARGS, "object_move(id, dx, dy)"},
     {"object_animation",naruObjectAnimation,METH_VARARGS,"object_animation(id, action, clip, loop, lock)"},
+    {"effect_call",naruEffectCall,METH_VARARGS,"effect_call(action, value, target, x, y)"},
     {"animation_signals",naruAnimationSignals,METH_NOARGS,"animation_signals()"},
     {nullptr, nullptr, 0, nullptr},
 };

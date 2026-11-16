@@ -11,7 +11,7 @@ namespace naru {
 
 namespace {
 
-constexpr std::array<std::pair<FieldType, const char*>, 8> kFieldTypes{{
+constexpr std::array<std::pair<FieldType, const char*>, 9> kFieldTypes{{
     {FieldType::Integer, "integer"},
     {FieldType::Number, "number"},
     {FieldType::Text, "text"},
@@ -20,6 +20,7 @@ constexpr std::array<std::pair<FieldType, const char*>, 8> kFieldTypes{{
     {FieldType::Reference, "reference"},
     {FieldType::Image, "image"},
     {FieldType::Audio, "audio"},
+    {FieldType::Effect, "effect"},
 }};
 
 bool isAsciiAlnum(char c) {
@@ -317,6 +318,7 @@ Value emptyValueFor(const FieldDef& f) {
     case FieldType::Choice: return f.choices.empty() ? std::string() : f.choices.front();
     case FieldType::Image:
     case FieldType::Audio:
+    case FieldType::Effect:
     case FieldType::Reference: return std::monostate{};
     }
     return std::monostate{};
@@ -360,6 +362,7 @@ std::optional<std::string> checkValue(const Value& value, const FieldDef& f) {
         return "선택지 중 하나여야 합니다";
     case FieldType::Image:
     case FieldType::Audio:
+    case FieldType::Effect:
         if (std::holds_alternative<std::monostate>(value)) return std::nullopt;
         if (const auto* id = std::get_if<std::string>(&value); id && isValidAssetId(*id)) return std::nullopt;
         return "에셋 ID이거나 비어 있어야 합니다";
@@ -414,6 +417,7 @@ std::optional<Value> convertValue(const Value& value, const FieldDef& target) {
     case FieldType::Choice:
     case FieldType::Image:
     case FieldType::Audio:
+    case FieldType::Effect:
     case FieldType::Reference:
         return std::nullopt;
     }

@@ -40,12 +40,13 @@ public:
     void setObject(const std::string& sceneId, const naru::SceneObject& object);
     void setAssets(const std::vector<naru::Asset>& assets);
     void setAssetCatalog(const std::vector<naru::Asset>& assets, const std::vector<std::string>& groups);
-    void setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents, const naru::Database& database);
+    void setAssetIdentity(const std::vector<naru::Asset>& assets, const std::vector<naru::Scene>& references, const std::vector<naru::CommonEvent>& commonEvents, const naru::Database& database,const std::vector<naru::Effect>& effects);
     void setDatabase(const naru::Database& database);
     void setGlobalScripts(const std::vector<std::string>& scripts);
     void setCommonEvents(const std::vector<naru::CommonEvent>& events);
     void setVariables(const std::vector<naru::VariableDef>& variables);
     void setNetworkConnections(const std::vector<naru::NetworkConnection>& connections);
+    void setEffects(const std::vector<naru::Effect>& effects);
     void setInputSettings(const std::string& script, const std::string& source);
 
     // scripts/ 안의 .py 파일 이름 (이름순).

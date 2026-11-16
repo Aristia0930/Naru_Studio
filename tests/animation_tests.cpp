@@ -2,6 +2,29 @@
 #include "naru/runtime/GameWorld.h"
 #include "naru/project/AnimationVisual.h"
 
+TEST_CASE("공용 이펙트는 두 개를 동시에 재생하고 끝나거나 중지하면 정리된다") {
+    naru::Project p;naru::Effect effect;effect.id="fire";effect.name="불꽃";
+    naru::EffectFrame frame;frame.image="sheet";frame.seconds=.05;effect.frames={frame,frame};p.effects={effect};
+    naru::Scene scene;scene.id="stage";scene.playerObjectId="hero";naru::SceneObject hero;hero.id="hero";scene.objects={hero};p.scenes={scene};
+    naru::GameWorld world(p,naru::ScriptRunner{});CHECK(world.startGame("stage"));
+    auto first=world.playEffect("fire");auto second=world.playEffect("fire","@screen");CHECK(first!=second);CHECK(world.activeEffects().size()==2);
+    world.update(.05,naru::InputState{});CHECK(world.effectPlaying(first));CHECK(world.activeEffects()[0].frame==1);
+    world.stopEffect(first);CHECK(!world.effectPlaying(first));CHECK(world.effectPlaying(second));
+    world.update(.05,naru::InputState{});CHECK(!world.effectPlaying(second));CHECK(world.activeEffects().empty());
+    CHECK(world.playEffect("fire")>0);world.enterScene("stage");CHECK(world.activeEffects().empty());
+}
+
+TEST_CASE("이펙트 표시 이벤트는 실제 재생을 기다리고 F6에서 그림을 재생하지 않는다") {
+    naru::Project p;naru::Effect effect;effect.id="spark";effect.name="불꽃";naru::EffectFrame frame;frame.image="sheet";frame.seconds=.05;effect.frames={frame};p.effects={effect};
+    naru::Scene scene;scene.id="stage";naru::SceneObject actor;actor.id="actor";scene.objects={actor};p.scenes={scene};
+    naru::GameWorld world(p,naru::ScriptRunner{});CHECK(world.startGame("stage"));
+    naru::EventCommand command;command.type=naru::EventCommandType::ShowEffect;command.effect="spark";command.target="actor";command.waitForEnd=true;
+    naru::CommandContext ctx{world.variables(),world.logger()};ctx.game=&world;
+    naru::EventRunner runner(naru::compileEvent({command},{}));runner.start(ctx);CHECK(runner.status()==naru::CommandStatus::Waiting);CHECK(world.activeEffects().size()==1);
+    world.update(.05,naru::InputState{});runner.update(ctx,.05);CHECK(runner.status()==naru::CommandStatus::Completed);CHECK(world.activeEffects().empty());
+    ctx.game=nullptr;naru::EventRunner preview(naru::compileEvent({command},{}));preview.start(ctx);CHECK(preview.status()==naru::CommandStatus::Completed);CHECK(world.activeEffects().empty());
+}
+
 TEST_CASE("클립 방향·한 번 재생·신호·잠금·자동 복귀·장면/F8 정리") {
     naru::Project p;naru::Scene scene;scene.id="stage";scene.playerObjectId="hero";
     naru::SceneObject hero;hero.id="hero";hero.x=100;hero.y=100;hero.width=16;hero.height=16;

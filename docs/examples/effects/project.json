@@ -1,0 +1,100 @@
+{
+  "formatVersion": 1,
+  "name": "이펙트 애니메이션",
+  "startScene": "stage",
+  "scenes": [
+    "stage",
+    "other"
+  ],
+  "assets": [
+    {
+      "id": "sheet",
+      "name": "sheet.png",
+      "kind": "image",
+      "path": "assets/sheet.png",
+      "sourceName": "sheet.png",
+      "sha256": "be0b606012686903cb25670341d718a939608f4a93a5ef4d92371ae7f778134d"
+    },
+    {
+      "id": "pose",
+      "name": "pose.png",
+      "kind": "image",
+      "path": "assets/pose.png",
+      "sourceName": "pose.png",
+      "sha256": "cc8389444cf86c2d666ba7cc76558a5f86eabeb36375890abbaf194bc4546e2d"
+    },
+    {
+      "id": "effect_sound",
+      "name": "effect.wav",
+      "kind": "audio",
+      "path": "assets/effect.wav",
+      "sourceName": "effect.wav",
+      "sha256": "23f0b345865c641f17099a2c62e13ad72c32e650b0081e1b6b2dba7c1cdf0040"
+    }
+  ],
+  "globalScripts": [
+    "animation_controls.py"
+  ],
+  "effects": [
+    {
+      "id": "spark",
+      "name": "불꽃 이펙트",
+      "frames": [
+        {
+          "image": "sheet",
+          "x": 0,
+          "y": 0,
+          "width": 32,
+          "height": 32,
+          "seconds": 0.25,
+          "offsetX": 0,
+          "offsetY": -28,
+          "scale": 2,
+          "rotation": 0,
+          "opacity": 1,
+          "blend": "normal",
+          "sound": "",
+          "targetFlash": false,
+          "screenFlash": false,
+          "screenShake": false
+        },
+        {
+          "image": "sheet",
+          "x": 32,
+          "y": 0,
+          "width": 32,
+          "height": 32,
+          "seconds": 0.25,
+          "offsetX": 0,
+          "offsetY": -28,
+          "scale": 2,
+          "rotation": 0,
+          "opacity": 1,
+          "blend": "normal",
+          "sound": "effect_sound",
+          "targetFlash": true,
+          "screenFlash": false,
+          "screenShake": false
+        },
+        {
+          "image": "sheet",
+          "x": 64,
+          "y": 0,
+          "width": 32,
+          "height": 32,
+          "seconds": 0.25,
+          "offsetX": 0,
+          "offsetY": -28,
+          "scale": 2,
+          "rotation": 0,
+          "opacity": 1,
+          "blend": "normal",
+          "sound": "",
+          "targetFlash": false,
+          "screenFlash": true,
+          "screenShake": true
+        }
+      ]
+    }
+  ]
+}

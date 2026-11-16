@@ -262,6 +262,8 @@ json commandsToJson(const std::vector<EventCommand>& commands);
 json commandToJson(const EventCommand& c) {
     json j = {{"type", toKey(c.type)}};
     switch (c.type) {
+    case EventCommandType::ShowEffect:
+        j["effect"]=c.effect;j["target"]=c.target;j["wait"]=c.waitForEnd;break;
     case EventCommandType::ObjectAnimation:
         j["target"]=c.target;j["animation"]=c.animation;j["animationLoop"]=c.animationLoop;j["animationLock"]=c.animationLock;j["animationStop"]=c.animationStop;j["wait"]=c.waitForEnd;break;
     case EventCommandType::NetworkRequest: {
@@ -441,6 +443,7 @@ EventCommand commandFromJson(const json& j, int depth) {
     c.speed = getNumber(j, "speed", c.speed);
     c.waitForEnd = getBool(j, "wait", c.waitForEnd);
     c.animation=getString(j,"animation","attack");c.animationLoop=getBool(j,"animationLoop",false);c.animationLock=getBool(j,"animationLock",false);c.animationStop=getBool(j,"animationStop",false);
+    c.effect=getString(j,"effect","");
     c.show = getBool(j, "visible", c.show);
     if (c.type == EventCommandType::IfVariable) {
         c.thenCommands = commandsFromJson(getArray(j, "then"), depth + 1);
@@ -956,6 +959,19 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
             throw std::runtime_error(groupError);
         if (auto assetError = validateAssets(project.assets, dir); !assetError.empty())
             throw std::runtime_error(assetError);
+        for(const auto& ej:getArray(root,"effects")){
+            Effect effect;effect.id=requireString(ej,"id");effect.name=requireString(ej,"name");
+            for(const auto& fj:getArray(ej,"frames")){
+                EffectFrame f;f.image=requireString(fj,"image");f.x=getInt(fj,"x",0);f.y=getInt(fj,"y",0);f.width=getInt(fj,"width",32);f.height=getInt(fj,"height",32);
+                f.seconds=getNumber(fj,"seconds",.1);f.offsetX=getNumber(fj,"offsetX",0);f.offsetY=getNumber(fj,"offsetY",0);f.scale=getNumber(fj,"scale",1);f.rotation=getNumber(fj,"rotation",0);f.opacity=getNumber(fj,"opacity",1);
+                f.blend=getString(fj,"blend","normal");f.sound=getString(fj,"sound","");f.targetFlash=getBool(fj,"targetFlash",false);f.screenFlash=getBool(fj,"screenFlash",false);f.screenShake=getBool(fj,"screenShake",false);effect.frames.push_back(std::move(f));
+            }project.effects.push_back(std::move(effect));
+        }validateEffects(project.effects);
+        for(const auto& effect:project.effects)for(const auto& frame:effect.frames){
+            auto image=std::find_if(project.assets.begin(),project.assets.end(),[&](const Asset& a){return a.id==frame.image&&a.kind=="image";});
+            if(image==project.assets.end())throw std::runtime_error("이펙트 이미지 에셋이 없습니다: "+effect.id+" / "+frame.image);
+            if(!frame.sound.empty()&&std::none_of(project.assets.begin(),project.assets.end(),[&](const Asset& a){return a.id==frame.sound&&a.kind=="audio";}))throw std::runtime_error("이펙트 소리 에셋이 없습니다: "+effect.id+" / "+frame.sound);
+        }
         for (const auto& scriptJson : getArray(root, "globalScripts")) {
             if (!scriptJson.is_string()) {
                 throw std::runtime_error("'globalScripts'에는 스크립트 파일 이름 문자열만 넣을 수 있습니다");
@@ -1107,6 +1123,8 @@ ProjectLoadResult ProjectIO::load(const fs::path& dir) {
 std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path& dir) {
     try { validateConnections(project.networkConnections); }
     catch (const std::exception& e) { return {{kProjectFile, e.what()}}; }
+    try { validateEffects(project.effects); }
+    catch (const std::exception& e) { return {{kProjectFile, e.what()}}; }
     for (const auto& scene : project.scenes) for (const auto& object : scene.objects) {
         if (!isValidNameText(object.nameText)) return {{kProjectFile, "이름표 문구 형식/길이가 올바르지 않습니다: " + object.id}};
         if (!isValidNameBackgroundColor(object.nameBackgroundColor) || !isValidNamePosition(object.namePosition))
@@ -1179,6 +1197,8 @@ std::vector<ProjectError> ProjectIO::save(const Project& project, const fs::path
                  {"dataTypes", dataKeys},
                  {"globalScripts", project.globalScripts}};
     root["assets"] = json::array();
+    root["effects"] = json::array();
+    for(const auto& effect:project.effects){json frames=json::array();for(const auto& f:effect.frames)frames.push_back({{"image",f.image},{"x",f.x},{"y",f.y},{"width",f.width},{"height",f.height},{"seconds",f.seconds},{"offsetX",f.offsetX},{"offsetY",f.offsetY},{"scale",f.scale},{"rotation",f.rotation},{"opacity",f.opacity},{"blend",f.blend},{"sound",f.sound},{"targetFlash",f.targetFlash},{"screenFlash",f.screenFlash},{"screenShake",f.screenShake}});root["effects"].push_back({{"id",effect.id},{"name",effect.name},{"frames",frames}});}
     root["assetGroups"] = project.assetGroups;
     for (const auto& a : project.assets) {
         root["assets"].push_back({{"id", a.id}, {"name", a.name}, {"kind", a.kind},

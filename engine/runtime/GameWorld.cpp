@@ -133,6 +133,7 @@ bool GameWorld::enterScene(const std::string& sceneId, const Arrival& arrival) {
     playerMovedThisTick_ = false;
     facing_ = arrival.facing.value_or(Facing::Down);
     scene_ = *source;
+    activeEffects_.clear();
     animationSignals_.clear();
     advanceAnimations(0);
     logger_.info("장면 시작: " + scene_->name);
@@ -239,6 +240,13 @@ void GameWorld::update(double realSeconds, const InputState& input) {
             }
         }
         advanceAnimations(fixedStep_);
+        for(auto it=activeEffects_.begin();it!=activeEffects_.end();){
+            const auto effect=std::find_if(project_.effects.begin(),project_.effects.end(),[&](const Effect& e){return e.id==it->id;});
+            if(effect==project_.effects.end()||it->frame>=effect->frames.size()){it=activeEffects_.erase(it);continue;}
+            it->elapsed+=fixedStep_;
+            while(it->frame<effect->frames.size()&&it->elapsed>=effect->frames[it->frame].seconds){it->elapsed-=effect->frames[it->frame].seconds;++it->frame;if(it->frame<effect->frames.size()&&audio_&&!effect->frames[it->frame].sound.empty())audio_->playSe(effect->frames[it->frame].sound,100);}
+            if(it->frame>=effect->frames.size())it=activeEffects_.erase(it);else ++it;
+        }
         // "새로 누름"은 프레임당 한 번이므로 첫 틱에서만 쓴다 (이벤트 중에 누른 키로 조사하지 않는다).
         actionPressed = false;
         tickInput_.endFrame();
@@ -742,6 +750,7 @@ bool GameWorld::tickEvent(RunningEvent& event, double dt) {
 }
 
 void GameWorld::stopAll() {
+    activeEffects_.clear();
     if(scene_)for(auto& o:scene_->objects)stopObjectAnimation(o.id);
     animationSignals_.clear();
     if (blocking_) {
@@ -756,6 +765,18 @@ void GameWorld::stopAll() {
     commonQueue_.clear();
     routes_.clear();
 }
+
+std::uint64_t GameWorld::playEffect(const std::string& id,const std::string& target,double x,double y){
+    if(!scene_)throw std::invalid_argument("이펙트는 게임 장면에서만 재생할 수 있습니다");
+    const auto effect=std::find_if(project_.effects.begin(),project_.effects.end(),[&](const Effect& e){return e.id==id;});
+    if(effect==project_.effects.end())throw std::invalid_argument("이펙트 ID가 없습니다: "+id);
+    const std::string actual=target=="@player"?(scene_->playerObjectId):target;
+    if(actual!="@screen"&&actual!="@position"&&!object(actual))throw std::invalid_argument("이펙트 대상 객체가 없습니다: "+target);
+    if(activeEffects_.size()>=256)throw std::runtime_error("동시 이펙트는 최대 256개입니다");
+    activeEffects_.push_back({id,actual,x,y,0,0,++effectToken_});if(audio_&&!effect->frames.front().sound.empty())audio_->playSe(effect->frames.front().sound,100);return effectToken_;
+}
+bool GameWorld::effectPlaying(std::uint64_t token) const{return std::any_of(activeEffects_.begin(),activeEffects_.end(),[&](const ActiveEffect& e){return e.token==token;});}
+void GameWorld::stopEffect(std::uint64_t token){std::erase_if(activeEffects_,[&](const ActiveEffect& e){return e.token==token;});}
 
 void GameWorld::stopEvents() {
     stopAll();

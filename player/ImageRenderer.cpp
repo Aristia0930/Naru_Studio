@@ -111,6 +111,7 @@ naru::NameplateAnchor ImageRenderer::nameplateAnchor(const naru::SceneObject& ob
 void ImageRenderer::draw(const naru::Scene& scene) {
     if (scene_ != scene.id) { clear(); scene_ = scene.id; }
     camera = naru::mapCamera(scene);
+    camera.x+=shakeX;camera.y+=shakeY;
     SDL_SetRenderLogicalPresentation(renderer_, camera.width, camera.height, SDL_LOGICAL_PRESENTATION_LETTERBOX);
     SDL_Rect clip{0, 0, std::min(camera.width, scene.width), std::min(camera.height, scene.height)}; SDL_SetRenderClipRect(renderer_, &clip);
     if (auto* image = texture(scene.backgroundImage.asset)) {
@@ -154,6 +155,29 @@ void ImageRenderer::drawForeground(const naru::Scene& scene) {
     SDL_SetRenderClipRect(renderer_, &clip);
     drawTileLayers(scene, true);
     SDL_SetRenderClipRect(renderer_, nullptr);
+}
+void ImageRenderer::drawEffects(const naru::GameWorld& world){
+    const auto* scene=world.scene();if(!scene)return;
+    for(const auto& active:world.activeEffects()){
+        auto definition=std::find_if(project_.effects.begin(),project_.effects.end(),[&](const naru::Effect& e){return e.id==active.id;});
+        if(definition==project_.effects.end()||active.frame>=definition->frames.size())continue;
+        const auto& f=definition->frames[active.frame];auto* image=texture(f.image);if(!image||f.x+f.width>image->w||f.y+f.height>image->h)continue;
+        double x=active.x,y=active.y;
+        if(active.target=="@screen"){x=camera.width/2.;y=camera.height/2.;}
+        else if(active.target!="@position"){const auto* o=scene->findObject(active.target);if(!o)continue;x=o->x+o->width/2-camera.x;y=o->y+o->height/2-camera.y;}
+        else{x-=camera.x;y-=camera.y;}
+        SDL_FRect src{float(f.x),float(f.y),float(f.width),float(f.height)};
+        SDL_FRect dst{float(x+f.offsetX-f.width*f.scale/2),float(y+f.offsetY-f.height*f.scale/2),float(f.width*f.scale),float(f.height*f.scale)};
+        SDL_FPoint pivot{dst.w/2,dst.h/2};SDL_SetTextureAlphaModFloat(image,float(f.opacity));
+        SDL_SetTextureBlendMode(image,f.blend=="add"?SDL_BLENDMODE_ADD:SDL_BLENDMODE_BLEND);
+        SDL_RenderTextureRotated(renderer_,image,&src,&dst,f.rotation,&pivot,SDL_FLIP_NONE);
+        SDL_SetTextureBlendMode(image,SDL_BLENDMODE_BLEND);
+        if(f.targetFlash&&active.target!="@screen"&&active.target!="@position")if(const auto* o=scene->findObject(active.target)){
+            SDL_SetRenderDrawBlendMode(renderer_,SDL_BLENDMODE_BLEND);SDL_SetRenderDrawColor(renderer_,255,255,255,130);
+            SDL_FRect flash{float(o->x-camera.x),float(o->y-camera.y),float(o->width),float(o->height)};SDL_RenderFillRect(renderer_,&flash);
+        }
+        if(f.screenFlash){SDL_SetRenderDrawBlendMode(renderer_,SDL_BLENDMODE_BLEND);SDL_SetRenderDrawColor(renderer_,255,255,255,85);SDL_FRect flash{0,0,float(camera.width),float(camera.height)};SDL_RenderFillRect(renderer_,&flash);}
+    }
 }
 void ImageRenderer::drawTileLayers(const naru::Scene& scene, bool above) {
         int size=scene.tileSize, columns=(scene.width+size-1)/size;

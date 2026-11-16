@@ -47,6 +47,7 @@ QString ValueEditor::typeLabel(FieldType type) {
     case FieldType::Reference: return QStringLiteral("데이터 참조");
     case FieldType::Image: return QStringLiteral("이미지 에셋");
     case FieldType::Audio: return QStringLiteral("소리 에셋");
+    case FieldType::Effect: return QStringLiteral("이펙트");
     }
     return {};
 }
@@ -117,11 +118,13 @@ ValueEditor::ValueEditor(const naru::FieldDef& field, const Value& value, const 
         break;
     }
     case FieldType::Image:
-    case FieldType::Audio: {
+    case FieldType::Audio:
+    case FieldType::Effect: {
         combo_ = new QComboBox(this);
         combo_->setObjectName(QStringLiteral("dbAssetValue"));
         combo_->addItem(QStringLiteral("(없음)"), QVariant());
-        if (document) for (const auto& a : document->project().assets) {
+        if (field.type==FieldType::Effect && document)for(const auto& e:document->project().effects)combo_->addItem(QString::fromStdString(e.name+" ("+e.id+")"),QString::fromStdString(e.id));
+        if (document && field.type!=FieldType::Effect) for (const auto& a : document->project().assets) {
             if (a.kind != (field.type == FieldType::Image ? "image" : "audio")) continue;
             combo_->addItem(QStringLiteral("%1 (%2)").arg(q(a.name), q(a.id)), q(a.id));
             if (field.type == FieldType::Image) {
@@ -152,7 +155,7 @@ ValueEditor::ValueEditor(const naru::FieldDef& field, const Value& value, const 
         };
         updatePreview();
         connect(combo_, &QComboBox::currentIndexChanged, this, updatePreview);
-        layout->addWidget(preview);
+        if(field.type==FieldType::Effect)preview->hide();layout->addWidget(preview);
         connect(preview, &QPushButton::clicked, this, [this, document] {
             QDialog dialog(this);
             dialog.setWindowTitle(QStringLiteral("DB 연결 에셋 확인"));
@@ -209,6 +212,7 @@ Value ValueEditor::value() const {
                                                : Value{std::string()};
     case FieldType::Image:
     case FieldType::Audio:
+    case FieldType::Effect:
     case FieldType::Reference:
         return combo_->currentData().isValid() ? Value{combo_->currentData().toString().toStdString()}
                                                : Value{std::monostate{}};

@@ -6,7 +6,7 @@
 namespace naru {
 
 bool EventCommand::operator==(const EventCommand& o) const {
-    return animation==o.animation && animationLoop==o.animationLoop && animationLock==o.animationLock && animationStop==o.animationStop && network == o.network && type == o.type && speaker == o.speaker && text == o.text && seconds == o.seconds &&
+    return effect==o.effect && animation==o.animation && animationLoop==o.animationLoop && animationLock==o.animationLock && animationStop==o.animationStop && network == o.network && type == o.type && speaker == o.speaker && text == o.text && seconds == o.seconds &&
            variable == o.variable && op == o.op && compare == o.compare && value == o.value &&
            script == o.script && function == o.function && dataType == o.dataType && record == o.record &&
            field == o.field && target == o.target && direction == o.direction && distance == o.distance &&
@@ -44,7 +44,8 @@ const char* nameOf(const std::array<std::pair<E, const char*>, N>& table, E valu
     return "";
 }
 
-constexpr std::array<std::pair<EventCommandType, const char*>, 16> kTypes{{
+constexpr std::array<std::pair<EventCommandType, const char*>, 17> kTypes{{
+    {EventCommandType::ShowEffect,"show_effect"},
     {EventCommandType::ObjectAnimation,"object_animation"},
     {EventCommandType::NetworkRequest, "network_request"},
     {EventCommandType::Audio, "audio"},

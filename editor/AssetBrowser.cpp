@@ -103,7 +103,7 @@ public:
     AssetIdCommand(ProjectDocument* doc, const std::string& before, const std::string& after)
         : QUndoCommand(QStringLiteral("에셋 ID 변경")), doc_(doc), before_(doc->project().assets), after_(before_),
           beforeScenes_(doc->project().scenes), afterScenes_(beforeScenes_),
-          beforeCommon_(doc->project().commonEvents), afterCommon_(beforeCommon_), beforeDb_(doc->project().database), afterDb_(beforeDb_) {
+          beforeCommon_(doc->project().commonEvents), afterCommon_(beforeCommon_), beforeDb_(doc->project().database), afterDb_(beforeDb_),beforeEffects_(doc->project().effects),afterEffects_(beforeEffects_) {
         naru::renameDatabaseAsset(afterDb_, before, after);
         for (auto& a : after_) if (a.id == before) a.id = after;
         for (auto& s : afterScenes_) {
@@ -116,15 +116,17 @@ public:
             }
         }
         for (auto& event : afterCommon_) naru::renameAudioReferences(event.event.commands, before, after);
+        for(auto& effect:afterEffects_)for(auto& frame:effect.frames){if(frame.image==before)frame.image=after;if(frame.sound==before)frame.sound=after;}
     }
-    void redo() override { doc_->setAssetIdentity(after_, afterScenes_, afterCommon_, afterDb_); }
-    void undo() override { doc_->setAssetIdentity(before_, beforeScenes_, beforeCommon_, beforeDb_); }
+    void redo() override { doc_->setAssetIdentity(after_, afterScenes_, afterCommon_, afterDb_,afterEffects_); }
+    void undo() override { doc_->setAssetIdentity(before_, beforeScenes_, beforeCommon_, beforeDb_,beforeEffects_); }
 private:
     ProjectDocument* doc_;
     std::vector<naru::Asset> before_, after_;
     std::vector<naru::Scene> beforeScenes_, afterScenes_;
     std::vector<naru::CommonEvent> beforeCommon_, afterCommon_;
     naru::Database beforeDb_, afterDb_;
+    std::vector<naru::Effect> beforeEffects_,afterEffects_;
 };
 }
 

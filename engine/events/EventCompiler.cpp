@@ -211,6 +211,21 @@ public:
     void cancel(CommandContext& ctx) override{if(ctx.game&&ctx.game->objectAnimating(target_,token_))ctx.game->stopObjectAnimation(target_);}
 private:EventCommand data_;std::string target_;std::uint64_t token_=0;
 };
+class ShowEffectCommand : public Command {
+public:
+    ShowEffectCommand(std::string id,const EventCommand& c):Command(std::move(id)),data_(c){}
+    CommandStatus start(CommandContext& ctx) override {
+        if(!ctx.game){ctx.logger.info("이펙트 미리보기: 실제 재생하지 않음");return CommandStatus::Completed;}
+        const auto target=ctx.game->resolveTarget(data_.target,ctx.selfObjectId);
+        if(target.empty()){setError("이펙트 대상 객체가 없습니다");return CommandStatus::Failed;}
+        try{token_=ctx.game->playEffect(data_.effect,target);}
+        catch(const std::exception& e){setError(e.what());return CommandStatus::Failed;}
+        return data_.waitForEnd?CommandStatus::Waiting:CommandStatus::Completed;
+    }
+    CommandStatus update(CommandContext& ctx,double) override{return ctx.game&&ctx.game->effectPlaying(token_)?CommandStatus::Waiting:CommandStatus::Completed;}
+    void cancel(CommandContext& ctx) override{if(ctx.game)ctx.game->stopEffect(token_);}
+private:EventCommand data_;std::uint64_t token_=0;
+};
 class MoveObjectCommand : public Command {
 public:
     MoveObjectCommand(std::string id, const EventCommand& c)
@@ -658,6 +673,8 @@ void emit(const std::vector<EventCommand>& list, const std::string& prefix,
             break;
         case EventCommandType::ObjectAnimation:
             out.push_back(std::make_unique<ObjectAnimationCommand>(id,c));break;
+        case EventCommandType::ShowEffect:
+            out.push_back(std::make_unique<ShowEffectCommand>(id,c));break;
         case EventCommandType::SetVisible:
             out.push_back(std::make_unique<SetVisibleCommand>(id, c.target, c.show));
             break;

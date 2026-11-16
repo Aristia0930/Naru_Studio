@@ -46,7 +46,7 @@ FieldDialog::FieldDialog(const naru::FieldDef& field, const naru::DataType& owne
                                     "만든 뒤에는 바꿀 수 없습니다."));
     type_ = new QComboBox(this);
     for (auto t : {FieldType::Integer, FieldType::Number, FieldType::Text, FieldType::Boolean, FieldType::Choice,
-                   FieldType::Reference, FieldType::Image, FieldType::Audio}) {
+                   FieldType::Reference, FieldType::Image, FieldType::Audio, FieldType::Effect}) {
         type_->addItem(ValueEditor::typeLabel(t), static_cast<int>(t));
     }
     type_->setCurrentIndex(type_->findData(static_cast<int>(field.type)));
@@ -173,6 +173,7 @@ void FieldDialog::rebuildDefaultEditor() {
     case FieldType::Choice: hint_->setText(QStringLiteral("정해진 것 중 하나. 예: 속성(불/물/풀), 분류")); break;
     case FieldType::Image: hint_->setText(QStringLiteral("에셋 목록의 이미지 ID를 참조합니다. 없음은 None입니다.")); break;
     case FieldType::Audio: hint_->setText(QStringLiteral("WAV/MP3 에셋 ID를 참조합니다. 자동 재생하지 않습니다.")); break;
+    case FieldType::Effect: hint_->setText(QStringLiteral("이펙트 라이브러리의 ID를 참조합니다. 읽기만으로 재생되지 않습니다.")); break;
     case FieldType::Reference: hint_->setText(QStringLiteral("다른 데이터의 항목 하나를 가리킴. 예: 몬스터가 떨어뜨리는 아이템")); break;
     }
 }
@@ -212,6 +213,14 @@ void FieldDialog::accept() {
     if (document_ && naru::isAssetField(f.type)) {
         if (auto error = naru::checkAssetValue(f.defaultValue, f, document_->project().assets)) {
             QMessageBox::warning(this, windowTitle(), q(*error)); return;
+        }
+    }
+    if (document_ && f.type == FieldType::Effect) {
+        if (const auto* id = std::get_if<std::string>(&f.defaultValue); id &&
+            std::none_of(document_->project().effects.begin(), document_->project().effects.end(),
+                         [&](const naru::Effect& effect) { return effect.id == *id; })) {
+            QMessageBox::warning(this, windowTitle(), QStringLiteral("존재하지 않는 이펙트 ID입니다."));
+            return;
         }
     }
     field_ = f;

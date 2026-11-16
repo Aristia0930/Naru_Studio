@@ -156,6 +156,11 @@ public:
     bool objectAnimating(const std::string& id,std::uint64_t token=0) const;
     void stopObjectAnimation(const std::string& id);
     std::vector<AnimationSignal> takeAnimationSignals();
+    struct ActiveEffect {std::string id,target;double x=0,y=0,elapsed=0;std::size_t frame=0;std::uint64_t token=0;};
+    std::uint64_t playEffect(const std::string& id,const std::string& target="@player",double x=0,double y=0);
+    bool effectPlaying(std::uint64_t token) const;
+    void stopEffect(std::uint64_t token);
+    const std::vector<ActiveEffect>& activeEffects() const {return activeEffects_;}
     // "@self"(selfId)·"@player"·객체 ID를 실제 객체 ID로 바꾼다. 장면에 없으면 빈 문자열.
     std::string resolveTarget(const std::string& target, const std::string& selfId) const;
 
@@ -200,6 +205,8 @@ private:
     void advanceAnimations(double dt);
     void emitAnimationSignal(const SceneObject& object);
     std::vector<AnimationSignal> animationSignals_;
+    std::vector<ActiveEffect> activeEffects_;
+    std::uint64_t effectToken_=0;
     std::uint64_t animationToken_=0;
 
     Project project_;

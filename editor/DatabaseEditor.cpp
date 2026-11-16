@@ -30,6 +30,7 @@
 #include <QPlainTextEdit>
 #include <QTimer>
 #include "naru/network/NetworkSettings.h"
+#include <algorithm>
 #include <limits>
 #include <QSet>
 #include <stdexcept>
@@ -836,6 +837,11 @@ bool DatabaseEditor::setRecordValue(const QString& typeKey, const QString& recor
             }
             const auto* f = t->findField(fieldKey.toStdString());
             if (naru::isAssetField(f->type) && naru::checkAssetValue(value, *f, doc_->project().assets)) return false;
+            if (f->type == naru::FieldType::Effect) {
+                if (const auto* id = std::get_if<std::string>(&value); id &&
+                    std::none_of(doc_->project().effects.begin(), doc_->project().effects.end(),
+                                 [&](const naru::Effect& effect) { return effect.id == *id; })) return false;
+            }
             r->values[fieldKey.toStdString()] = value;
             return true;
         },
@@ -871,6 +877,11 @@ void DatabaseEditor::addFieldInteractive() {
 
 bool DatabaseEditor::setField(const QString& typeKey, int index, const FieldDef& field, bool askBeforeReset) {
     if (naru::isAssetField(field.type) && naru::checkAssetValue(field.defaultValue, field, doc_->project().assets)) return false;
+    if (field.type == naru::FieldType::Effect) {
+        if (const auto* id = std::get_if<std::string>(&field.defaultValue); id &&
+            std::none_of(doc_->project().effects.begin(), doc_->project().effects.end(),
+                         [&](const naru::Effect& effect) { return effect.id == *id; })) return false;
+    }
     const DataType* t = doc_->project().database.findType(typeKey.toStdString());
     if (!t || index < 0 || index >= static_cast<int>(t->fields.size())) {
         return false;

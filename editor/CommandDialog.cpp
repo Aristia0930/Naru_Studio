@@ -50,6 +50,7 @@ int kindOf(const Value& v) {
 QString CommandDialog::typeLabel(EventCommandType type) {
     switch (type) {
     case EventCommandType::ObjectAnimation:return QStringLiteral("객체 애니메이션");
+    case EventCommandType::ShowEffect:return QStringLiteral("이펙트 표시");
     case EventCommandType::NetworkRequest: return QStringLiteral("API 요청 → 변수");
     case EventCommandType::Audio: return QStringLiteral("소리 재생/정지");
     case EventCommandType::CallCommonEvent: return QStringLiteral("공통 이벤트 호출");
@@ -204,6 +205,12 @@ CommandDialog::CommandDialog(const naru::EventCommand& command, const QStringLis
     };
 
     switch (command.type) {
+    case EventCommandType::ShowEffect: {
+        addTargetRow();animationName_=new QLineEdit(QString::fromStdString(command.effect),this);
+        waitForEnd_=new QCheckBox(QStringLiteral("끝날 때까지 기다리기"),this);waitForEnd_->setChecked(command.waitForEnd);
+        form->addRow(QStringLiteral("이펙트 ID"),animationName_);form->addRow(waitForEnd_);
+        form->addRow(new QLabel(QStringLiteral("프로젝트 공용 이펙트 ID를 입력합니다. F6은 실제 그림을 재생하지 않습니다."),this));break;
+    }
     case EventCommandType::ObjectAnimation: {
         addTargetRow();animationName_=new QLineEdit(QString::fromStdString(command.animation),this);
         animationLoop_=new QCheckBox(QStringLiteral("반복"),this);animationLoop_->setChecked(command.animationLoop);
@@ -650,6 +657,9 @@ bool CommandDialog::readValue(QComboBox* typeBox, QLineEdit* edit, QComboBox* bo
 void CommandDialog::accept() {
     naru::EventCommand c = command_;
     switch (c.type) {
+    case EventCommandType::ShowEffect:
+        c.target=target_->currentData().toString().toStdString();c.effect=animationName_->text().trimmed().toStdString();c.waitForEnd=waitForEnd_->isChecked();
+        if(c.effect.empty()){QMessageBox::warning(this,QStringLiteral("이펙트"),QStringLiteral("이펙트 ID를 입력하세요."));return;}break;
     case EventCommandType::ObjectAnimation:
         c.target=target_->currentData().toString().toStdString();c.animation=animationName_->text().trimmed().toStdString();c.animationLoop=animationLoop_->isChecked();c.animationLock=animationLock_->isChecked();c.animationStop=animationStop_->isChecked();c.waitForEnd=waitForEnd_->isChecked();
         if(!c.animationStop&&(c.animation.empty()||(c.animationLoop&&c.waitForEnd))){QMessageBox::warning(this,QStringLiteral("애니메이션"),QStringLiteral("동작 이름을 입력하고 반복+기다리기 조합을 해제하세요."));return;}break;

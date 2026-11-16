@@ -1,5 +1,7 @@
 # 스크립트 예제
 
+[공용 이펙트·이벤트/Python 재생 예제](effects/README.md)
+
 [캐릭터 애니메이션·프레임 신호·이벤트/Python 예제](animation/README.md)
 
 [레이어 타일맵·충돌·카메라 예제](tilemap/README.md) · [API 데이터 가져오기 서버](api-import/README.md)

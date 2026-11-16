@@ -2,6 +2,7 @@
 
 #include "naru/core/Value.h"
 #include "naru/project/Animation.h"
+#include "naru/project/Effect.h"
 #include "naru/project/Asset.h"
 #include "naru/data/Database.h"
 #include "naru/events/EventData.h"
@@ -109,6 +110,7 @@ struct CommonEvent {
 
 // 편집 문서로서의 프로젝트. 폴더 위치는 ProjectIO가 다루며 여기에는 저장하지 않는다.
 struct Project {
+    std::vector<Effect> effects;
     std::vector<NetworkConnection> networkConnections;
     int formatVersion = 1;
     std::string name;

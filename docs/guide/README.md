@@ -2,6 +2,8 @@
 
 [캐릭터 애니메이션 편집·방향별 idle/walk·이벤트/Python·수동 확인](ANIMATION.md)
 
+[공용 이펙트 편집·이벤트·Python 재생](EFFECTS.md)
+
 [2026-11-16 오늘 개발 기능·준비 명령·전체 수동 테스트 순서](2026-11-16_TEST_GUIDE.md)
 
 [나중에 확인할 API 가져오기·타일맵 수동 테스트 모음](MANUAL_TESTS.md)
@@ -36,11 +38,12 @@ API 명령에서 응답 항목을 변수에 연결하려면 **응답 → 변수 
 - [API 응답을 프로젝트 DB에 가져오기](API_IMPORT.md)
 - [레이어 타일맵·충돌·카메라](TILEMAP.md)
 - [캐릭터 애니메이션·이미지 격자 선택](ANIMATION.md)
+- [공용 이펙트 애니메이션·이벤트/Python 재생](EFFECTS.md)
 - [DB 이미지·소리 속성·Python 연결](DB_ASSETS.md)
 - [에셋 목록 팝업·별도 추가 창·미리보기](ASSETS.md)
 - [에셋 ID 직접 지정·변경과 스크립트 연결](ASSETS.md#id-직접-지정변경)
 - [키 설정 · Python과 양방향 동기화](INPUT_SETTINGS.md)
-- [이벤트 명령 16종 사용법](EVENTS.md)
+- [이벤트 명령 17종 사용법](EVENTS.md)
 - [Python 작성·이벤트/전역 스크립트 연결](SCRIPTING.md)
 - [스크립트 줄 번호·들여쓰기·로그 복사](SCRIPTING.md#스크립트-줄-번호와-들여쓰기)
 

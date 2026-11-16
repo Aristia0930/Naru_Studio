@@ -15,6 +15,7 @@
 #include "VariablesDialog.h"
 #include "NetworkSettingsDialog.h"
 #include "InputSettingsDialog.h"
+#include "EffectEditor.h"
 
 #include "naru/events/BuiltinCommands.h"
 #include "naru/python/PythonRuntime.h"
@@ -369,6 +370,7 @@ void MainWindow::createActions() {
 
     auto* assets = menuBar()->addMenu(QStringLiteral("에셋"));
     assets->addAction(make(QStringLiteral("에셋 목록..."), {}, &MainWindow::showAssets));
+    assets->addAction(make(QStringLiteral("이펙트 라이브러리..."), {}, [this]{EffectEditor dialog(doc_,this);dialog.exec();}));
 
     auto* edit = menuBar()->addMenu(QStringLiteral("편집(&E)"));
     edit->addAction(undo);

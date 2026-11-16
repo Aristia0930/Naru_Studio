@@ -1,5 +1,6 @@
 #include "TestMain.h"
 #include "AnimationEditor.h"
+#include "EffectEditor.h"
 #include "AssetBrowser.h"
 #include "Inspector.h"
 #include "UndoCommands.h"
@@ -37,4 +38,21 @@ TEST_CASE("애니메이션 편집·적용/취소·에셋 참조·Undo·저장 �
     shot.findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Apply)->click();CHECK(shot.result()!=QDialog::Accepted);
     naru::EventCommand command;command.type=naru::EventCommandType::ObjectAnimation;command.target=actor.id;command.animation="idle";command.animationLock=true;
     CommandDialog commandDialog(command,{},&doc->project(),&scene);commandDialog.findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Ok)->click();CHECK(commandDialog.result()==QDialog::Accepted);CHECK(commandDialog.command()==command);
+}
+
+TEST_CASE("공용 이펙트 편집 창은 적용·Undo·재열기를 보존한다") {
+    QTemporaryDir temp;QString error;auto doc=ProjectDocument::create(temp.path()+"/effect","이펙트",&error);CHECK(doc!=nullptr);if(!doc)return;
+    QImage image(64,64,QImage::Format_ARGB32);image.fill(Qt::red);CHECK(image.save(temp.path()+"/source.png"));
+    AssetBrowser browser(doc.get());CHECK(browser.importFiles({temp.path()+"/source.png"},{"spark_image"}).isEmpty());
+    naru::Effect effect;effect.id="spark";effect.name="불꽃";naru::EffectFrame frame;frame.image="spark_image";frame.seconds=.5;effect.frames={frame};doc->setEffects({effect});
+    EffectEditor dialog(doc.get());dialog.show();QApplication::processEvents();
+    auto* table=dialog.findChild<QTableWidget*>("effectFrames");CHECK(table&&table->rowCount()==1);table->item(0,5)->setText("0.25");
+    for(auto* button:dialog.findChildren<QPushButton*>())if(button->text()==QStringLiteral("대상 위 미리보기 재생"))button->click();
+    QApplication::processEvents();const auto shot=qEnvironmentVariable("NARU_EFFECT_SCREENSHOT");if(!shot.isEmpty())CHECK(dialog.grab().save(shot));
+    dialog.findChild<QDialogButtonBox*>()->button(QDialogButtonBox::Apply)->click();CHECK(dialog.result()==QDialog::Accepted);
+    CHECK(doc->project().effects[0].frames[0].seconds==.25);doc->undoStack()->undo();CHECK(doc->project().effects[0].frames[0].seconds==.5);
+    doc->undoStack()->redo();CHECK(!browser.unregisterAsset("spark_image"));
+    CHECK(browser.renameAssetId("spark_image","renamed_image",&error));CHECK(doc->project().effects[0].frames[0].image=="renamed_image");
+    doc->undoStack()->undo();CHECK(doc->project().effects[0].frames[0].image=="spark_image");
+    CHECK(doc->save(&error));auto loaded=ProjectDocument::open(doc->directory(),&error);CHECK(loaded&&loaded->project().effects==doc->project().effects);
 }

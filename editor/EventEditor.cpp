@@ -99,6 +99,8 @@ QString describe(const EventCommand& c, const naru::Scene* scene, const naru::Pr
         return QStringLiteral("데이터 → 변수: %1 = %2[%3].%4").arg(q(c.variable), q(c.dataType), q(c.record), q(c.field));
     case EventCommandType::ObjectAnimation:
         return QStringLiteral("객체 애니메이션: %1 · %2%3%4").arg(CommandDialog::targetLabel(c.target,scene),c.animationStop?QStringLiteral("중지"):q(c.animation),c.animationLoop?QStringLiteral(" (반복)"):QString(),c.waitForEnd&&!c.animationStop?QStringLiteral(" · 완료 대기"):QString());
+    case EventCommandType::ShowEffect:
+        return QStringLiteral("이펙트 표시: %1 · %2%3").arg(CommandDialog::targetLabel(c.target,scene),q(c.effect),c.waitForEnd?QStringLiteral(" · 완료 대기"):QString());
     case EventCommandType::MoveObject:
         return QStringLiteral("객체 이동: %1 → %2 %3px (%4%5)")
             .arg(CommandDialog::targetLabel(c.target, scene), CommandDialog::directionLabel(c.direction))
@@ -155,7 +157,7 @@ std::optional<EventCommandType> chooseType(QWidget* parent) {
     for (auto type : {EventCommandType::Say, EventCommandType::ShowChoices, EventCommandType::Wait, EventCommandType::SetVariable,
                       EventCommandType::IfVariable, EventCommandType::GetData, EventCommandType::MoveObject,
                       EventCommandType::SetVisible, EventCommandType::ChangeScene, EventCommandType::CallScript,
-                      EventCommandType::CallCommonEvent, EventCommandType::Audio, EventCommandType::NetworkRequest, EventCommandType::ObjectAnimation, EventCommandType::Log,
+                      EventCommandType::CallCommonEvent, EventCommandType::Audio, EventCommandType::NetworkRequest, EventCommandType::ObjectAnimation, EventCommandType::ShowEffect, EventCommandType::Log,
                       EventCommandType::Comment}) {
         menu.addAction(CommandDialog::typeLabel(type))->setData(static_cast<int>(type));
     }

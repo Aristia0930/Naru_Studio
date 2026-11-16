@@ -1,5 +1,17 @@
 # 스크립트에서 쓰는 엔진 값 (ctx 레퍼런스)
 
+## 공용 이펙트 (순서 13)
+
+실제 게임 Ctrl+R에서 `ctx.effects`를 사용합니다. F5/F6에서는 None입니다. 이펙트는 프로젝트의 **에셋 → 이펙트 라이브러리...**에 ID로 등록하고 [편집·이벤트 사용법](guide/EFFECTS.md)을 따릅니다.
+
+| 함수 | 인자·반환·오류 |
+|---|---|
+| `ctx.effects.play(effect_id, target="@player", x=0, y=0)` | 이펙트 ID 문자열, 대상 객체 ID/`@player`/`@screen`/`@position`, 숫자 좌표. 양의 정수 재생 번호 반환. 없는 ID·대상은 ValueError, 동시 256개 초과는 RuntimeError |
+| `ctx.effects.is_playing(token)` | 재생 번호 정수 → 진행 중이면 True, 종료/중지/장면 이동 뒤면 False |
+| `ctx.effects.stop(token)` | 재생 번호 정수 → None. 해당 재생만 중지 |
+
+`@position`의 x/y는 장면 좌표이며 `@screen`은 현재 화면 중앙입니다. 객체 대상은 현재 위치를 따라갑니다. 프레임마다 소리·번쩍임·흔들림을 적용합니다. 이펙트는 피해/회복 값 자체를 바꾸지 않습니다. 이벤트 명령 **이펙트 표시**는 별도로 완료 대기를 선택할 수 있습니다. [실행 예제](examples/effects/README.md).
+
 ## 캐릭터 애니메이션 (순서 12)
 
 게임 실행 중 `ctx.scene.object(ID)`로 얻은 `SceneObject`에서 다음을 사용한다. F5/F6의 `ctx.scene`은 None이므로 게임 실행에서 호출한다.
